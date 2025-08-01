@@ -109,7 +109,6 @@ Developed by Philippe Branly
 ### If you want support the project
 
 www.paypal.me/philippebranly
-[![Donate][donation-paypal]](https://www.paypal.me/philippebranly)
 
 
 
