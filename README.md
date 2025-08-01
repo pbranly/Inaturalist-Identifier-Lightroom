@@ -15,7 +15,7 @@ A Lightroom Classic plugin that identifies animal species in photos using the iN
 - [Dependencies](#dependencies)  
 - [Development](#development)  
 - [License](#license)
-- [If you want support project](#If-you-want-support-project)
+- [If you want support project](#If-you-want-support-the-project)
 
 ---
 
@@ -106,9 +106,9 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 Developed by Philippe Branly
 
-### If you want support project
+### If you want support the project
 
-
+www.paypal.me/philippebranly
 [![Donate][donation-paypal]](https://www.paypal.me/philippebranly)
 
 
