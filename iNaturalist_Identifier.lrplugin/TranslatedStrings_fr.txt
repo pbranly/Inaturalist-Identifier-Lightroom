@@ -19,7 +19,7 @@
 
 "$$$/iNat/DialogCancelled=Dialogue annulé."
 
-"$$$/iNat/Bezel/PluginStarted=Plugin démarré"
+"$$$/iNat/Bezel/Started=Plugin démarré"
 "$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."
 "$$$/iNat/Bezel/PhotoName=Photo sélectionnée : "
 "$$$/iNat/Bezel/Cleared=Image précédente supprimée."
