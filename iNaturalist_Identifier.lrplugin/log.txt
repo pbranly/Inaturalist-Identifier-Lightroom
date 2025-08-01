@@ -1,0 +1,24 @@
+[2025-08-01 16:10:39] == Nouveau lancement du plugin ===
+[2025-08-01 16:10:39] Plugin started
+[2025-08-01 16:10:39] == Début de isTokenValid() ===
+[2025-08-01 16:10:39] 🔑 Token détecté (longueur : 156 caractères)
+[2025-08-01 16:10:39] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQwNTk5Njd9.XZDla3CRTea01z7XRlyT_2nrGvIGP5yIWV_Z0v3ecoX7Q9zwiVZA3AValjPjlJRSGDMSTzcA1Y5u__DGWISUeQ" "https://api.inaturalist.org/v1/users/me"
+[2025-08-01 16:10:44] ➡️ Code HTTP retourné par iNaturalist : 200
+[2025-08-01 16:10:44] ✅ Succès : le token est valide.
+[2025-08-01 16:10:44] Selected photo: _DSC3816-DxO_DeepPRIME XD2s_XD.dng
+[2025-08-01 16:10:45] Fichier JPG supprimé :D:\Telechargement\iNaturalist_Identifier\iNaturalist_Identifier.lrplugin\tempo.jpg
+[2025-08-01 16:10:47] Image exported as tempo.jpg
+[2025-08-01 16:10:49] Identification results:
+🕊️ Recognized animals:
+
+- goéland à ailes grises (Larus glaucescens) : 100.0%
+- goéland bourgmestre (Larus hyperboreus) : 85.2%
+- Goéland de Mongolie (Larus mongolicus) : 79.1%
+- Goéland à manteau ardoisé (Larus schistisagus) : 53.8%
+- Goéland d'Audubon (Larus occidentalis) : 25.6%
+- Goéland à ailes blanches (Larus glaucoides) : 20.0%
+- Goéland de la Véga (Larus vegae) : 19.8%
+- Goéland brun (Larus fuscus) : 14.0%
+- Goéland argenté (Larus argentatus) : 7.5%
+- Goéland leucophée (Larus michahellis) : 4.6%
+[2025-08-01 16:10:56] User skipped tagging.

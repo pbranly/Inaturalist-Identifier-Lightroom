@@ -1,0 +1,133 @@
+-- Import required Lightroom modules
+local LrTasks = import "LrTasks"
+local LrDialogs = import "LrDialogs"
+local LrApplication = import "LrApplication"
+local LrPathUtils = import "LrPathUtils"
+local LrFileUtils = import "LrFileUtils"
+local LrExportSession = import "LrExportSession"
+local LrPrefs = import "LrPrefs"
+
+-- Custom modules
+local logger = require("Logger")
+local imageUtils = require("ImageUtils")
+local tokenUpdater = require("TokenUpdater")
+local tokenChecker = require("VerificationToken")
+local callAPI = require("call_inaturalist")
+
+-- Main function
+local function identifyAnimal()
+    LrTasks.startAsyncTask(function()
+        logger.initializeLogFile()
+        logger.logMessage("Plugin started")
+        LrDialogs.showBezel("Plugin started", 2)
+
+        local prefs = LrPrefs.prefsForPlugin()
+        local token = prefs.token
+
+        if not token or token == "" then
+            logger.notify("Token is missing. Please enter it in Preferences.")
+            tokenUpdater.runUpdateTokenScript()
+            return
+        end
+
+        local isValid, msg = tokenChecker.isTokenValid()
+        if not isValid then
+            logger.notify("Invalid or expired token.")
+            tokenUpdater.runUpdateTokenScript()
+            return
+        end
+
+        local catalog = LrApplication.activeCatalog()
+        local photo = catalog:getTargetPhoto()
+        if not photo then
+            logger.logMessage("No photo selected.")
+            LrDialogs.showBezel("No photo selected.", 3)
+            return
+        end
+
+        local filename = photo:getFormattedMetadata("fileName") or "unknown"
+        logger.logMessage("Selected photo: " .. filename)
+        LrDialogs.showBezel("Selected photo: " .. filename, 2)
+
+        local pluginFolder = _PLUGIN.path
+        imageUtils.clearJPEGs(pluginFolder)
+
+        local exportSettings = {
+            LR_export_destinationType = "specificFolder",
+            LR_export_destinationPathPrefix = pluginFolder,
+            LR_export_useSubfolder = false,
+            LR_format = "JPEG",
+            LR_jpeg_quality = 0.8,
+            LR_size_resizeType = "wh",
+            LR_size_maxWidth = 1024,
+            LR_size_maxHeight = 1024,
+            LR_size_doNotEnlarge = true,
+            LR_renamingTokensOn = true,
+            LR_renamingTokens = "{{image_name}}",
+        }
+
+        local exportSession = LrExportSession({
+            photosToExport = { photo },
+            exportSettings = exportSettings
+        })
+
+        local success = LrTasks.pcall(function()
+            exportSession:doExportOnCurrentTask()
+        end)
+
+        local exportedPath = imageUtils.findSingleJPEG(pluginFolder)
+        if not exportedPath then
+            logger.logMessage("Failed to export image.")
+            LrDialogs.showBezel("Image export failed.", 3)
+            return
+        end
+
+        local finalPath = LrPathUtils.child(pluginFolder, "tempo.jpg")
+        local ok, err = LrFileUtils.move(exportedPath, finalPath)
+        if not ok then
+            logger.logMessage("File rename error: " .. (err or "unknown"))
+            LrDialogs.showBezel("Rename failed.", 3)
+            return
+        end
+
+        logger.logMessage("Image exported as tempo.jpg")
+        LrDialogs.showBezel("Image exported to tempo.jpg", 2)
+
+        -- Call Lua API handler instead of Python
+        local result, err = callAPI.identify(finalPath, token)
+
+        if not result then
+            logger.logMessage("API error: " .. (err or "unknown"))
+            LrDialogs.message("Identification failed", err or "Unknown error.")
+            return
+        end
+
+        if result:match("🕊️") then
+            logger.logMessage("Identification results:\n" .. result)
+            LrDialogs.message("Identification results:", result)
+
+            local choix = LrDialogs.confirm(
+                "Do you want to add one or more identifications as keywords?",
+                "Click 'Continue' to select species.",
+                "Continue",
+                "Cancel"
+            )
+
+            if choix == "ok" then
+                local selector = require("SelectAndTagResults")
+                selector.showSelection(result)
+            else
+                logger.logMessage("User skipped tagging.")
+            end
+        else
+            LrDialogs.showBezel("No results found.", 3)
+            logger.logMessage("No identification results.")
+        end
+
+        LrDialogs.showBezel("Analysis completed.", 2)
+    end)
+end
+
+return {
+    identify = identifyAnimal
+}
