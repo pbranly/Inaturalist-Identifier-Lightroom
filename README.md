@@ -15,7 +15,7 @@ A Lightroom Classic plugin that identifies animal species in photos using the iN
 - [Dependencies](#dependencies)  
 - [Development](#development)  
 - [License](#license)
-- [If you want support project](#If you want support project)
+- [If you want support project](#If-you-want-support-project)
 
 ---
 
