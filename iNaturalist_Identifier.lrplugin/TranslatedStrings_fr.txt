@@ -21,22 +21,28 @@
 
 "$$$/iNat/Bezel/Started=Plugin démarré"
 "$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."
-"$$$/iNat/Bezel/PhotoName=Photo sélectionnée : "
-"$$$/iNat/Bezel/Cleared=Image précédente supprimée."
+
+
 "$$$/iNat/Bezel/ExportFailed=Échec de l'exportation de l'image."
 "$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg"
-"$$$/iNat/Bezel/ResultNone=Aucun résultat d'identification ❌"
-"$$$/iNat/Bezel/NoneFound=Aucun résultat trouvé."
-"$$$/iNat/Bezel/AnalysisDone=Analyse terminée."
-"$$$/iNat/Bezel/RenameFailed=Échec du renommage."
+
+
+
+
 "$$$/iNat/Bezel/SelectedPhoto=Photo sélectionnée : "
 "$$$/iNat/Bezel/Done=Analyse terminée."
 
-"$$$/iNat/Error/MissingToken=Le jeton est manquant. Veuillez le saisir dans les Préférences."
-"$$$/iNat/Error/InvalidToken=Jeton invalide ou expiré."
-"$$$/iNat/Error/MissingUpdateScript=Script de mise à jour du token absent : update_token.lua"
 
-"$$$/iNat/Title/Result=Résultats de l’identification :"
+
+"$$$/iNat/Error/MissingUpdateScript=Script de mise à jour du token absent : update_token.lua"
+"$$$/iNat/Bezel/NoResult"
+"$$$/iNat/Error/ExportFailed"
+"$$$/iNat/Error/ExportedFileNotFound"
+"$$$/iNat/Error/FileMove"
+"$$$/iNat/Error/TokenInvalid"
+"$$$/iNat/Error/TokenMissing"
+
+
 "$$$/iNat/Dialog/IdentificationFailed=Échec de l'identification"
 "$$$/iNat/Dialog/UnknownError=Erreur inconnue."
 "$$$/iNat/Dialog/Results=Résultats de l'identification :"
@@ -45,10 +51,10 @@
 "$$$/iNat/Dialog/Continue=Continuer"
 "$$$/iNat/Dialog/Cancel=Annuler"
 
-"$$$/iNat/Confirm/Ask=Souhaitez-vous ajouter une ou plusieurs identifications comme mots-clés ?"
-"$$$/iNat/Confirm/Hint=Cliquez sur « Continuer » pour sélectionner les espèces."
-"$$$/iNat/Confirm/Continue=Continuer"
-"$$$/iNat/Confirm/Cancel=Annuler"
+
+
+
+
 
 "$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé :"
 "$$$/iNat/Log/PluginStarted=== Nouveau lancement du plugin ==="
@@ -68,7 +74,7 @@
 "$$$/iNat/Log/NoPhoto=Aucune photo sélectionnée."
 "$$$/iNat/Log/SelectedPhoto=Photo sélectionnée : "
 "$$$/iNat/Log/ExportFailed=Échec de l'exportation de l'image."
-"$$$/iNat/Log/RenameFailed=Erreur lors du renommage du fichier : "
+
 "$$$/iNat/Log/Exported=Image exportée sous le nom tempo.jpg"
 "$$$/iNat/Log/APIError=Erreur API : "
 "$$$/iNat/Log/Results=Résultats de l'identification :\n"
