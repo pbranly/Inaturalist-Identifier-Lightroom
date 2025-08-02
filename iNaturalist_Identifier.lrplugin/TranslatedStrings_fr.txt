@@ -41,7 +41,9 @@
 "$$$/iNat/Error/FileMove"
 "$$$/iNat/Error/TokenInvalid"
 "$$$/iNat/Error/TokenMissing"
-
+"$$$/iNat/Error/ImageRead=Unable to read image: "
+"$$$/iNat/Error/NoAPIResponse=API error: No response"
+"$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: "
 
 "$$$/iNat/Dialog/IdentificationFailed=Échec de l'identification"
 "$$$/iNat/Dialog/UnknownError=Erreur inconnue."
@@ -93,6 +95,12 @@
 "$$$/iNaturalist/TokenLabel=Token :"
 "$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
 "$$$/iNaturalist/SaveButton=Sauvegarder"
+
+
+"$$$/iNat/Result/None=🕊️ No animal recognized."
+"$$$/iNat/Result/Header=🕊️ Recognized animals:\n"
+"$$$/iNat/Result/UnknownName=Unknown"
+
 
 "$$$/AiTagger/Language/English=Anglais"
 "$$$/AiTagger/Language/Spanish=Espagnol"
