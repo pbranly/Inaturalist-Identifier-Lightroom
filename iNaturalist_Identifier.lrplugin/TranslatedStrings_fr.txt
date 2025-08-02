@@ -41,9 +41,9 @@
 "$$$/iNat/Error/FileMove"
 "$$$/iNat/Error/TokenInvalid"
 "$$$/iNat/Error/TokenMissing"
-"$$$/iNat/Error/ImageRead=Unable to read image: "
-"$$$/iNat/Error/NoAPIResponse=API error: No response"
-"$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: "
+"$$$/iNat/Error/ImageRead=Impossible d'ouvrir l'image: "
+"$$$/iNat/Error/NoAPIResponse=Erreur API: Pas de reponse"
+"$$$/iNat/Error/InvalidJSON=API error: Echec de decodage du JSON: "
 
 "$$$/iNat/Dialog/IdentificationFailed=Échec de l'identification"
 "$$$/iNat/Dialog/UnknownError=Erreur inconnue."
@@ -97,9 +97,9 @@
 "$$$/iNaturalist/SaveButton=Sauvegarder"
 
 
-"$$$/iNat/Result/None=🕊️ No animal recognized."
-"$$$/iNat/Result/Header=🕊️ Recognized animals:\n"
-"$$$/iNat/Result/UnknownName=Unknown"
+"$$$/iNat/Result/None=🕊️ aucune espece reconnue."
+"$$$/iNat/Result/Header=🕊️ Espêce reconnue:\n"
+"$$$/iNat/Result/UnknownName=Inbconnu"
 
 
 "$$$/AiTagger/Language/English=Anglais"

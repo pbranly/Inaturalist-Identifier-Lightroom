@@ -61,7 +61,7 @@ function M.identify(imagePath, token)
     if max_score == 0 then max_score = 1 end
 
     -- Build result output
-    local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized animals:\n") }
+    local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized specie:\n") }
     for _, result in ipairs(results) do
         local taxon = result.taxon or {}
         local name_fr = taxon.preferred_common_name or LOC("$$$/iNat/Result/UnknownName=Unknown")
