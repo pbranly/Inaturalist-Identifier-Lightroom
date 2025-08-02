@@ -1,42 +1,36 @@
--- identifyAnimal.lua
-
+-- Import required Lightroom modules
 local LrTasks = import "LrTasks"
 local LrDialogs = import "LrDialogs"
 local LrApplication = import "LrApplication"
-local LrPathUtils = import "LrPathUtils"
-local LrFileUtils = import "LrFileUtils"
 local LrPrefs = import "LrPrefs"
 
 -- Import custom modules
 local logger = require("Logger")
-local imageUtils = require("ImageUtils")
 local tokenUpdater = require("TokenUpdater")
 local tokenChecker = require("VerificationToken")
 local callAPI = require("call_inaturalist")
-local exportToTempo = require("export_to_tempo")
-local LOC = LOC  -- For localized UI text
+local export_to_tempo = require("export_to_tempo") -- Externalized export logic
+local LOC = LOC
 
--- Main function that identifies the selected photo using iNaturalist API
+-- Main function to identify the animal in the selected photo
 local function identifyAnimal()
     LrTasks.startAsyncTask(function()
-
-        -- Initialize logging and display startup notification
+        -- Initialize logging and show start message
         logger.initializeLogFile()
         logger.logMessage(LOC("$$$/iNat/Log/Started=Plugin started"))
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Started=Plugin started"), 2)
 
-        -- Retrieve saved API token from plugin preferences
+        -- Get the token from plugin preferences
         local prefs = LrPrefs.prefsForPlugin()
         local token = prefs.token
 
-        -- Check if the token is missing or empty
+        -- Validate the token
         if not token or token == "" then
             logger.notify(LOC("$$$/iNat/Error/TokenMissing=Token is missing. Please enter it in Preferences."))
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- Validate token using verification module
         local isValid, msg = tokenChecker.isTokenValid()
         if not isValid then
             logger.notify(LOC("$$$/iNat/Error/TokenInvalid=Invalid or expired token."))
@@ -44,7 +38,7 @@ local function identifyAnimal()
             return
         end
 
-        -- Get the current selected photo in the Lightroom catalog
+        -- Get the selected photo from Lightroom catalog
         local catalog = LrApplication.activeCatalog()
         local photo = catalog:getTargetPhoto()
         if not photo then
@@ -53,25 +47,24 @@ local function identifyAnimal()
             return
         end
 
-        -- Log and show the name of the selected photo
+        -- Show selected photo filename
         local filename = photo:getFormattedMetadata("fileName") or "unknown"
         logger.logMessage(LOC("$$$/iNat/Log/SelectedPhoto=Selected photo: ") .. filename)
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)
 
-        -- Clear any existing JPEGs in the plugin folder
-        local pluginFolder = _PLUGIN.path
-        imageUtils.clearJPEGs(pluginFolder)
-
-        -- Export the selected photo to tempo.jpg using external module
-        local finalPath, exportError = exportToTempo.export(photo, pluginFolder, imageUtils, logger, LOC)
-        if not finalPath then
-            logger.logMessage(LOC("$$$/iNat/Log/ExportFailed=Export failed: ") .. (exportError or LOC("$$$/iNat/Error/Unknown=Unknown error.")))
-            LrDialogs.showBezel(exportError or LOC("$$$/iNat/Error/Unknown=Unknown error."), 3)
+        -- Export the photo as tempo.jpg via separate module
+        local exportedPath, err = export_to_tempo.exportToTempo(photo)
+        if not exportedPath then
+            logger.logMessage(LOC("$$$/iNat/Log/ExportFailed=Failed to export image: ") .. (err or "unknown"))
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)
             return
         end
 
-        -- Call the iNaturalist API with the exported image
-        local result, err = callAPI.identify(finalPath, token)
+        logger.logMessage(LOC("$$$/iNat/Log/Exported=Image exported as tempo.jpg"))
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
+
+        -- Send the exported image to the identification API
+        local result, err = callAPI.identify(exportedPath, token)
         if not result then
             logger.logMessage(LOC("$$$/iNat/Log/APIError=API error: ") .. (err or "unknown"))
             LrDialogs.message(
@@ -81,12 +74,12 @@ local function identifyAnimal()
             return
         end
 
-        -- Display results if response contains the expected emoji (🕊️)
+        -- If response includes bird emoji, it's considered valid
         if result:match("🕊️") then
             logger.logMessage(LOC("$$$/iNat/Log/Results=Identification results:\n") .. result)
             LrDialogs.message(LOC("$$$/iNat/Dialog/Results=Identification results:"), result)
 
-            -- Ask the user if they want to tag the image with identification results
+            -- Ask the user if they want to apply tags
             local choix = LrDialogs.confirm(
                 LOC("$$$/iNat/Dialog/AskTag=Do you want to add one or more identifications as keywords?"),
                 LOC("$$$/iNat/Dialog/AskTagDetails=Click 'Continue' to select species."),
@@ -94,7 +87,6 @@ local function identifyAnimal()
                 LOC("$$$/iNat/Dialog/Cancel=Cancel")
             )
 
-            -- If user agrees, open the selector module for keyword tagging
             if choix == "ok" then
                 local selector = require("SelectAndTagResults")
                 selector.showSelection(result)
@@ -102,17 +94,16 @@ local function identifyAnimal()
                 logger.logMessage(LOC("$$$/iNat/Log/SkippedTag=User skipped tagging."))
             end
         else
-            -- No identification results found
+            -- No identification result found
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoResult=No results found."), 3)
             logger.logMessage(LOC("$$$/iNat/Log/NoResult=No identification results."))
         end
 
-        -- Final notification to indicate process completion
+        -- Show completion message
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Done=Analysis completed."), 2)
     end)
 end
 
--- Return module entry point
 return {
     identify = identifyAnimal
 }

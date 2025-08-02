@@ -1,15 +1,22 @@
--- export_to_tempo.lua
-
+-- Import required Lightroom modules
 local LrExportSession = import "LrExportSession"
 local LrTasks = import "LrTasks"
 local LrPathUtils = import "LrPathUtils"
 local LrFileUtils = import "LrFileUtils"
-local LrDialogs = import "LrDialogs"
 
-local exportToTempo = {}
+-- Custom modules
+local imageUtils = require("ImageUtils")
+local logger = require("Logger")
+local LOC = LOC
 
-function exportToTempo.export(photo, pluginFolder, imageUtils, logger, LOC)
-    -- Export settings with metadata and GPS included
+-- Function to export a given photo to tempo.jpg
+local function exportToTempo(photo)
+    local pluginFolder = _PLUGIN.path
+
+    -- Clear existing JPEGs in plugin folder
+    imageUtils.clearJPEGs(pluginFolder)
+
+    -- Export settings to create a JPEG with embedded metadata
     local exportSettings = {
         LR_export_destinationType = "specificFolder",
         LR_export_destinationPathPrefix = pluginFolder,
@@ -20,17 +27,13 @@ function exportToTempo.export(photo, pluginFolder, imageUtils, logger, LOC)
         LR_size_maxWidth = 1024,
         LR_size_maxHeight = 1024,
         LR_size_doNotEnlarge = true,
+        LR_metadata_includeAll = true, -- Include all metadata including GPS
+        LR_removeLocationMetadata = false,
         LR_renamingTokensOn = true,
         LR_renamingTokens = "{{image_name}}",
-
-        -- Include metadata and GPS info
-        LR_export_includeMetadata = true,
-        LR_export_includeGPS = true,
-        LR_minimizeEmbeddedMetadata = false,
-        LR_metadata_keywordOptions = "lightroomHierarchical",
-        LR_includeDevelopSettings = true,
     }
 
+    -- Perform export
     local exportSession = LrExportSession({
         photosToExport = { photo },
         exportSettings = exportSettings
@@ -41,24 +44,25 @@ function exportToTempo.export(photo, pluginFolder, imageUtils, logger, LOC)
     end)
 
     if not success then
-        return nil, LOC("$$$/iNat/Error/ExportSessionFailed=Export session failed.")
+        return nil, LOC("$$$/iNat/Error/ExportFailed=Export failed.")
     end
 
+    -- Locate the exported JPEG
     local exportedPath = imageUtils.findSingleJPEG(pluginFolder)
     if not exportedPath then
         return nil, LOC("$$$/iNat/Error/ExportedFileNotFound=Exported file not found.")
     end
 
+    -- Rename to tempo.jpg
     local finalPath = LrPathUtils.child(pluginFolder, "tempo.jpg")
     local ok, err = LrFileUtils.move(exportedPath, finalPath)
     if not ok then
-        return nil, LOC("$$$/iNat/Error/RenameFailed=File rename error: ") .. (err or LOC("$$$/iNat/Error/Unknown=unknown"))
+        return nil, LOC("$$$/iNat/Error/FileMove=Failed to rename exported file: ") .. (err or "unknown")
     end
 
-    logger.logMessage(LOC("$$$/iNat/Log/Exported=Image exported as tempo.jpg"))
-    LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
-
-    return finalPath, nil
+    return finalPath
 end
 
-return exportToTempo
+return {
+    exportToTempo = exportToTempo
+}
