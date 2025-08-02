@@ -1,24 +1,24 @@
-[2025-08-01 16:10:39] == Nouveau lancement du plugin ===
-[2025-08-01 16:10:39] Plugin started
-[2025-08-01 16:10:39] == Début de isTokenValid() ===
-[2025-08-01 16:10:39] 🔑 Token détecté (longueur : 156 caractères)
-[2025-08-01 16:10:39] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQwNTk5Njd9.XZDla3CRTea01z7XRlyT_2nrGvIGP5yIWV_Z0v3ecoX7Q9zwiVZA3AValjPjlJRSGDMSTzcA1Y5u__DGWISUeQ" "https://api.inaturalist.org/v1/users/me"
-[2025-08-01 16:10:44] ➡️ Code HTTP retourné par iNaturalist : 200
-[2025-08-01 16:10:44] ✅ Succès : le token est valide.
-[2025-08-01 16:10:44] Selected photo: _DSC3816-DxO_DeepPRIME XD2s_XD.dng
-[2025-08-01 16:10:45] Fichier JPG supprimé :D:\Telechargement\iNaturalist_Identifier\iNaturalist_Identifier.lrplugin\tempo.jpg
-[2025-08-01 16:10:47] Image exported as tempo.jpg
-[2025-08-01 16:10:49] Identification results:
+[2025-08-02 08:43:22] == Nouveau lancement du plugin ===
+[2025-08-02 08:43:22] Plugin démarré
+[2025-08-02 08:43:22] == Début de isTokenValid() ===
+[2025-08-02 08:43:22] 🔑 Token détecté (longueur : 156 caractères)
+[2025-08-02 08:43:22] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyMDI2OTJ9.ul9EIGvMj2EZtqTHl9eMM72nG4R9DTfHuu9C_Kp1-yomjZfHqikyXWBljL5SG11NK7zQ5_ft-sjnhtpuysX0yQ" "https://api.inaturalist.org/v1/users/me"
+[2025-08-02 08:43:26] ➡️ Code HTTP retourné par iNaturalist : 200
+[2025-08-02 08:43:26] ✅ Succès : le token est valide.
+[2025-08-02 08:43:27] Photo sélectionnée : 10-DSC_5344.jpg
+[2025-08-02 08:43:28] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
+[2025-08-02 08:43:29] Image exportée sous le nom tempo.jpg
+[2025-08-02 08:43:32] Résultats de l'identification :
 🕊️ Recognized animals:
 
-- goéland à ailes grises (Larus glaucescens) : 100.0%
-- goéland bourgmestre (Larus hyperboreus) : 85.2%
-- Goéland de Mongolie (Larus mongolicus) : 79.1%
-- Goéland à manteau ardoisé (Larus schistisagus) : 53.8%
-- Goéland d'Audubon (Larus occidentalis) : 25.6%
-- Goéland à ailes blanches (Larus glaucoides) : 20.0%
-- Goéland de la Véga (Larus vegae) : 19.8%
-- Goéland brun (Larus fuscus) : 14.0%
-- Goéland argenté (Larus argentatus) : 7.5%
-- Goéland leucophée (Larus michahellis) : 4.6%
-[2025-08-01 16:10:56] User skipped tagging.
+- Renne (Rangifer tarandus) : 100.0%
+- mouflon de Dall (Ovis dalli) : 3.4%
+- Lama (Lama glama) : 2.1%
+- Gazelle du Tibet (Procapra picticaudata) : 0.7%
+- Chèvre des Rocheuses (Oreamnos americanus) : 0.5%
+- Chèvre domestique (Capra hircus) : 0.4%
+- Gazelle goitreuse (Gazella subgutturosa) : 0.3%
+- Yak domestique (Bos grunniens) : 0.3%
+- renard arctique (Vulpes lagopus) : 0.3%
+- Mouflon d'Asie (Ovis ammon) : 0.2%
+[2025-08-02 08:43:46] Dialogue annulé.
