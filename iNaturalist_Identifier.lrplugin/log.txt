@@ -1,24 +1,24 @@
-[2025-08-02 18:22:49] == Nouveau lancement du plugin ===
-[2025-08-02 18:22:49] Plugin démarré
-[2025-08-02 18:22:49] == Début de isTokenValid() ===
-[2025-08-02 18:22:49] 🔑 Token détecté (longueur : 156 caractères)
-[2025-08-02 18:22:49] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyMDI2OTJ9.ul9EIGvMj2EZtqTHl9eMM72nG4R9DTfHuu9C_Kp1-yomjZfHqikyXWBljL5SG11NK7zQ5_ft-sjnhtpuysX0yQ" "https://api.inaturalist.org/v1/users/me"
-[2025-08-02 18:22:55] ➡️ Code HTTP retourné par iNaturalist : 200
-[2025-08-02 18:22:55] ✅ Succès : le token est valide.
-[2025-08-02 18:22:57] Photo sélectionnée : _DSC9471.NEF
-[2025-08-02 18:23:07] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
-[2025-08-02 18:23:18] Image exportée sous le nom tempo.jpg
-[2025-08-02 18:23:23] Résultats de l'identification :
+[2025-08-02 20:00:11] == Nouveau lancement du plugin ===
+[2025-08-02 20:00:11] Plugin démarré
+[2025-08-02 20:00:11] == Début de isTokenValid() ===
+[2025-08-02 20:00:11] 🔑 Token détecté (longueur : 156 caractères)
+[2025-08-02 20:00:11] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyMDI2OTJ9.ul9EIGvMj2EZtqTHl9eMM72nG4R9DTfHuu9C_Kp1-yomjZfHqikyXWBljL5SG11NK7zQ5_ft-sjnhtpuysX0yQ" "https://api.inaturalist.org/v1/users/me"
+[2025-08-02 20:00:16] ➡️ Code HTTP retourné par iNaturalist : 200
+[2025-08-02 20:00:16] ✅ Succès : le token est valide.
+[2025-08-02 20:00:17] Photo sélectionnée : _DSC2825-DxO_DeepPRIME XD2s_XD.dng
+[2025-08-02 20:00:17] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
+[2025-08-02 20:00:18] Image exportée sous le nom tempo.jpg
+[2025-08-02 20:00:21] Résultats de l'identification :
 🕊️ Recognized animals:
 
-- Hortensia à feuilles de chêne (Hydrangea quercifolia) : 100.0%
-- Unknown (Hydrangea serrata) : 13.9%
-- Unknown (Hydrangea paniculata) : 2.6%
-- Hortensia de Virginie (Hydrangea arborescens) : 2.1%
-- Unknown (Hydrangea peruviana) : 0.8%
-- Unknown (Hydrangea petiolaris) : 0.8%
-- Unknown (Hydrangea radiata) : 0.7%
-- Hortensia (Hydrangea macrophylla) : 0.7%
-- Unknown (Pogonopus) : 0.5%
-- Cléome de Houtte (Cleome houtteana) : 0.4%
-[2025-08-02 18:23:39] Dialogue annulé.
+- phoque barbu (Erignathus barbatus) : 100.0%
+- otarie de Californie (Zalophus californianus) : 4.4%
+- Otarie des Galápagos (Zalophus wollebaeki) : 2.1%
+- Lion de mer australien (Neophoca cinerea) : 1.2%
+- otarie à fourrure du Nord (Callorhinus ursinus) : 1.1%
+- phoque annelé (Pusa hispida) : 0.9%
+- Otarie subantarctique (Arctocephalus tropicalis) : 0.8%
+- Loutre de Mer (Enhydra lutris) : 0.5%
+- Arctocéphale d'Afrique du Sud (Arctocephalus pusillus) : 0.5%
+- Otarie à crinière (Otaria flavescens) : 0.5%
+[2025-08-02 20:00:26] Dialogue annulé.
