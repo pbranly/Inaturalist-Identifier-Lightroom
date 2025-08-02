@@ -2,7 +2,7 @@
 [2025-08-02 08:43:22] Plugin démarré
 [2025-08-02 08:43:22] == Début de isTokenValid() ===
 [2025-08-02 08:43:22] 🔑 Token détecté (longueur : 156 caractères)
-[2025-08-02 08:43:22] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyMDI2OTJ9.ul9EIGvMj2EZtqTHl9eMM72nG4R9DTfHuu9C_Kp1-yomjZfHqikyXWBljL5SG11NK7zQ5_ft-sjnhtpuysX0yQ" "https://api.inaturalist.org/v1/users/me"
+[2025-08-02 08:43:22] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyMDI2OTJ9._ft-sjnhtpuysX0yQ" "https://api.inaturalist.org/v1/users/me"
 [2025-08-02 08:43:26] ➡️ Code HTTP retourné par iNaturalist : 200
 [2025-08-02 08:43:26] ✅ Succès : le token est valide.
 [2025-08-02 08:43:27] Photo sélectionnée : 10-DSC_5344.jpg
