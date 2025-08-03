@@ -99,7 +99,7 @@
 
 "$$$/iNat/Result/None=🕊️ aucune espece reconnue."
 "$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
-"$$$/iNat/Result/UnknownName=Inbconnu"
+"$$$/iNat/Result/UnknownName=Inconnu"
 
 
 "$$$/AiTagger/Language/English=Anglais"
