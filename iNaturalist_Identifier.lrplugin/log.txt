@@ -1,24 +1,25 @@
-[2025-08-02 08:43:22] == Nouveau lancement du plugin ===
-[2025-08-02 08:43:22] Plugin démarré
-[2025-08-02 08:43:22] == Début de isTokenValid() ===
-[2025-08-02 08:43:22] 🔑 Token détecté (longueur : 156 caractères)
-[2025-08-02 08:43:22] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyMDI2OTJ9._ft-sjnhtpuysX0yQ" "https://api.inaturalist.org/v1/users/me"
-[2025-08-02 08:43:26] ➡️ Code HTTP retourné par iNaturalist : 200
-[2025-08-02 08:43:26] ✅ Succès : le token est valide.
-[2025-08-02 08:43:27] Photo sélectionnée : 10-DSC_5344.jpg
-[2025-08-02 08:43:28] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
-[2025-08-02 08:43:29] Image exportée sous le nom tempo.jpg
-[2025-08-02 08:43:32] Résultats de l'identification :
-🕊️ Recognized animals:
+[2025-08-03 09:06:42] == Nouveau lancement du plugin ===
+[2025-08-03 09:06:42] Plugin démarré
+[2025-08-03 09:06:42] == Début de isTokenValid() ===
+[2025-08-03 09:06:42] 🔑 Token détecté (longueur : 156 caractères)
+[2025-08-03 09:06:42] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyODkyNzZ9.cGyZrXzus48k3owl9T9yoPTVIFmtB_EIL4WoJlqvyzS-ZW1LQ_eGoT5AnGinuOwwraBM21aftfagInKwY10ykg" "https://api.inaturalist.org/v1/users/me"
+[2025-08-03 09:06:47] ➡️ Code HTTP retourné par iNaturalist : 200
+[2025-08-03 09:06:47] ✅ Succès : le token est valide.
+[2025-08-03 09:06:47] Photo sélectionnée : _DSC2825-DxO_DeepPRIME XD2s_XD.dng
+[2025-08-03 09:06:47] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
+[2025-08-03 09:06:48] Image exportée sous le nom tempo.jpg
+[2025-08-03 09:06:51] Résultats de l'identification :
+🕊️ Espêce reconnue:
 
-- Renne (Rangifer tarandus) : 100.0%
-- mouflon de Dall (Ovis dalli) : 3.4%
-- Lama (Lama glama) : 2.1%
-- Gazelle du Tibet (Procapra picticaudata) : 0.7%
-- Chèvre des Rocheuses (Oreamnos americanus) : 0.5%
-- Chèvre domestique (Capra hircus) : 0.4%
-- Gazelle goitreuse (Gazella subgutturosa) : 0.3%
-- Yak domestique (Bos grunniens) : 0.3%
-- renard arctique (Vulpes lagopus) : 0.3%
-- Mouflon d'Asie (Ovis ammon) : 0.2%
-[2025-08-02 08:43:46] Dialogue annulé.
+
+- phoque barbu (Erignathus barbatus) : 100.0%
+- otarie de Californie (Zalophus californianus) : 4.4%
+- Otarie des Galápagos (Zalophus wollebaeki) : 2.1%
+- Lion de mer australien (Neophoca cinerea) : 1.2%
+- otarie à fourrure du Nord (Callorhinus ursinus) : 1.1%
+- phoque annelé (Pusa hispida) : 0.9%
+- Otarie subantarctique (Arctocephalus tropicalis) : 0.8%
+- Loutre de Mer (Enhydra lutris) : 0.5%
+- Arctocéphale d'Afrique du Sud (Arctocephalus pusillus) : 0.5%
+- Otarie à crinière (Otaria flavescens) : 0.5%
+[2025-08-03 09:07:07] Mots-clés ajoutés : phoque barbu (Erignathus barbatus)

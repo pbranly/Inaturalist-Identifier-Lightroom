@@ -19,7 +19,8 @@ local function showSelection(resultsString)
     end
 
     -- Look for the start of the results section
-    local startIndex = resultsString:find("🕊️%s*Animaux reconnus%s*:") or resultsString:find("🕊️%s*Recognized animals%s*:")
+--    local startIndex = resultsString:find("🕊️%s*Animaux reconnus%s*:") or resultsString:find("🕊️%s*Recognized animals%s*:")
+	    local startIndex = resultsString:find("🕊️")
     if not startIndex then
         logger.logMessage(LOC("$$$/iNat/UnknownFormat=Unrecognized result format."))
         return

@@ -41,7 +41,9 @@
 "$$$/iNat/Error/FileMove"
 "$$$/iNat/Error/TokenInvalid"
 "$$$/iNat/Error/TokenMissing"
-
+"$$$/iNat/Error/ImageRead=Impossible d'ouvrir l'image: "
+"$$$/iNat/Error/NoAPIResponse=Erreur API: Pas de reponse"
+"$$$/iNat/Error/InvalidJSON=API error: Echec de decodage du JSON: "
 
 "$$$/iNat/Dialog/IdentificationFailed=Échec de l'identification"
 "$$$/iNat/Dialog/UnknownError=Erreur inconnue."
@@ -93,6 +95,12 @@
 "$$$/iNaturalist/TokenLabel=Token :"
 "$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
 "$$$/iNaturalist/SaveButton=Sauvegarder"
+
+
+"$$$/iNat/Result/None=🕊️ aucune espece reconnue."
+"$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
+"$$$/iNat/Result/UnknownName=Inconnu"
+
 
 "$$$/AiTagger/Language/English=Anglais"
 "$$$/AiTagger/Language/Spanish=Espagnol"
