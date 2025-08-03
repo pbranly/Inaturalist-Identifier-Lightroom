@@ -52,7 +52,7 @@ function M.identify(imagePath, token)
     -- Extract results array from JSON
     local results = parsed.results or {}
     if #results == 0 then
-        return LOC("$$$/iNat/Result/None=🕊️ No animal recognized.")
+        return LOC("$$$/iNat/Result/None=🕊️ No specie recognized.")
     end
 
     -- Determine maximum score to normalize percentages
@@ -64,7 +64,7 @@ function M.identify(imagePath, token)
     if max_score == 0 then max_score = 1 end
 
     -- Format result lines
-    local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized animals:") }
+    local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
     table.insert(output, "") -- Add a newline
 
     for _, result in ipairs(results) do
