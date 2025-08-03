@@ -98,7 +98,7 @@
 
 
 "$$$/iNat/Result/None=🕊️ aucune espece reconnue."
-"$$$/iNat/Result/Header=🕊️ Espêce reconnue:\n"
+"$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
 "$$$/iNat/Result/UnknownName=Inbconnu"
 
 
