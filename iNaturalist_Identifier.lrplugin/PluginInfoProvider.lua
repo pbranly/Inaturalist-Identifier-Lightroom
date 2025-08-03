@@ -1,49 +1,49 @@
--- Lightroom module imports
-local LrPrefs = import "LrPrefs"
-local LrView = import "LrView"
-local LrTasks = import "LrTasks"
+-- Lightroom module imports for plugin preferences and UI creation
+local LrPrefs = import "LrPrefs"      -- For storing plugin-specific preferences
+local LrView = import "LrView"        -- For creating UI elements in the Lightroom plugin dialog
+local LrTasks = import "LrTasks"      -- For launching asynchronous tasks
 
--- Plugin preferences dialog definition
+-- Define and return the plugin preferences dialog
 return {
     sectionsForTopOfDialog = function(viewFactory)
-        local prefs = LrPrefs.prefsForPlugin()
+        local prefs = LrPrefs.prefsForPlugin()  -- Load preferences specific to this plugin
 
-        -- Text input field for the user's token
+        -- Text input field for the user's iNaturalist token
         local tokenField = viewFactory:edit_field {
-            value = prefs.token or "",
-            width_in_chars = 50,
+            value = prefs.token or "",         -- Use existing token, or empty if none
+            width_in_chars = 50,               -- Width of the input field
         }
 
-        -- Checkbox to enable logging
+        -- Checkbox for enabling/disabling logging
         local logCheck = viewFactory:checkbox {
             title = LOC("$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),
-            value = prefs.logEnabled or false,
-            checked_value = true,
-            unchecked_value = false,
+            value = prefs.logEnabled or false, -- Default to false if not set
+            checked_value = true,              -- Value stored if checked
+            unchecked_value = false,           -- Value stored if unchecked
         }
 
-        -- Opens the token generation page in the user's default browser
+        -- Function to open the iNaturalist token generation page in the user's browser
         local function openTokenPage()
             local url = "https://www.inaturalist.org/users/api_token"
-            LrTasks.startAsyncTask(function()
+            LrTasks.startAsyncTask(function()   -- Run asynchronously to avoid UI blocking
                 local openCommand
                 if WIN_ENV then
-                    openCommand = 'start "" "' .. url .. '"'
+                    openCommand = 'start "" "' .. url .. '"'     -- Windows
                 elseif MAC_ENV then
-                    openCommand = 'open "' .. url .. '"'
+                    openCommand = 'open "' .. url .. '"'         -- macOS
                 else
-                    openCommand = 'xdg-open "' .. url .. '"'
+                    openCommand = 'xdg-open "' .. url .. '"'     -- Linux or others
                 end
-                LrTasks.execute(openCommand)
+                LrTasks.execute(openCommand)     -- Execute the system command to open the URL
             end)
         end
 
-        -- Return the UI layout for the dialog
+        -- Return the layout of the dialog as a table of UI components
         return {
             {
                 title = LOC("$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),
 
-                -- Instructional message about token expiration
+                -- Instructional text explaining token duration and where to get a new one
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     viewFactory:static_text {
@@ -53,7 +53,7 @@ return {
                     },
                 },
 
-                -- Button to open the token generation URL
+                -- Row with button to open the token generation page
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     viewFactory:push_button {
@@ -62,7 +62,7 @@ return {
                     },
                 },
 
-                -- Token input row
+                -- Row with token label and input field
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     viewFactory:static_text {
@@ -70,21 +70,21 @@ return {
                         alignment = 'right',
                         width = 100,
                     },
-                    tokenField,
+                    tokenField, -- Token input field
                 },
 
-                -- Logging checkbox row
+                -- Row with logging checkbox
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
-                    logCheck,
+                    logCheck,   -- Logging enable/disable
                 },
 
-                -- Save button to persist token and logging preference
+                -- Button to save entered token and logging setting
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/SaveButton=Save"),
                     action = function()
-                        prefs.token = tokenField.value
-                        prefs.logEnabled = logCheck.value
+                        prefs.token = tokenField.value     -- Save token input
+                        prefs.logEnabled = logCheck.value -- Save logging preference
                     end,
                 },
             }
