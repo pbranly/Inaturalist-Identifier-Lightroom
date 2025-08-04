@@ -1,3 +1,39 @@
+--[[
+    Script: update_token.lua
+    ------------------------
+    This script provides a Lightroom user interface for entering and saving an iNaturalist API token.
+
+    Purpose:
+    --------
+    Allows the user to:
+      1. Open the iNaturalist token generation webpage in their default browser.
+      2. Paste the generated token into a text field.
+      3. Save the token to Lightroom plugin preferences for future use (e.g., in API calls).
+
+    How It Works:
+    -------------
+    - Uses Lightroom's UI framework (`LrView`) to build a simple dialog box.
+    - Provides a push button that opens the browser to the iNaturalist token page.
+    - Accepts the user's token input and stores it persistently using `LrPrefs`.
+    - Executes URL opening logic differently depending on the operating system (Windows, macOS, or Linux).
+
+    Features:
+    ---------
+    - Modal dialog to ensure focus while entering token.
+    - Cross-platform support for opening URLs.
+    - Localization-ready (uses `LOC()` for translatable strings).
+    - Token is saved and reused automatically without requiring re-entry on each session.
+
+    Dependencies:
+    -------------
+    - Lightroom SDK modules: `LrPrefs`, `LrDialogs`, `LrView`, `LrTasks`
+    - Plugin-specific localization strings via the `LOC` function
+
+    Notes:
+    ------
+    iNaturalist API tokens expire after 24 hours. The user may need to repeat this process periodically.
+]]
+
 -- Import Lightroom SDK modules
 local LrPrefs   = import "LrPrefs"    -- Module to read/write plugin preferences
 local LrDialogs = import "LrDialogs"  -- Module for UI dialogs (e.g., messages, modal windows)

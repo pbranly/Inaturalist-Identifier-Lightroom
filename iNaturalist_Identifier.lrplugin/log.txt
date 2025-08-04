@@ -1,15 +1,15 @@
-[2025-08-03 09:06:42] == Nouveau lancement du plugin ===
-[2025-08-03 09:06:42] Plugin démarré
-[2025-08-03 09:06:42] == Début de isTokenValid() ===
-[2025-08-03 09:06:42] 🔑 Token détecté (longueur : 156 caractères)
-[2025-08-03 09:06:42] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyODkyNzZ9.cGyZrXzus48k3owl9T9yoPTVIFmtB_EIL4WoJlqvyzS-ZW1LQ_eGoT5AnGinuOwwraBM21aftfagInKwY10ykg" "https://api.inaturalist.org/v1/users/me"
-[2025-08-03 09:06:47] ➡️ Code HTTP retourné par iNaturalist : 200
-[2025-08-03 09:06:47] ✅ Succès : le token est valide.
-[2025-08-03 09:06:47] Photo sélectionnée : _DSC2825-DxO_DeepPRIME XD2s_XD.dng
-[2025-08-03 09:06:47] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
-[2025-08-03 09:06:48] Image exportée sous le nom tempo.jpg
-[2025-08-03 09:06:51] Résultats de l'identification :
-🕊️ Espêce reconnue:
+[2025-08-03 14:41:53] == Nouveau lancement du plugin ===
+[2025-08-03 14:41:53] Plugin démarré
+[2025-08-03 14:41:53] == Début de isTokenValid() ===
+[2025-08-03 14:41:53] 🔑 Token détecté (longueur : 156 caractères)
+[2025-08-03 14:41:53] 📎 Commande curl exécutée :curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODQ2MDA0LCJleHAiOjE3NTQyODkyNzZ9.cGyZrXzus48k3owl9T9yoPTVIFmtB_EIL4WoJlqvyzS-ZW1LQ_eGoT5AnGinuOwwraBM21aftfagInKwY10ykg" "https://api.inaturalist.org/v1/users/me"
+[2025-08-03 14:41:58] ➡️ Code HTTP retourné par iNaturalist : 200
+[2025-08-03 14:41:58] ✅ Succès : le token est valide.
+[2025-08-03 14:41:59] Photo sélectionnée : _DSC2825-DxO_DeepPRIME XD2s_XD.dng
+[2025-08-03 14:41:59] Fichier JPG supprimé :D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin\tempo.jpg
+[2025-08-03 14:42:01] Image exportée sous le nom tempo.jpg
+[2025-08-03 14:42:05] Résultats de l'identification :
+🕊️ Espece reconnue:
 
 
 - phoque barbu (Erignathus barbatus) : 100.0%
@@ -22,4 +22,4 @@
 - Loutre de Mer (Enhydra lutris) : 0.5%
 - Arctocéphale d'Afrique du Sud (Arctocephalus pusillus) : 0.5%
 - Otarie à crinière (Otaria flavescens) : 0.5%
-[2025-08-03 09:07:07] Mots-clés ajoutés : phoque barbu (Erignathus barbatus)
+[2025-08-03 14:42:12] Dialogue annulé.

@@ -1,3 +1,39 @@
+--[[
+=====================================================================================
+ Script   : AnimalIdentifier.lua
+ Purpose  : Main logic for identifying wildlife species in a Lightroom photo using 
+            the iNaturalist API.
+ Author   : Philippe (or replace with your name if preferred)
+ Description :
+ This script is the core engine of the Lightroom plugin for automated species 
+ identification using iNaturalist. It performs the following key tasks:
+
+   1. Loads the user’s iNaturalist API token from plugin preferences.
+   2. Validates the token's presence and expiration.
+   3. Exports the currently selected photo as a temporary JPEG.
+   4. Sends the image to the iNaturalist API for identification.
+   5. Parses and checks the results.
+   6. Displays species recognition results to the user.
+   7. Allows the user to optionally assign identified species as keywords.
+
+ The script runs as an asynchronous task to keep Lightroom’s UI responsive 
+ and includes error handling for all major failure scenarios.
+
+ Dependencies:
+ - Logger.lua             : Logging utility for debugging and tracking.
+ - TokenUpdater.lua       : UI helper for token input and updates.
+ - VerificationToken.lua  : Token validation utility.
+ - call_inaturalist.lua   : Handles HTTP communication with the iNaturalist API.
+ - export_to_tempo.lua    : Responsible for exporting the selected photo to a JPEG file.
+ - SelectAndTagResults.lua: Displays identification results and keyword tagging interface.
+
+ Usage:
+ - This module is invoked via the plugin’s main menu entry.
+ - Calls the identify() function as its main routine.
+
+=====================================================================================
+--]]
+
 -- Lightroom SDK modules
 local LrTasks        = import "LrTasks"         -- Allows asynchronous/background execution
 local LrDialogs      = import "LrDialogs"       -- For showing dialogs and bezeled notifications

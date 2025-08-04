@@ -1,3 +1,22 @@
+--[[
+=====================================================================================
+ Script : runUpdateTokenScript.lua
+ Purpose : Execute an auxiliary script to refresh the iNaturalist token
+ Author  : Philippe (or your name here)
+ Description :
+ This module provides a function that checks for the presence of the `update_token.lua` 
+ script inside the plugin folder and, if found, runs it asynchronously using Lightroom's
+ task system. If the script is missing, it alerts the user via a modal dialog.
+
+ Typical Use:
+ - Called from within the plugin when a token refresh is required.
+ - Ensures non-blocking execution by using `LrTasks.startAsyncTask`.
+
+ Dependencies:
+ - Lightroom SDK: LrPathUtils, LrFileUtils, LrTasks, LrDialogs
+=====================================================================================
+--]]
+
 -- Lightroom SDK imports
 local LrPathUtils = import "LrPathUtils"
 local LrFileUtils = import "LrFileUtils"
