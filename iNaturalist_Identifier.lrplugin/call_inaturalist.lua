@@ -1,26 +1,36 @@
 --[[
 =====================================================================================
- Module : inat_api.lua
- Purpose : Communicate with iNaturalist API to identify species from images and 
-           submit observations.
- Author  : Philippe (or your name here)
+ Module : call_inaturalist.lua
+ Purpose : Handles communication with the iNaturalist API for species identification
+           and observation submission from within Lightroom Classic.
+ Author  : Philippe Branly (or your name)
  Description :
- This module provides two main functions for use in a Lightroom plugin:
-   1. `identify(imagePath, token)`:
-        - Sends a JPEG image to iNaturalist's AI scoring endpoint to identify species.
-        - Returns a formatted list of top matching species and their confidence scores.
-   2. `submitObservation(photo, keywords, token)`:
-        - Submits a photo and selected species as an observation to iNaturalist.
-        - Attaches the photo to the newly created observation.
+ This module is used by the Lightroom plugin to:
+   1. Upload a JPEG photo to iNaturalist’s AI recognition endpoint and receive 
+      a list of candidate species with confidence scores.
+   2. Submit a confirmed species observation with GPS and timestamp metadata, 
+      along with the JPEG photo, to the iNaturalist platform.
 
- Prerequisites:
- - A valid iNaturalist API token.
- - GPS and date/time metadata in the photo.
- - `tempo.jpg` must exist in the plugin folder for upload.
+ It serves as the core interface between Lightroom and iNaturalist.
+
+ Functions:
+   - identify(imagePath, token):  
+       → Calls the /v1/computervision/score_image API with an image file  
+       → Returns formatted species predictions and confidence levels  
+
+   - submitObservation(photo, keywords, token):  
+       → Creates an observation on iNaturalist using photo metadata and keyword tags  
+       → Attaches the image file to the observation  
+
+ Requirements:
+   - A valid API token (24-hour lifetime)
+   - A JPEG image file exported as `tempo.jpg`
+   - Valid EXIF GPS and capture date metadata in the selected photo
 
  Dependencies:
- - Lightroom SDK modules: LrHttp, LrFileUtils, LrPathUtils, LrDate
- - External JSON parser: json.lua (must be present in plugin directory)
+   - Lightroom SDK modules: LrHttp, LrFileUtils, LrPathUtils, LrDate
+   - External JSON parser: json.lua (must be present in plugin directory)
+   - This module is typically called from main.lua or through SelectAndTagResults.lua
 =====================================================================================
 --]]
 
