@@ -1,3 +1,28 @@
+--[[
+=====================================================================================
+ Script : TokenUpdater.lua
+ Purpose : Plugin preferences panel for iNaturalist Lightroom plugin
+ Author  : Philippe (or your name here)
+ Description :
+ This script defines a section in the Lightroom plugin’s Preferences dialog.
+ It allows users to:
+   - Enter or update their iNaturalist API token (required for authentication).
+   - Enable or disable logging to a local log.txt file.
+   - Open the iNaturalist token generation page directly in the browser.
+
+ The UI is built using Lightroom’s `LrView` module and plugin preferences are stored
+ persistently using `LrPrefs`.
+
+ Key Features:
+   - Token is stored securely and used by other modules to authenticate API calls.
+   - Logging helps with diagnostics and debugging when activated.
+   - Token is valid for 24 hours, and users are reminded to renew it.
+
+ Dependencies:
+ - Lightroom SDK: LrPrefs, LrView, LrTasks
+=====================================================================================
+--]]
+
 -- Lightroom module imports for plugin preferences and UI creation
 local LrPrefs = import "LrPrefs"      -- For storing plugin-specific preferences
 local LrView = import "LrView"        -- For creating UI elements in the Lightroom plugin dialog
