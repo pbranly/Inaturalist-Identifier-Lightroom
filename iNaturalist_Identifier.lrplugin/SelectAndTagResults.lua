@@ -1,3 +1,31 @@
+--[[
+=====================================================================================
+ Script : showSelection.lua
+ Purpose : Display species identification results for manual keyword selection
+ Author  : Philippe (or your name here)
+ Description :
+ This module processes identification results (typically from an AI or external service)
+ and presents a dialog in Lightroom allowing the user to select which species names
+ to add as keywords to the currently selected photo.
+
+ Key Features:
+   - Parses results from a string that includes species names, Latin names, and confidence percentages.
+   - Presents results in a modal UI dialog with checkboxes for each identified species.
+   - Lets the user choose which keywords to apply.
+   - Adds the selected keywords to the photo in Lightroom, creating them if necessary.
+
+ Expected Input Format (from result string):
+   🕊️
+   - Eurasian Blue Tit (Cyanistes caeruleus) : 96.3%
+   - Great Tit (Parus major) : 2.1%
+   ...
+
+ Dependencies:
+ - Lightroom SDK: LrDialogs, LrFunctionContext, LrBinding, LrView, LrApplication
+ - Logger module (custom)
+=====================================================================================
+--]]
+
 -- Import necessary Lightroom SDK modules
 local LrDialogs = import "LrDialogs"                -- To show dialogs and messages
 local LrFunctionContext = import "LrFunctionContext"-- To manage UI lifecycle

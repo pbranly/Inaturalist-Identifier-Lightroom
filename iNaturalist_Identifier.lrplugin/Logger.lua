@@ -1,3 +1,26 @@
+--[[
+=====================================================================================
+ Script : Logger.lua
+ Purpose : Centralized logging utility for the Lightroom plugin
+ Author  : Philippe (or your name here)
+ Description :
+ This module provides functions to handle logging for the plugin's operations.
+ It is used to create, write to, and display messages from a `log.txt` file stored 
+ in the plugin’s folder. Logging can be enabled or disabled using a plugin preference.
+
+ Main Functions:
+   - initializeLogFile(): Creates and starts the log file at plugin launch.
+   - logMessage(msg): Appends timestamped messages to the log file.
+   - notify(msg): Logs a message and displays it to the user via a dialog box.
+
+ The logger helps in debugging and tracing plugin behavior without affecting Lightroom’s UI.
+
+ Dependencies:
+ - Lightroom SDK: LrPrefs for preferences, LrDialogs for alerts, LrPathUtils for paths.
+
+=====================================================================================
+--]]
+
 -- Lightroom API imports
 local LrPathUtils = import "LrPathUtils"
 local LrDialogs  = import "LrDialogs"
