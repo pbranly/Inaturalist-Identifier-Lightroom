@@ -1,27 +1,35 @@
 --[[
 =====================================================================================
- Script : identify.lua
- Purpose : Main logic for identifying species in a selected photo using iNaturalist API
- Author  : Philippe (or your name here)
+ Script   : AnimalIdentifier.lua
+ Purpose  : Main logic for identifying wildlife species in a Lightroom photo using 
+            the iNaturalist API.
+ Author   : Philippe (or replace with your name if preferred)
  Description :
- This script serves as the main entry point for the iNaturalist Lightroom plugin.
- It performs the following steps:
-   1. Loads and verifies the user’s iNaturalist API token.
-   2. Exports the currently selected photo in Lightroom as a temporary JPEG.
-   3. Sends the exported image to the iNaturalist API for species identification.
-   4. Parses and validates the results.
-   5. Optionally allows the user to add identified species as keywords to the photo.
+ This script is the core engine of the Lightroom plugin for automated species 
+ identification using iNaturalist. It performs the following key tasks:
 
- The script uses asynchronous execution to keep Lightroom responsive, and handles error
- cases gracefully (e.g., no token, export failure, no photo selected, API error, etc.).
+   1. Loads the user’s iNaturalist API token from plugin preferences.
+   2. Validates the token's presence and expiration.
+   3. Exports the currently selected photo as a temporary JPEG.
+   4. Sends the image to the iNaturalist API for identification.
+   5. Parses and checks the results.
+   6. Displays species recognition results to the user.
+   7. Allows the user to optionally assign identified species as keywords.
+
+ The script runs as an asynchronous task to keep Lightroom’s UI responsive 
+ and includes error handling for all major failure scenarios.
 
  Dependencies:
- - Logger.lua: For logging to a text file and Lightroom's console.
- - TokenUpdater.lua: UI for prompting token entry.
- - VerificationToken.lua: Token validation logic.
- - call_inaturalist.lua: API call wrapper.
- - export_to_tempo.lua: Photo exporter to temporary location.
- - SelectAndTagResults.lua: Displays identification results and lets user tag photo.
+ - Logger.lua             : Logging utility for debugging and tracking.
+ - TokenUpdater.lua       : UI helper for token input and updates.
+ - VerificationToken.lua  : Token validation utility.
+ - call_inaturalist.lua   : Handles HTTP communication with the iNaturalist API.
+ - export_to_tempo.lua    : Responsible for exporting the selected photo to a JPEG file.
+ - SelectAndTagResults.lua: Displays identification results and keyword tagging interface.
+
+ Usage:
+ - This module is invoked via the plugin’s main menu entry.
+ - Calls the identify() function as its main routine.
 
 =====================================================================================
 --]]
