@@ -107,8 +107,11 @@ This project is licensed under the MIT License. See the LICENSE file for details
 Developed by Philippe Branly
 
 ### If you want support the project
+If you find this plugin helpful and would like to support further development, you can:
 
-www.paypal.me/philippebranly
+- [Buy me a coffee](https://www.buymeacoffee.com/philippebranly)
+- Or donate via PayPal: [paypal.me/philippebranly](https://www.paypal.me/philippebranly)
+
 
 
 
