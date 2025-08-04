@@ -1,6 +1,6 @@
 # iNaturalist Identifier
 
-A Lightroom Classic plugin that identifies animal species in photos using the iNaturalist API.
+A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.
 
 ---
 
@@ -21,14 +21,14 @@ A Lightroom Classic plugin that identifies animal species in photos using the iN
 
 ## Overview
 
-The iNaturalist Bird Identifier plugin integrates with Adobe Lightroom Classic to help users automatically identify bird species captured in their photographs. It leverages the iNaturalist API to analyze selected photos and adds species identification tags based on the API's results.
+The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help users automatically identify species captured in their photographs. It leverages the iNaturalist API to analyze selected photos and adds species identification tags based on the API's results.
 
 ---
 
 ## Features
 
 - Send photos from Lightroom to iNaturalist's image recognition API  
-- Automatically tag photos with identified bird species  
+- Automatically tag photos with identified species  
 - Select and tag multiple photos in batch (to be done) 
 - View detailed API responses for each image  
 - Simple and lightweight plugin using Lua
@@ -64,7 +64,7 @@ Note: this token is valid 24 hours only
 
 Select one or more photos in Lightroom Library.( not tested)
 
-Use the plugin menu to send images to the iNaturalist API for bird species identification.
+Use the plugin menu to send images to the iNaturalist API for species identification.
 
 Review the identification results and select which species tags to apply.
 
