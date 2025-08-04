@@ -1,3 +1,24 @@
+--[[
+=====================================================================================
+ Script : Token Dialog for iNaturalist Plugin
+ Author : Philippe (or your name if you prefer)
+ Description :
+ This script creates a modal dialog in Adobe Lightroom that allows the user to paste 
+ their iNaturalist API token. This token is required for the plugin to interact with 
+ the iNaturalist API and identify species from exported photos.
+
+ Features:
+ - Prompts the user to paste a personal iNaturalist token (valid for 24 hours).
+ - Includes a button to open the official iNaturalist token generation webpage.
+ - Saves the token into persistent plugin preferences so it's remembered across sessions.
+ - If a token is already stored, it is pre-filled into the input field.
+
+ This script uses Lightroom SDK modules such as LrView, LrDialogs, LrPrefs, and LrTasks.
+ It also runs system-level browser-opening commands asynchronously to avoid freezing the UI.
+
+=====================================================================================
+--]]
+
 -- Import Lightroom SDK modules
 local LrPrefs   = import "LrPrefs"    -- For storing and retrieving persistent plugin preferences
 local LrDialogs = import "LrDialogs"  -- For showing modal and non-modal dialog windows
