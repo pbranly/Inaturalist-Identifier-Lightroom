@@ -1,21 +1,23 @@
 --[[
 =====================================================================================
- Script : file_helpers.lua
- Purpose : Utility module for managing JPEG files in a directory
- Author  : Philippe (or your name here)
+ Module  : imageutils.lua
+ Purpose : Utility functions for managing JPEG image files in a directory
+ Author  : Philippe Branly (or your name)
  Description :
- This module provides helper functions used by the Lightroom plugin to:
-   1. Delete all JPEG files (*.jpg) from a specified directory. This ensures that
-      old or temporary exports don't accumulate between plugin runs.
-   2. Find and return the first JPEG file in a directory. This is useful after a 
-      photo is exported and needs to be located for further processing.
+ This module provides helper functions used by the Lightroom iNaturalist plugin 
+ to manage temporary JPEG image files. It is primarily used by the `export_to_tempo.lua`
+ module to clean up old files and locate the newly exported image.
 
- These functions support the plugin’s workflow, especially when preparing and managing
- temporary image files during the species identification process.
+ Functions:
+   - clearJPEGs(directory): Deletes all .jpg files in the specified directory.
+   - findSingleJPEG(directory): Returns the first .jpg file found in the directory.
+
+ These functions are used to maintain a clean export folder and ensure the correct
+ file is passed to the iNaturalist API after Lightroom exports a photo.
 
  Dependencies:
- - Logger.lua: For logging deletion actions and file detections.
- - Lightroom SDK: LrFileUtils and LrPathUtils for filesystem and path operations.
+   - Lightroom SDK: LrFileUtils, LrPathUtils
+   - Logger.lua: for logging deleted files
 
 =====================================================================================
 --]]
