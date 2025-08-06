@@ -6,6 +6,8 @@
  Description :
  This Lightroom plugin module exports the currently selected photo to a temporary 
  JPEG file named "tempo.jpg" located in the plugin's own folder (cross-platform).
+ It intègre désormais les fonctions utilitaires `clearJPEGs` et `findSingleJPEG`
+ précédemment contenues dans `imageutils.lua`, afin de simplifier l'architecture.
 
  Use Case:
  - The exported file can be used for external services like image recognition 
@@ -13,7 +15,7 @@
 
  Workflow:
  ---------
- 1. Delete any existing "tempo.jpg" in the plugin folder.
+ 1. Delete any existing JPEG files in the plugin folder.
  2. Set up export settings:
      - Format: JPEG
      - Size: Max 1024x1024 pixels
@@ -32,7 +34,7 @@
  -------------
  - Lightroom SDK: LrExportSession, LrPathUtils, LrFileUtils
  - _PLUGIN global: for determining the plugin directory path
- - Logger.lua (optional): for logging errors (can be added easily)
+ - Logger.lua : for logging deletions and issues
 
  Author:
  -------
@@ -42,9 +44,32 @@
 
 -- Import Lightroom SDK modules
 local LrExportSession = import "LrExportSession"
-local LrFileUtils = import "LrFileUtils"
-local LrPathUtils = import "LrPathUtils"
-local LrApplication = import "LrApplication"
+local LrFileUtils     = import "LrFileUtils"
+local LrPathUtils     = import "LrPathUtils"
+local LrApplication   = import "LrApplication"
+
+-- Import logger
+local logger = require("Logger")
+
+-- Local utility function: Delete all JPEGs in a directory
+local function clearJPEGs(directory)
+    for file in LrFileUtils.files(directory) do
+        if string.lower(LrPathUtils.extension(file)) == "jpg" then
+            LrFileUtils.delete(file)
+            logger.logMessage(LOC("$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)
+        end
+    end
+end
+
+-- Local utility function: Find first JPEG file in a directory
+local function findSingleJPEG(directory)
+    for file in LrFileUtils.files(directory) do
+        if string.lower(LrPathUtils.extension(file)) == "jpg" then
+            return file
+        end
+    end
+    return nil
+end
 
 -- Define module
 local export_to_tempo = {}
@@ -60,12 +85,10 @@ function export_to_tempo.exportToTempo(photo)
     local tempFileName = "tempo.jpg"
     local tempFilePath = LrPathUtils.child(exportFolder, tempFileName)
 
-    -- Remove any existing tempo.jpg
-    if LrFileUtils.exists(tempFilePath) then
-        LrFileUtils.delete(tempFilePath)
-    end
+    -- Step 1: Clear all existing JPEGs in folder
+    clearJPEGs(exportFolder)
 
-    -- Define export settings
+    -- Step 2: Define export settings
     local exportSettings = {
         LR_export_destinationType = "specificFolder",
         LR_export_destinationPathPrefix = exportFolder,
@@ -81,21 +104,21 @@ function export_to_tempo.exportToTempo(photo)
         LR_renamingTokensOn = false,
     }
 
-    -- Create export session
+    -- Step 3: Create export session
     local exportSession = LrExportSession {
         photosToExport = { photo },
         exportSettings = exportSettings,
     }
 
-    -- Perform export
+    -- Step 4: Perform export
     exportSession:doExportOnCurrentTask()
 
-    -- Locate exported file
+    -- Step 5: Locate exported JPEG
     local exportedPhotos = exportSession:countRenditions()
     for i, rendition in exportSession:renditions() do
         local success, pathOrMsg = rendition:waitForRender()
         if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
-            -- Move or rename to "tempo.jpg"
+            -- Rename/move file to "tempo.jpg"
             local result = LrFileUtils.move(pathOrMsg, tempFilePath)
             if result then
                 return tempFilePath
