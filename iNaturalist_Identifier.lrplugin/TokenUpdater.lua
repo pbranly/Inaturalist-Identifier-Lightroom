@@ -1,28 +1,61 @@
 --[[
 =====================================================================================
- Script : TokenUpdater.lua
- Purpose : Provide a full UI and logic to update and store the iNaturalist API token.
- Author  : Philippe (or your name here)
+ Module   : TokenUpdater.lua
+ Purpose  : Manage the acquisition and storage of the iNaturalist personal access token
+ Author   : Philippe Branly (or your name here)
 
  Description :
- This script combines the logic of the old `runUpdateTokenScript.lua` and `update_token.lua`.
- It presents a modal dialog to the user to enter their token, with a button to open the
- iNaturalist token generation page in their browser.
+ ------------
+ This module provides a complete user interface within Lightroom for managing the 
+ iNaturalist personal API token required for authentication with the iNaturalist service.
 
- The entered token is stored using Lightroom's preferences system (`LrPrefs`) and will be 
- reused automatically by other plugin modules.
+ The iNaturalist API requires users to authenticate via a token that is generated
+ from their user account page. This token expires after 24 hours and must be refreshed
+ periodically to continue accessing the API.
 
- Usage :
- You can call this script directly using: `dofile("TokenUpdater.lua")`
- Or import it as a module and use: `require("TokenUpdater").launchTokenUpdater()`
+ Functional Overview :
+ ---------------------
+ This module combines two key functionalities:
+   1. Opening the official iNaturalist token generation page in the user's default browser.
+   2. Providing a modal dialog in Lightroom to paste, view, and save the token.
+
+ When invoked, it displays a dialog where the user can:
+   - Click a button to open the token generation URL.
+   - Paste the newly generated token into a text field.
+   - Save the token persistently using Lightroom's plugin preferences.
+
+ This stored token can later be retrieved by other plugin modules for authenticated API calls.
+
+ Key Features :
+ --------------
+ - Full UI integration using Lightroom's native LrView system
+ - Cross-platform browser launch (macOS, Windows, Linux)
+ - Token persistence across Lightroom sessions using LrPrefs
+ - Safe asynchronous task execution (non-blocking)
+ - Localization-ready with `LOC()` wrappers for all visible strings
+
+ Typical Usage :
+ ---------------
+ - Called manually by the user from a plugin menu
+ - Or triggered automatically when an API call fails due to token expiration
+
+ Integration Example :
+ ---------------------
+     local tokenUpdater = require("TokenUpdater")
+     tokenUpdater.launchTokenUpdater()
 
  Dependencies :
+ --------------
  Lightroom SDK modules:
- - LrPrefs, LrDialogs, LrView, LrTasks
+ - LrPrefs     : for reading/writing plugin preferences
+ - LrDialogs   : for displaying UI dialogs
+ - LrView      : for creating the modal token input interface
+ - LrTasks     : for executing asynchronous shell commands
+
 =====================================================================================
 --]]
 
--- Lightroom SDK imports
+-- Import Lightroom SDK modules
 local LrPrefs   = import "LrPrefs"
 local LrDialogs = import "LrDialogs"
 local LrView    = import "LrView"
@@ -31,14 +64,19 @@ local LrTasks   = import "LrTasks"
 -- Create the module
 local TokenUpdater = {}
 
+-- Function: launchTokenUpdater
+-- Description:
+--    Displays a modal dialog to input or update the iNaturalist API token.
+--    Provides a button to open the token generation page in the default browser.
 function TokenUpdater.launchTokenUpdater()
     local f = LrView.osFactory()
     local prefs = LrPrefs.prefsForPlugin()
     local props = { token = prefs.token or "" }
 
-    -- Function to open the iNaturalist token page
+    -- Function to open the token generation page in the default browser
     local function openTokenPage()
         local url = "https://www.inaturalist.org/users/api_token"
+
         LrTasks.startAsyncTask(function()
             local openCommand
             if WIN_ENV then
@@ -48,11 +86,12 @@ function TokenUpdater.launchTokenUpdater()
             else
                 openCommand = 'xdg-open "' .. url .. '"'
             end
+
             LrTasks.execute(openCommand)
         end)
     end
 
-    -- UI definition
+    -- UI layout definition
     local contents = f:column {
         bind_to_object = props,
         spacing = f:control_spacing(),
@@ -81,12 +120,12 @@ function TokenUpdater.launchTokenUpdater()
         }
     }
 
-    -- Show the UI as a modal dialog
+    -- Display the UI
     LrDialogs.presentModalDialog {
         title = LOC("$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),
         contents = contents
     }
 end
 
--- Return module table
+-- Return the module's public API
 return TokenUpdater
