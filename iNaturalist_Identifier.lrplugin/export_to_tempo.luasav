@@ -1,1 +1,36 @@
 
+--[[
+    Module: Export to Tempo.jpg
+    ---------------------------
+    This Lightroom plugin module is responsible for exporting a selected photo 
+    from the Lightroom catalog to a temporary JPEG file named "tempo.jpg" in the 
+    plugin's own directory.
+
+    Purpose:
+    --------
+    The exported JPEG is used as an input for computer vision services 
+    (e.g., species identification via iNaturalist API).
+
+    How It Works:
+    -------------
+    1. Deletes any existing JPEGs in the plugin folder to avoid naming conflicts.
+    2. Prepares a set of Lightroom export settings:
+       - JPEG format
+       - Max size: 1024x1024 pixels
+       - Keeps GPS and other metadata
+    3. Creates and runs a Lightroom export session for the selected photo.
+    4. Locates the newly exported JPEG file.
+    5. Renames/moves it to "tempo.jpg" in the plugin folder.
+    6. Returns the absolute path to "tempo.jpg" or an error message if something fails.
+
+    Dependencies:
+    -------------
+    - ImageUtils.lua : For file cleanup and locating the JPEG.
+    - Logger.lua     : (Optional) For logging (not explicitly used here).
+    - Lightroom SDK  : Requires access to Lightroom export and file APIs.
+
+    Usage:
+    ------
+    Called when a photo needs to be analyzed or submitted externally.
+    The returned path to "tempo.jpg" is used by other modules (e.g., image recognition).
+]]
