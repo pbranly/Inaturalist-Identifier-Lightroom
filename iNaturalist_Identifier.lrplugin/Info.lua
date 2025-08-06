@@ -1,40 +1,35 @@
-return {
-    -- Display name in Lightroom (localized)
-    LrPluginName = LOC("$$$/iNat/PluginName=Identification iNaturalist"),
+--[[
+=====================================================================================
+ File        : Info.lua
+ Purpose     : Main plugin descriptor for the iNaturalist Lightroom Export Plugin
 
-    -- Unique identifier for the plugin
-    LrToolkitIdentifier = "com.example.iNaturalistBirdIdentifier",
+ Description :
+ -------------
+ This file defines the plugin metadata and integration points with the Adobe Lightroom SDK.
+ It registers the plugin with Lightroom as an *Export Plugin*, adds a custom menu item 
+ under "File > Export", and links the core logic to the script `main.lua`.
 
-    -- Supported Lightroom SDK versions
-    LrSdkVersion = 14.0,
-    LrSdkMinimumVersion = 10.0,
+ Functional Overview:
+ --------------------
+ - Displays a localized plugin name ("Identification iNaturalist") in the Lightroom UI.
+ - Declares the plugin type as "export", which allows it to export photos and metadata.
+ - Binds the main functionality to a menu item that triggers `main.lua`.
+ - Specifies SDK version compatibility to ensure proper operation.
+ - Registers a plugin info panel (via `PluginInfoProvider.lua`) for settings or user guidance.
+ - Declares a unique identifier (`LrToolkitIdentifier`) for Lightroom to manage plugin state.
 
-    -- Link to plugin information website
-    LrPluginInfoUrl = "https://www.inaturalist.org",
+ This file is essential and must be present for Lightroom to recognize and load the plugin.
 
-    -- Script launched from the "File > Export" menu
-    LrExportMenuItems = {
-        {
-            title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "main.lua",
-        },
-    },
+ Compatibility:
+ --------------
+ ✅ Lightroom Classic 10.0 and above  
+ ❌ Not compatible with Lightroom CC or Mobile  
 
-    -- Interface for the Plugin Manager
-    LrPluginInfoProvider = "PluginInfoProvider.lua",
-
-    -- Plugin type
-    LrPluginType = "export",
-
-    -- Plugin version number
-    VERSION = {
-        major = 0,
-        minor = 0,
-        revision = 1,
-        build = 2,
-    },
-}
-
+ Author:
+ -------
+ Philippe (or your name)
+=====================================================================================
+--]]
 
 return {
     -- Display name in Lightroom (localized)
@@ -54,17 +49,17 @@ return {
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "main.lua",
+            file = "main.lua",  -- This is the main script triggered by the user
         },
     },
 
-    -- Interface for the Plugin Manager
+    -- Interface for the Plugin Manager (shown in Lightroom’s Plugin Manager panel)
     LrPluginInfoProvider = "PluginInfoProvider.lua",
 
-    -- Plugin type
+    -- Declare the plugin type (must be "export" for export-style plugins)
     LrPluginType = "export",
 
-    -- Plugin version number
+    -- Versioning information (displayed in Plugin Manager or for diagnostics)
     VERSION = {
         major = 0,
         minor = 0,
