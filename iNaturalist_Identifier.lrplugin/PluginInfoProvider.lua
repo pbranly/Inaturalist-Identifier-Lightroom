@@ -1,25 +1,44 @@
 --[[
 =====================================================================================
- Script : TokenUpdater.lua
- Purpose : Plugin preferences panel for iNaturalist Lightroom plugin
- Author  : Philippe (or your name here)
+ Script   : PluginInfoProvider.lua
+ Purpose  : Define a custom preferences panel for the iNaturalist Lightroom plugin
+ Author   : Philippe Branly (or your name here)
+
  Description :
- This script defines a section in the Lightroom plugin’s Preferences dialog.
- It allows users to:
-   - Enter or update their iNaturalist API token (required for authentication).
-   - Enable or disable logging to a local log.txt file.
-   - Open the iNaturalist token generation page directly in the browser.
+ ------------
+ This script provides a custom preferences section in Lightroom's Plugin Manager.
+ It allows users to configure authentication and logging settings for the 
+ iNaturalist integration.
 
- The UI is built using Lightroom’s `LrView` module and plugin preferences are stored
- persistently using `LrPrefs`.
+ Specifically, it provides:
+   - A button to open the iNaturalist token generation page in the default web browser.
+   - A text input field to manually enter or update the API token.
+   - A checkbox to enable or disable logging to a local `log.txt` file.
+   - A "Save" button to persist changes in the plugin preferences.
 
- Key Features:
-   - Token is stored securely and used by other modules to authenticate API calls.
-   - Logging helps with diagnostics and debugging when activated.
-   - Token is valid for 24 hours, and users are reminded to renew it.
+ This panel helps ensure the user maintains a valid token (valid for 24 hours)
+ and optionally enables logging for debugging purposes.
 
- Dependencies:
- - Lightroom SDK: LrPrefs, LrView, LrTasks
+ Functional Overview :
+ ---------------------
+ - When the Plugin Manager loads, this module builds and displays the custom section.
+ - It uses Lightroom's `LrView` system to define the layout and inputs.
+ - Preferences are stored persistently using `LrPrefs.prefsForPlugin()`.
+
+ Key Features :
+ --------------
+ - Clean UI layout with labels, inputs, and buttons.
+ - Safe asynchronous launching of browser URLs.
+ - Preferences saved automatically for future Lightroom sessions.
+ - Token is required for API requests sent to iNaturalist.
+
+ Dependencies :
+ --------------
+ - Lightroom SDK: 
+     - LrPrefs    : for storing user-defined plugin settings.
+     - LrView     : for UI element construction.
+     - LrTasks    : for executing system commands (e.g., to open the browser).
+
 =====================================================================================
 --]]
 
