@@ -7,18 +7,16 @@
  -------------
  This file defines the plugin metadata and integration points with the Adobe Lightroom SDK.
  It registers the plugin with Lightroom as an *Export Plugin*, adds a custom menu item 
- under "File > Export", and links the core logic to the script `main.lua`.
+ under "File > Export", and links the core logic to the script `AnimalIdentifier.lua`.
 
  Functional Overview:
  --------------------
  - Displays a localized plugin name ("Identification iNaturalist") in the Lightroom UI.
  - Declares the plugin type as "export", which allows it to export photos and metadata.
- - Binds the main functionality to a menu item that triggers `main.lua`.
+ - Binds the main functionality to a menu item that triggers `AnimalIdentifier.lua`.
  - Specifies SDK version compatibility to ensure proper operation.
  - Registers a plugin info panel (via `PluginInfoProvider.lua`) for settings or user guidance.
  - Declares a unique identifier (`LrToolkitIdentifier`) for Lightroom to manage plugin state.
-
- This file is essential and must be present for Lightroom to recognize and load the plugin.
 
  Compatibility:
  --------------
@@ -49,7 +47,7 @@ return {
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "main.lua",  -- This is the main script triggered by the user
+            file = "AnimalIdentifier.lua",  -- Updated: now launching AnimalIdentifier.lua
         },
     },
 
@@ -64,6 +62,6 @@ return {
         major = 0,
         minor = 0,
         revision = 1,
-        build = 2,
+        build = 3,
     },
 }
