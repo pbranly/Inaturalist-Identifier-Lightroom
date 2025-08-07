@@ -29,6 +29,8 @@
 =====================================================================================
 --]]
 
+local PluginVersion = require("PluginVersion")
+
 return {
     -- Display name in Lightroom (localized)
     LrPluginName = LOC("$$$/iNat/PluginName=Identification iNaturalist"),
@@ -58,10 +60,5 @@ return {
     LrPluginType = "export",
 
     -- Versioning information (displayed in Plugin Manager or for diagnostics)
-    VERSION = {
-        major = 0,
-        minor = 0,
-        revision = 1,
-        build = 3,
-    },
+    VERSION = PluginVersion,
 }
