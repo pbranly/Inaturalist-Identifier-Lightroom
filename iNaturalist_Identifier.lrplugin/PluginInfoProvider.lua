@@ -112,7 +112,7 @@ return {
                                         "Souhaitez-vous télécharger la nouvelle version ?"
                                     )
                                     if clicked == "ok" then
-                                        LrHttp.openUrlInBrowser("https://github.com/[utilisateur]/[repo]/releases/latest")
+                                        LrHttp.openUrlInBrowser("https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
                                     end
                                 else
                                     LrDialogs.message("Votre plugin est à jour.")
