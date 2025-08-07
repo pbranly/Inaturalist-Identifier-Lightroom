@@ -25,7 +25,7 @@
 
  Author:
  -------
- Philippe (or your name)
+ Philippe
 =====================================================================================
 --]]
 
@@ -40,14 +40,14 @@ return {
     LrSdkVersion = 14.0,
     LrSdkMinimumVersion = 10.0,
 
-    -- Link to plugin information website
-    LrPluginInfoUrl = "https://www.inaturalist.org",
+    -- Link to plugin information website or GitHub release page
+    LrPluginInfoUrl = "https://github.com/[utilisateur]/[repo]/releases/latest", -- 🔁 À adapter
 
     -- Script launched from the "File > Export" menu
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "AnimalIdentifier.lua",  -- Updated: now launching AnimalIdentifier.lua
+            file = "AnimalIdentifier.lua",
         },
     },
 
