@@ -101,7 +101,8 @@ return {
                     f:push_button {
                         title = LOC("$$$/iNaturalist/CheckUpdate=Vérifier les mises à jour"),
                         action = function()
-                            local currentVersion = "0.0.1"  -- 🔁 À synchroniser manuellement
+                            local PluginVersion = require("PluginVersion")
+                            local currentVersion = PluginVersion.asString(PluginVersion)
                             local githubApiUrl = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest" -- 🔁 À adapter
 
                             LrHttp.get(githubApiUrl, nil, function(body, headers)
