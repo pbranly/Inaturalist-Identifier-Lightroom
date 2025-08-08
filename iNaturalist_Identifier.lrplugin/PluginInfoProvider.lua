@@ -1,18 +1,75 @@
 --[[
 =====================================================================================
  Script   : PluginInfoProvider.lua
- Purpose  : Define a custom preferences panel for the iNaturalist Lightroom plugin
+ Purpose  : Provide a custom preferences panel for the iNaturalist Lightroom plugin
  Author   : Philippe Branly
 
- Description :
+ Functional Description:
+ ------------------------
+ This module defines the configuration interface displayed in Lightroom's 
+ Plugin Manager for the iNaturalist integration. It allows the user to:
+
+    1. **Authenticate with iNaturalist**
+       - The user can paste their iNaturalist API token (valid for 24 hours).
+       - A button is provided to directly open the token generation page in 
+         the default browser.
+
+    2. **Enable/Disable Logging**
+       - Option to enable logging output to `log.txt` for debugging and 
+         troubleshooting.
+
+    3. **Save Preferences**
+       - The "Save" button stores the token and logging preferences using 
+         Lightroom's built-in `LrPrefs` storage, ensuring the settings persist 
+         between sessions.
+
+    4. **Check for Plugin Updates via GitHub**
+       - The "Check for updates" button fetches the latest release info from 
+         a specified GitHub repository using the GitHub REST API.
+       - If a newer version than the locally installed one is detected, 
+         the user is prompted to open the download page.
+       - If the installed version is current, the user is notified that 
+         no update is needed.
+
+ Technical Notes:
+ ----------------
+ - **UI Construction**: 
+   Uses `LrView` factory methods (`f:edit_field`, `f:checkbox`, `f:push_button`, etc.) 
+   to create rows and controls that form the preferences panel.
+
+ - **Environment Detection**:
+   The function `openTokenPage()` detects the operating system 
+   (`WIN_ENV`, `MAC_ENV`, or default to Linux/Unix) to execute 
+   the correct shell command for opening the URL.
+
+ - **Preferences Management**:
+   Uses `LrPrefs.prefsForPlugin()` to access a persistent preferences table 
+   unique to the plugin.
+
+ - **Update Checking**:
+   - Makes an asynchronous HTTP GET request to GitHub's API with `LrHttp.get()`.
+   - Parses the `tag_name` from the returned JSON to extract the latest 
+     version number.
+   - Compares it to the local version retrieved from the `PluginVersion` module.
+   - If newer, prompts the user with a `LrDialogs.confirm()` dialog.
+
+ Example Usage:
+ --------------
+ This script is automatically called by Lightroom when displaying the 
+ Plugin Manager for this plugin. It is not typically invoked directly 
+ by other parts of the code.
+
+ Maintenance:
  ------------
- This script provides a custom preferences section in Lightroom's Plugin Manager.
- It allows users to configure authentication and logging settings for the 
- iNaturalist integration and check for plugin updates via GitHub.
+ - Update the `githubApiUrl` and release page URL if the repository 
+   changes location.
+ - Ensure the token note text matches iNaturalist's actual expiration 
+   policy if it changes.
+ - If additional plugin settings are required, add them as new controls 
+   in the `sections` table.
 
 =====================================================================================
 --]]
-
 local LrPrefs = import "LrPrefs"
 local LrView = import "LrView"
 local LrTasks = import "LrTasks"
