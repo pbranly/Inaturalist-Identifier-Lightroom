@@ -40,30 +40,26 @@ local LrApplication = import "LrApplication"
 
 -- Plugin modules
 local logger = require("Logger")
-local uploadModule = require("UploadObservation")  -- This module must define upload(photo, token)
+local uploadModule = require("UploadObservation")
 
---- Main function to show species selection and optionally upload observation
--- @param photo (LrPhoto) The photo to which keywords should be added
--- @param resultsString (string) Raw text results returned by the iNaturalist API
--- @param token (string) Auth token for API requests
 local function showSelection(photo, resultsString, token)
 
     if not photo then
-        logger.logMessage("No photo provided.")
+        logger.logMessage(LOC("$$$/iNat/Log/NoPhoto=No photo provided."))
         return
     end
 
-    -- Attempt to locate species result block in the result string
+    -- Attempt to locate species result block
     local startIndex = resultsString:find("🕊️")
     if not startIndex then
-        logger.logMessage("Result format unrecognized or missing species.")
+        logger.logMessage(LOC("$$$/iNat/Log/NoSpecies=Result format unrecognized or missing species."))
         return
     end
 
     local subResult = resultsString:sub(startIndex)
     local parsedItems = {}
 
-    -- Parse lines with expected pattern: - Name (Latin) : XX.X%
+    -- Parse lines with expected pattern
     for line in subResult:gmatch("[^\r\n]+") do
         local name_fr, name_latin, percent = line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)%%")
         if name_fr and name_latin and percent then
@@ -74,11 +70,10 @@ local function showSelection(photo, resultsString, token)
     end
 
     if #parsedItems == 0 then
-        logger.logMessage("No parsable species entries.")
+        logger.logMessage(LOC("$$$/iNat/Log/NoParsable=No parsable species entries."))
         return
     end
 
-    -- Create and present the UI for species keyword selection
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
@@ -100,7 +95,6 @@ local function showSelection(photo, resultsString, token)
             f:column(checkboxes)
         }
 
-        -- Show modal dialog to user
         local result = LrDialogs.presentModalDialog {
             title = LOC("$$$/iNat/DialogTitle=Select species to add as keywords"),
             contents = contents,
@@ -118,14 +112,17 @@ local function showSelection(photo, resultsString, token)
             end
 
             if #selectedKeywords == 0 then
-                logger.logMessage("No species selected by user.")
-                LrDialogs.message("No species selected", "No keywords will be added.")
+                logger.logMessage(LOC("$$$/iNat/Log/NoSelection=No species selected by user."))
+                LrDialogs.message(
+                    LOC("$$$/iNat/Msg/NoSpeciesTitle=No species selected"),
+                    LOC("$$$/iNat/Msg/NoSpeciesBody=No keywords will be added.")
+                )
                 return
             end
 
-            -- Apply keywords to the photo
+            -- Apply keywords
             local catalog = LrApplication.activeCatalog()
-            catalog:withWriteAccessDo("Add selected keywords", function()
+            catalog:withWriteAccessDo(LOC("$$$/iNat/WriteAccess=Add selected keywords"), function()
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
                         if kw:getName() == name then
@@ -143,10 +140,13 @@ local function showSelection(photo, resultsString, token)
                 end
             end)
 
-            logger.logMessage("Keywords added: " .. table.concat(selectedKeywords, ", "))
-            LrDialogs.message("Success", "Selected species have been added as keywords.")
+            logger.logMessage(LOC("$$$/iNat/Log/KeywordsAdded=Keywords added: ") .. table.concat(selectedKeywords, ", "))
+            LrDialogs.message(
+                LOC("$$$/iNat/Msg/SuccessTitle=Success"),
+                LOC("$$$/iNat/Msg/SuccessBody=Selected species have been added as keywords.")
+            )
 
-            -- Ask whether to upload the observation
+            -- Ask whether to upload
             local confirm = LrDialogs.confirm(
                 LOC("$$$/iNat/ConfirmUploadTitle=Send observation?"),
                 LOC("$$$/iNat/ConfirmUploadBody=Do you want to upload the observation to iNaturalist?"),
@@ -157,22 +157,25 @@ local function showSelection(photo, resultsString, token)
             if confirm == "ok" then
                 local success, err = uploadModule.upload(photo, token)
                 if success then
-                    LrDialogs.message("Upload Complete", "Observation successfully sent to iNaturalist.")
-                    logger.logMessage("Observation uploaded successfully.")
+                    LrDialogs.message(
+                        LOC("$$$/iNat/Msg/UploadCompleteTitle=Upload Complete"),
+                        LOC("$$$/iNat/Msg/UploadCompleteBody=Observation successfully sent to iNaturalist.")
+                    )
+                    logger.logMessage(LOC("$$$/iNat/Log/UploadOK=Observation uploaded successfully."))
                 else
-                    LrDialogs.message("Upload Failed", err or "Unknown error.")
-                    logger.logMessage("Upload error: " .. (err or "unknown"))
+                    LrDialogs.message(
+                        LOC("$$$/iNat/Msg/UploadFailedTitle=Upload Failed"),
+                        err or LOC("$$$/iNat/Msg/UnknownError=Unknown error.")
+                    )
+                    logger.logMessage(LOC("$$$/iNat/Log/UploadError=Upload error: ") .. (err or LOC("$$$/iNat/Msg/UnknownError=Unknown error.")))
                 end
             else
-                logger.logMessage("User declined to upload observation.")
+                logger.logMessage(LOC("$$$/iNat/Log/UploadDeclined=User declined to upload observation."))
             end
         else
-            logger.logMessage("Species selection dialog cancelled.")
+            logger.logMessage(LOC("$$$/iNat/Log/DialogCancelled=Species selection dialog cancelled."))
         end
     end)
 end
 
--- Export the main function
-return {
-    showSelection = showSelection
-}
+return { showSelection = showSelection }
