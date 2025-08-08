@@ -70,48 +70,76 @@
 
 =====================================================================================
 --]]
-local LrPrefs = import "LrPrefs"
-local LrView = import "LrView"
-local LrTasks = import "LrTasks"
-local LrHttp = import "LrHttp"
-local LrDialogs = import "LrDialogs"
+-- Import Lightroom SDK modules
+local LrPrefs   = import "LrPrefs"    -- For storing and retrieving plugin preferences
+local LrView    = import "LrView"     -- For building custom UI components
+local LrTasks   = import "LrTasks"    -- For asynchronous execution
+local LrHttp    = import "LrHttp"     -- For making HTTP requests
+local LrDialogs = import "LrDialogs"  -- For showing dialogs and alerts
 
+-- Main function returning the plugin's preferences panel definition
 return {
     sectionsForTopOfDialog = function(viewFactory)
+        -- Retrieve persistent preferences for this plugin
         local prefs = LrPrefs.prefsForPlugin()
+
+        -- Alias to the view factory for convenience
         local f = viewFactory
 
+        ----------------------------------------------------------------------
+        -- UI Element: Token input field
+        -- Allows the user to paste their iNaturalist API token.
+        -- Token is stored in plugin preferences when saved.
+        ----------------------------------------------------------------------
         local tokenField = f:edit_field {
-            value = prefs.token or "",
-            width_in_chars = 50,
+            value = prefs.token or "", -- Default to stored token or empty
+            width_in_chars = 50,       -- Field width in characters
         }
 
+        ----------------------------------------------------------------------
+        -- UI Element: Logging checkbox
+        -- Lets the user enable or disable logging to log.txt.
+        -- Useful for debugging or error tracking.
+        ----------------------------------------------------------------------
         local logCheck = f:checkbox {
             title = LOC("$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),
-            value = prefs.logEnabled or false,
+            value = prefs.logEnabled or false, -- Default based on saved prefs
             checked_value = true,
             unchecked_value = false,
         }
 
+        ----------------------------------------------------------------------
+        -- Function: openTokenPage
+        -- Opens the iNaturalist token generation page in the user's browser.
+        -- Handles OS-specific commands for Windows, macOS, and Linux.
+        ----------------------------------------------------------------------
         local function openTokenPage()
             local url = "https://www.inaturalist.org/users/api_token"
             LrTasks.startAsyncTask(function()
                 local openCommand
                 if WIN_ENV then
-                    openCommand = 'start "" "' .. url .. '"'
+                    openCommand = 'start "" "' .. url .. '"'   -- Windows
                 elseif MAC_ENV then
-                    openCommand = 'open "' .. url .. '"'
+                    openCommand = 'open "' .. url .. '"'       -- macOS
                 else
-                    openCommand = 'xdg-open "' .. url .. '"'
+                    openCommand = 'xdg-open "' .. url .. '"'   -- Linux / Unix
                 end
                 LrTasks.execute(openCommand)
             end)
         end
 
+        ----------------------------------------------------------------------
+        -- Build the sections table
+        -- Each entry defines a group of UI controls in the Plugin Manager.
+        ----------------------------------------------------------------------
         local sections = {
             {
+                -- Section title displayed in the Plugin Manager
                 title = LOC("$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),
 
+                ------------------------------------------------------------------
+                -- Information row explaining token expiration policy
+                ------------------------------------------------------------------
                 f:row {
                     spacing = f:control_spacing(),
                     f:static_text {
@@ -121,6 +149,9 @@ return {
                     },
                 },
 
+                ------------------------------------------------------------------
+                -- Button to open the token generation page in the browser
+                ------------------------------------------------------------------
                 f:row {
                     spacing = f:control_spacing(),
                     f:push_button {
@@ -129,6 +160,9 @@ return {
                     },
                 },
 
+                ------------------------------------------------------------------
+                -- Token label + editable field for user input
+                ------------------------------------------------------------------
                 f:row {
                     spacing = f:control_spacing(),
                     f:static_text {
@@ -139,11 +173,18 @@ return {
                     tokenField,
                 },
 
+                ------------------------------------------------------------------
+                -- Logging checkbox row
+                ------------------------------------------------------------------
                 f:row {
                     spacing = f:control_spacing(),
                     logCheck,
                 },
 
+                ------------------------------------------------------------------
+                -- Save button
+                -- Commits the entered token and logging preference to persistent storage
+                ------------------------------------------------------------------
                 f:push_button {
                     title = LOC("$$$/iNaturalist/SaveButton=Save"),
                     action = function()
@@ -152,7 +193,10 @@ return {
                     end,
                 },
 
-                -- Section de vérification de mise à jour via GitHub
+                ------------------------------------------------------------------
+                -- Update check section
+                -- Allows the user to check if a newer version of the plugin is available on GitHub.
+                ------------------------------------------------------------------
                 f:row {
                     spacing = f:control_spacing(),
                     f:push_button {
@@ -160,10 +204,16 @@ return {
                         action = function()
                             local PluginVersion = require("PluginVersion")
                             local currentVersion = PluginVersion.asString(PluginVersion)
-                            local githubApiUrl = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest" -- 🔁 À adapter
 
+                            -- GitHub API endpoint for latest release
+                            local githubApiUrl = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
+
+                            -- Fetch release info from GitHub
                             LrHttp.get(githubApiUrl, nil, function(body, headers)
+                                -- Extract the tag_name from the JSON response
                                 local remoteVersion = body and body:match('\\"tag_name\\"%s*:%s*\\"([^\\"\\n]+)\\"')
+
+                                -- Compare remote version to current version
                                 if remoteVersion and remoteVersion ~= currentVersion then
                                     local clicked = LrDialogs.confirm(
                                         "Mise à jour disponible : " .. remoteVersion,
@@ -182,6 +232,7 @@ return {
             }
         }
 
+        -- Return the fully built preferences UI
         return sections
     end
 }
