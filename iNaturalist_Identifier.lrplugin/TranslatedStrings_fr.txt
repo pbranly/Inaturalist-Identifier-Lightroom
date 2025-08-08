@@ -101,6 +101,38 @@
 "$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
 "$$$/iNat/Result/UnknownName=Inconnu"
 
+"$$$/iNat/Log/NoPhoto=Aucune photo fournie."
+"$$$/iNat/Log/NoSpecies=Format de résultat non reconnu ou aucune espèce trouvée."
+"$$$/iNat/Log/NoParsable=Aucune entrée d'espèce analysable."
+"$$$/iNat/Log/NoSelection=Aucune espèce sélectionnée par l'utilisateur."
+"$$$/iNat/Log/KeywordsAdded=Mots-clés ajoutés : "
+"$$$/iNat/Log/UploadOK=Observation téléversée avec succès."
+"$$$/iNat/Log/UploadError=Erreur de téléversement : "
+"$$$/iNat/Log/UploadDeclined=L'utilisateur a refusé de téléverser l'observation."
+"$$$/iNat/Log/DialogCancelled=Dialogue de sélection des espèces annulé."
+
+"$$$/iNat/DialogTitle=Sélectionner les espèces à ajouter comme mots-clés"
+"$$$/iNat/AddKeywords=Ajouter"
+
+"$$$/iNat/Msg/NoSpeciesTitle=Aucune espèce sélectionnée"
+"$$$/iNat/Msg/NoSpeciesBody=Aucun mot-clé ne sera ajouté."
+"$$$/iNat/Msg/SuccessTitle=Succès"
+"$$$/iNat/Msg/SuccessBody=Les espèces sélectionnées ont été ajoutées comme mots-clés."
+"$$$/iNat/Msg/UploadCompleteTitle=Téléversement terminé"
+"$$$/iNat/Msg/UploadCompleteBody=Observation envoyée avec succès à iNaturalist."
+"$$$/iNat/Msg/UploadFailedTitle=Échec du téléversement"
+"$$$/iNat/Msg/UnknownError=Erreur inconnue."
+
+"$$$/iNat/ConfirmUploadTitle=Envoyer l'observation ?"
+"$$$/iNat/ConfirmUploadBody=Voulez-vous téléverser l'observation sur iNaturalist ?"
+"$$$/iNat/Yes=Oui"
+"$$$/iNat/No=Non"
+
+"$$$/iNat/WriteAccess=Ajouter les mots-clés sélectionnés"
+
+
+
+
 
 "$$$/AiTagger/Language/English=Anglais"
 "$$$/AiTagger/Language/Spanish=Espagnol"
