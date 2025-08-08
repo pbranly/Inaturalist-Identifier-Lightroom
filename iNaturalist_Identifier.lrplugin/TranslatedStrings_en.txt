@@ -89,6 +89,36 @@
 "$$$/iNat/Result/Header=🕊️ Recognized species:\n"
 "$$$/iNat/Result/UnknownName=Unknown"
 
+
+"$$$/iNat/Log/NoPhoto=No photo provided."
+"$$$/iNat/Log/NoSpecies=Result format unrecognized or missing species."
+"$$$/iNat/Log/NoParsable=No parsable species entries."
+"$$$/iNat/Log/NoSelection=No species selected by user."
+"$$$/iNat/Log/KeywordsAdded=Keywords added: "
+"$$$/iNat/Log/UploadOK=Observation uploaded successfully."
+"$$$/iNat/Log/UploadError=Upload error: "
+"$$$/iNat/Log/UploadDeclined=User declined to upload observation."
+"$$$/iNat/Log/DialogCancelled=Species selection dialog cancelled."
+
+"$$$/iNat/DialogTitle=Select species to add as keywords"
+"$$$/iNat/AddKeywords=Add"
+
+"$$$/iNat/Msg/NoSpeciesTitle=No species selected"
+"$$$/iNat/Msg/NoSpeciesBody=No keywords will be added."
+"$$$/iNat/Msg/SuccessTitle=Success"
+"$$$/iNat/Msg/SuccessBody=Selected species have been added as keywords."
+"$$$/iNat/Msg/UploadCompleteTitle=Upload Complete"
+"$$$/iNat/Msg/UploadCompleteBody=Observation successfully sent to iNaturalist."
+"$$$/iNat/Msg/UploadFailedTitle=Upload Failed"
+"$$$/iNat/Msg/UnknownError=Unknown error."
+
+"$$$/iNat/ConfirmUploadTitle=Send observation?"
+"$$$/iNat/ConfirmUploadBody=Do you want to upload the observation to iNaturalist?"
+"$$$/iNat/Yes=Yes"
+"$$$/iNat/No=No"
+
+"$$$/iNat/WriteAccess=Add selected keywords"
+
 "$$$/AiTagger/Language/English=English"
 "$$$/AiTagger/Language/Spanish=Spanish"
 "$$$/AiTagger/Language/French=French"
