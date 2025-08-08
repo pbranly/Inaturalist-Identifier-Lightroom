@@ -43,7 +43,7 @@ return {
     LrSdkMinimumVersion = 10.0,
 
     -- Link to plugin information website or GitHub release page
-    LrPluginInfoUrl = "https://github.com/[utilisateur]/[repo]/releases/latest", -- 🔁 À adapter
+    LrPluginInfoUrl = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest", -- 🔁 À adapter
 
     -- Script launched from the "File > Export" menu
     LrExportMenuItems = {
