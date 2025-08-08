@@ -5,7 +5,7 @@
 "$$$/iNat/UnknownFormat=Format de résultat non reconnu."
 "$$$/iNat/NoSpeciesDetected=Aucune espèce détectée."
 
-"$$$/iNat/DialogTitle=Sélectionnez les espèces à ajouter comme mots-clés"
+"$$$/iNat/DialogTitle=Sélectionner les espèces à ajouter comme mots-clés"
 "$$$/iNat/AddKeywords=Ajouter"
 "$$$/iNat/NoKeywordsSelected=Aucun mot-clé sélectionné."
 "$$$/iNat/NoSpeciesCheckedTitle=Aucune espèce sélectionnée"
@@ -19,24 +19,13 @@
 
 "$$$/iNat/DialogCancelled=Dialogue annulé."
 
-"$$$/iNat/Bezel/Started=Plugin démarré"
-"$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."
-
-
 "$$$/iNat/Bezel/ExportFailed=Échec de l'exportation de l'image."
 "$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg"
-
-
-
-
 "$$$/iNat/Bezel/SelectedPhoto=Photo sélectionnée : "
 "$$$/iNat/Bezel/Done=Analyse terminée."
-
-
+"$$$/iNat/Bezel/Started=Plugin démarré"
 
 "$$$/iNat/Error/MissingUpdateScript=Script de mise à jour du token absent : update_token.lua"
-"$$$/iNat/Bezel/NoResult"
-"$$$/iNat/Error/ExportFailed"
 "$$$/iNat/Error/ExportedFileNotFound"
 "$$$/iNat/Error/FileMove"
 "$$$/iNat/Error/TokenInvalid"
@@ -53,11 +42,6 @@
 "$$$/iNat/Dialog/Continue=Continuer"
 "$$$/iNat/Dialog/Cancel=Annuler"
 
-
-
-
-
-
 "$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé :"
 "$$$/iNat/Log/PluginStarted=== Nouveau lancement du plugin ==="
 "$$$/iNat/Log/VerificationModuleLoaded===== CHARGEMENT DU MODULE VerificationToken.lua ====="
@@ -72,47 +56,19 @@
 "$$$/iNat/Log/ServerError=💥 Erreur serveur iNaturalist (code 500)."
 "$$$/iNat/Log/NoHttpCode=⚠️ Aucun code HTTP reçu. Vérifiez la connexion internet ou curl."
 "$$$/iNat/Log/UnexpectedCode=⚠️ Réponse inattendue (code "
-"$$$/iNat/Log/Started=Plugin démarré"
-"$$$/iNat/Log/NoPhoto=Aucune photo sélectionnée."
-"$$$/iNat/Log/SelectedPhoto=Photo sélectionnée : "
 "$$$/iNat/Log/ExportFailed=Échec de l'exportation de l'image."
-
 "$$$/iNat/Log/Exported=Image exportée sous le nom tempo.jpg"
 "$$$/iNat/Log/APIError=Erreur API : "
 "$$$/iNat/Log/Results=Résultats de l'identification :\n"
 "$$$/iNat/Log/SkippedTag=L'utilisateur a ignoré le marquage."
 "$$$/iNat/Log/NoResult=Aucun résultat d'identification."
-
-"$$$/iNat/TokenDialog/Instruction=Veuillez coller votre token iNaturalist (valide 24h) :"
-"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du token"
-"$$$/iNat/TokenDialog/Save=Sauvegarder le token"
-"$$$/iNat/TokenDialog/Saved=Token sauvegardé avec succès."
-"$$$/iNat/TokenDialog/Title=Configuration du token iNaturalist"
-
-"$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist"
-"$$$/iNaturalist/TokenNote=La durée de validité du token est de 24h ; au-delà, vous devez le régénérer à l'adresse suivante :"
-"$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération de token"
-"$$$/iNaturalist/TokenLabel=Token :"
-"$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
-"$$$/iNaturalist/SaveButton=Sauvegarder"
-
-
-"$$$/iNat/Result/None=🕊️ aucune espece reconnue."
-"$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
-"$$$/iNat/Result/UnknownName=Inconnu"
-
-"$$$/iNat/Log/NoPhoto=Aucune photo fournie."
 "$$$/iNat/Log/NoSpecies=Format de résultat non reconnu ou aucune espèce trouvée."
 "$$$/iNat/Log/NoParsable=Aucune entrée d'espèce analysable."
 "$$$/iNat/Log/NoSelection=Aucune espèce sélectionnée par l'utilisateur."
-"$$$/iNat/Log/KeywordsAdded=Mots-clés ajoutés : "
 "$$$/iNat/Log/UploadOK=Observation téléversée avec succès."
 "$$$/iNat/Log/UploadError=Erreur de téléversement : "
 "$$$/iNat/Log/UploadDeclined=L'utilisateur a refusé de téléverser l'observation."
 "$$$/iNat/Log/DialogCancelled=Dialogue de sélection des espèces annulé."
-
-"$$$/iNat/DialogTitle=Sélectionner les espèces à ajouter comme mots-clés"
-"$$$/iNat/AddKeywords=Ajouter"
 
 "$$$/iNat/Msg/NoSpeciesTitle=Aucune espèce sélectionnée"
 "$$$/iNat/Msg/NoSpeciesBody=Aucun mot-clé ne sera ajouté."
@@ -130,9 +86,22 @@
 
 "$$$/iNat/WriteAccess=Ajouter les mots-clés sélectionnés"
 
+"$$$/iNat/Result/None=🕊️ aucune espece reconnue."
+"$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
+"$$$/iNat/Result/UnknownName=Inconnu"
 
+"$$$/iNat/TokenDialog/Instruction=Veuillez coller votre token iNaturalist (valide 24h) :"
+"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du token"
+"$$$/iNat/TokenDialog/Save=Sauvegarder le token"
+"$$$/iNat/TokenDialog/Saved=Token sauvegardé avec succès."
+"$$$/iNat/TokenDialog/Title=Configuration du token iNaturalist"
 
-
+"$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist"
+"$$$/iNaturalist/TokenNote=La durée de validité du token est de 24h ; au-delà, vous devez le régénérer à l'adresse suivante :"
+"$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération de token"
+"$$$/iNaturalist/TokenLabel=Token :"
+"$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
+"$$$/iNaturalist/SaveButton=Sauvegarder"
 
 "$$$/AiTagger/Language/English=Anglais"
 "$$$/AiTagger/Language/Spanish=Espagnol"
