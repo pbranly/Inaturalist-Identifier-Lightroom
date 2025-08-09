@@ -2,7 +2,7 @@
 =====================================================================================
  Module   : TokenUpdater.lua
  Purpose  : Manage the acquisition and storage of the iNaturalist personal access token
- Author   : Philippe Branly (or your name here)
+ Author   : Philippe Branly
 
  Description :
  ------------
