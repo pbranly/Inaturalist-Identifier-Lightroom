@@ -1,26 +1,3 @@
---[[
-=====================================================================================
- Script : Logger.lua
- Purpose : Centralized logging utility for the Lightroom plugin
- Author  : Philippe
- Description :
- This module provides functions to handle logging for the plugin's operations.
- It is used to create, write to, and display messages from a `log.txt` file stored 
- in the plugin’s folder. Logging can be enabled or disabled using a plugin preference.
-
- Main Functions:
-   - initializeLogFile(): Creates and starts the log file at plugin launch.
-   - logMessage(msg): Appends timestamped messages to the log file.
-   - notify(msg): Logs a message and displays it to the user via a dialog box.
-
- The logger helps in debugging and tracing plugin behavior without affecting Lightroom’s UI.
-
- Dependencies:
- - Lightroom SDK: LrPrefs for preferences, LrDialogs for alerts, LrPathUtils for paths.
-
-=====================================================================================
---]]
-
 -- Lightroom API imports
 local LrPathUtils = import "LrPathUtils"
 local LrDialogs  = import "LrDialogs"
@@ -40,7 +17,6 @@ local function initializeLogFile()
         local f = io.open(getLogFilePath(), "w") -- overwrite at each launch
         if f then
             local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
-            -- Visible message → keep LOC
             f:write(timestamp .. LOC("$$$/iNat/Log/PluginStarted=== Plugin launched ===") .. "\n")
             f:close()
         end
@@ -53,23 +29,21 @@ local function logMessage(message)
         local f = io.open(getLogFilePath(), "a") -- append mode
         if f then
             local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
-            -- Internal log messages remain raw English (no LOC)
             f:write(timestamp .. message .. "\n")
             f:close()
         end
     end
 end
 
--- Shows a message to the user (UI) and logs it
+-- Shows a message to the user and logs it if enabled
 local function notify(message)
-    logMessage(message) -- raw log
-    -- UI message could be localized before being passed here
+    logMessage(message)
     LrDialogs.message(message)
 end
 
 -- Exported functions
 return {
     initializeLogFile = initializeLogFile,
-    logMessage        = logMessage,
-    notify            = notify
+    logMessage         = logMessage,
+    notify             = notify
 }

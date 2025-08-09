@@ -1,97 +1,150 @@
---[[
-=====================================================================================
- Script : AnimalIdentifier.lua
- Purpose : Main Lightroom Classic integration for species identification and 
-           optional observation upload using the iNaturalist API.
- Author  : Philippe Branly
+-- Import required Lightroom modules
+local LrTasks = import "LrTasks"
+local LrDialogs = import "LrDialogs"
+local LrApplication = import "LrApplication"
+local LrPathUtils = import "LrPathUtils"
+local LrFileUtils = import "LrFileUtils"
+local LrExportSession = import "LrExportSession"
+local LrPrefs = import "LrPrefs"
 
- Description :
- This script is the entry point that:
-   1. Retrieves the currently selected photo in Lightroom Classic.
-   2. Exports it temporarily as a JPEG (`tempo.jpg`).
-   3. Calls the iNaturalist AI identification service through `UploadObservation.lua`.
-   4. Displays the candidate species to the user via `SelectAndTagResults.lua`,
-      allowing them to choose one or more keywords to tag the photo.
-   5. After tagging is completed, optionally calls 
-      `UploadObservation.submitObservation()` to upload the observation.
+-- Custom modules
+local logger = require("Logger")
+local imageUtils = require("ImageUtils")
+local pythonRunner = require("PythonRunner")
+local tokenUpdater = require("TokenUpdater")
+local tokenChecker = require("VerificationToken")
 
- The script does **not** perform observation submission directly anymore.
- It delegates the task to the `UploadObservation.lua` module.
+-- Main function: exports selected photo, runs Python script, and handles result
+local function identifyAnimal()
+    LrTasks.startAsyncTask(function()
+        -- Initialization
+        logger.initializeLogFile()
+        logger.logMessage("Plugin started")
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PluginStarted=Plugin started"), 3)
 
- Requirements :
-   - A valid API token stored in plugin preferences (`prefs.token`).
-   - JPEG export capability (Lightroom SDK).
-   - `UploadObservation.lua` for API calls.
-   - `SelectAndTagResults.lua` for UI selection and tagging.
+        -- Retrieve token from preferences
+        local prefs = LrPrefs.prefsForPlugin()
+        local token = prefs.token
 
- Workflow :
-   Lightroom Photo → Export temp JPEG → iNat Identification → User selects species →
-   Tag photo → Submit observation via API.
+        -- Check if token is missing
+        if not token or token == "" then
+            logger.notify(LOC("$$$/iNat/Error/MissingToken=Token is missing. Please enter it in Preferences."))
+            tokenUpdater.runUpdateTokenScript()
+            return
+        end
 
- Dependencies :
-   - LrApplication, LrTasks, LrDialogs, LrFunctionContext (Lightroom SDK)
-   - `UploadObservation.lua`
-   - `SelectAndTagResults.lua`
-=====================================================================================
---]]
+        -- Validate token
+        local isValid, msg = tokenChecker.isTokenValid()
+        if not isValid then
+            logger.notify(LOC("$$$/iNat/Error/InvalidToken=Invalid or expired token."))
+            tokenUpdater.runUpdateTokenScript()
+            return
+        end
 
--- Lightroom SDK modules
-local LrApplication = import("LrApplication")
-local LrTasks = import("LrTasks")
-local LrDialogs = import("LrDialogs")
-local LrFunctionContext = import("LrFunctionContext")
-
--- Plugin modules
-local call_iNat = require("UploadObservation")
-local selector = require("SelectAndTagResults")
-
--- Main function to identify species and then optionally upload observation
-local function identifyAndUpload()
-    LrFunctionContext.callWithContext("identifyAndUpload", function(context)
+        -- Get the selected photo
         local catalog = LrApplication.activeCatalog()
         local photo = catalog:getTargetPhoto()
-
         if not photo then
-            LrDialogs.message(LOC("$$$/iNat/Error/NoPhoto=No photo selected."))
+            logger.logMessage("No photo selected.")
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
             return
         end
 
-        -- Retrieve stored API token
-        local prefs = import("LrPrefs").prefsForPlugin()
-        local token = prefs.token
-        if not token or token == "" then
-            LrDialogs.message(LOC("$$$/iNat/Error/NoToken=No iNaturalist token found. Please configure it first."))
-            return
-        end
+        -- Display selected photo filename
+        local filename = photo:getFormattedMetadata("fileName") or "unknown"
+        logger.logMessage("Selected photo: " .. filename)
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PhotoName=Selected photo: ") .. filename, 3)
 
-        -- Export temporary JPEG for API processing
-        local imagePath = _PLUGIN.path .. "/tempo.jpg"
-        catalog:withWriteAccessDo("Export temp image", function()
-            photo:requestJpegThumbnail(3000, 3000, imagePath)
+        -- Prepare export folder and cleanup
+        local pluginFolder = _PLUGIN.path
+        imageUtils.clearJPEGs(pluginFolder)
+        logger.logMessage("Previous JPEGs deleted.")
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Cleared=Previous image removed."), 3)
+
+        -- Export settings
+        local exportSettings = {
+            LR_export_destinationType = "specificFolder",
+            LR_export_destinationPathPrefix = pluginFolder,
+            LR_export_useSubfolder = false,
+            LR_format = "JPEG",
+            LR_jpeg_quality = 0.8,
+            LR_size_resizeType = "wh",
+            LR_size_maxWidth = 1024,
+            LR_size_maxHeight = 1024,
+            LR_size_doNotEnlarge = true,
+            LR_renamingTokensOn = true,
+            LR_renamingTokens = "{{image_name}}",
+        }
+
+        -- Perform export
+        local exportSession = LrExportSession({
+            photosToExport = { photo },
+            exportSettings = exportSettings
+        })
+
+        local success = LrTasks.pcall(function()
+            exportSession:doExportOnCurrentTask()
         end)
 
-        -- Identification via iNaturalist API
-        local result, err = call_iNat.identify(imagePath, token)
-        if not result then
-            LrDialogs.message(err or LOC("$$$/iNat/Error/IdentificationFailed=Identification failed."))
+        -- Check if export succeeded
+        local exportedPath = imageUtils.findSingleJPEG(pluginFolder)
+        if not exportedPath then
+            logger.logMessage("Failed to export temporary image.")
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Temporary export failed."), 3)
             return
         end
 
-        -- Let the user choose species to tag (must return keywords)
-        local keywords = selector.showSelection(photo, result, token)
-        if not keywords or #keywords == 0 then
-            return -- user cancelled or no keywords chosen
+        -- Rename the exported file to tempo.jpg
+        local finalPath = LrPathUtils.child(pluginFolder, "tempo.jpg")
+        local ok, err = LrFileUtils.move(exportedPath, finalPath)
+        if not ok then
+            local msg = string.format("Error renaming file: %s", err or "unknown")
+            logger.logMessage(msg)
+            LrDialogs.showBezel(msg, 3)
+            return
         end
 
-        -- After tagging, submit observation
-        local ok, msg = call_iNat.UploadObservation(photo, keywords, token)
-        if not ok then
-            LrDialogs.message(msg or LOC("$$$/iNat/Error/UploadFailed=Observation upload failed."))
+        logger.logMessage("Image exported as tempo.jpg")
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
+
+        -- Run Python identification script
+        local result = pythonRunner.runPythonIdentifier(
+            LrPathUtils.child(pluginFolder, "identifier_animal.py"),
+            finalPath,
+            token
+        )
+
+        -- Check and display result
+        if result:match("🕊️") then
+            local titre = LOC("$$$/iNat/Title/Result=Identification results:")
+            logger.logMessage(titre .. "\n" .. result)
+            LrDialogs.message(titre, result)
+
+            -- Ask user whether to proceed with keyword tagging
+            local choix = LrDialogs.confirm(
+                LOC("$$$/iNat/Confirm/Ask=Do you want to add one or more identifications as keywords?"),
+                LOC("$$$/iNat/Confirm/Hint=Click 'Continue' to select species."),
+                LOC("$$$/iNat/Confirm/Continue=Continue"),
+                LOC("$$$/iNat/Confirm/Cancel=Cancel")
+            )
+
+            if choix == "ok" then
+                local selector = require("SelectAndTagResults")
+                selector.showSelection(result)
+            else
+                logger.logMessage("Keyword tagging skipped by user.")
+            end
         else
-            LrDialogs.message(LOC("$$$/iNat/UploadSuccess=Observation uploaded successfully."))
+            -- No results from Python script
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ResultNone=No identification results ❌"), 3)
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoneFound=No results found."), 3)
         end
+
+        logger.logMessage("Analysis completed.")
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
     end)
 end
 
--- Run asynchronously to keep the UI responsive
-LrTasks.startAsyncTask(identifyAndUpload)
+return {
+    identify = identifyAnimal
+}
