@@ -1,129 +1,219 @@
 --[[
 =====================================================================================
- Script    : UploadObservation.lua
- Purpose   : Upload a tagged photo as an observation to iNaturalist via their API
-
+ Module : call_inaturalist.lua
+ Purpose : Handles communication with the iNaturalist API for species identification
+           and observation submission from within Lightroom Classic.
+ Author  : Philippe Branly
  Description :
- This module takes a Lightroom photo and uploads it to iNaturalist as an observation,
- using metadata such as species name (from keywords), GPS coordinates, and capture time.
+ This module is used by the Lightroom plugin to:
+   1. Upload a JPEG photo to iNaturalist’s AI recognition endpoint and receive 
+      a list of candidate species with confidence scores.
+   2. Submit a confirmed species observation with GPS and timestamp metadata, 
+      along with the JPEG photo, to the iNaturalist platform.
 
- Workflow:
-   1. Exports the current Lightroom photo as a temporary JPEG file.
-   2. Extracts metadata:
-       - Species name (from first keyword containing a Latin name in parentheses)
-       - GPS location (latitude & longitude)
-       - Date/time the photo was taken
-   3. Constructs a multipart/form-data HTTP request.
-   4. Sends the request using the iNaturalist v1 API with OAuth2 authentication.
-   5. Returns success or failure with a message.
+ It serves as the core interface between Lightroom and iNaturalist.
+
+ Functions:
+   - identify(imagePath, token):  
+       → Calls the /v1/computervision/score_image API with an image file  
+       → Returns formatted species predictions and confidence levels  
+
+   - submitObservation(photo, keywords, token):  
+       → Creates an observation on iNaturalist using photo metadata and keyword tags  
+       → Attaches the image file to the observation  
+
+ Requirements:
+   - A valid API token (24-hour lifetime)
+   - A JPEG image file exported as `tempo.jpg`
+   - Valid EXIF GPS and capture date metadata in the selected photo
 
  Dependencies:
-   - Lightroom SDK: 
-       • LrHttp        → For HTTP requests
-       • LrPathUtils   → For temp file paths
-       • LrFileUtils   → For reading file data
-       • LrApplication → For accessing photo metadata
-   - export_to_tempo.lua → Exports a temporary JPEG file
-   - Logger.lua          → Logs steps and results
-
- Author    : Philippe
+   - Lightroom SDK modules: LrHttp, LrFileUtils, LrPathUtils, LrDate
+   - External JSON parser: json.lua (must be present in plugin directory)
+   - This module is typically called from main.lua or through SelectAndTagResults.lua
 =====================================================================================
 --]]
 
--- Lightroom SDK modules
-local LrHttp = import "LrHttp"
-local LrPathUtils = import "LrPathUtils"
-local LrFileUtils = import "LrFileUtils"
-local LrApplication = import "LrApplication"
+-- Required Lightroom modules
+local LrHttp = import("LrHttp")
+local LrFileUtils = import("LrFileUtils")
+local LrPathUtils = import("LrPathUtils")
+local LrDate = import("LrDate")
 
--- External modules
-local export_to_tempo = require("export_to_tempo")
-local logger = require("Logger")
+-- JSON parser
+local json = require("json")
 
---- Uploads a Lightroom photo as an observation to iNaturalist
--- @param photo (LrPhoto) : The Lightroom photo object
--- @param token (string)  : OAuth2 bearer token for API authentication
--- @return true if success, or false and error message
-local function upload(photo, token)
-    logger.logMessage("[UploadObservation] Starting upload to iNaturalist...")
+-- Declare module table
+local M = {}
 
-    -- Step 1: Export photo as temporary JPEG
-    local imagePath, err = export_to_tempo.exportToTempo(photo)
-    if not imagePath then
-        return false, "Image export failed: " .. (err or "unknown error")
-    end
+-----------------------------------------------------------------------
+-- IDENTIFICATION FUNCTION
+-----------------------------------------------------------------------
+function M.identify(imagePath, token)
+    local boundary = "----LightroomFormBoundary123456"
 
-    -- Step 2: Extract species name from keywords (look for Latin name in parentheses)
-    local speciesName = nil
-    for _, kw in ipairs(photo:getRawMetadata("keywords")) do
-        local name = kw:getName()
-        local latin = name:match("%((.-)%)")
-        if latin then
-            speciesName = latin
-            break
-        end
-    end
-    if not speciesName then
-        return false, "No species name (Latin) found in keywords."
-    end
-
-    -- Step 3: Get date/time and GPS location
-    local takenAt = photo:getRawMetadata("dateTimeOriginal") or os.date("!%Y-%m-%dT%H:%M:%SZ")
-    local lat = photo:getRawMetadata("gpsLatitude")
-    local lon = photo:getRawMetadata("gpsLongitude")
-
-    -- Step 4: Build multipart/form-data HTTP POST body
-    local boundary = "----iNatFormBoundary" .. tostring(math.random(1000000, 9999999))
-    local function formField(name, value)
-        return "--" .. boundary .. "\r\n"
-            .. 'Content-Disposition: form-data; name="' .. name .. '"\r\n\r\n'
-            .. value .. "\r\n"
-    end
-
-    local bodyParts = {}
-    table.insert(bodyParts, formField("observation[species_guess]", speciesName))
-    table.insert(bodyParts, formField("observation[observed_on_string]", takenAt))
-    if lat and lon then
-        table.insert(bodyParts, formField("observation[latitude]", tostring(lat)))
-        table.insert(bodyParts, formField("observation[longitude]", tostring(lon)))
-    end
-
-    -- Photo data
-    table.insert(bodyParts, "--" .. boundary)
-    table.insert(bodyParts, 'Content-Disposition: form-data; name="observation[photo]"; filename="photo.jpg"\r\n'
-        .. 'Content-Type: image/jpeg\r\n\r\n')
+    -- Read JPEG image content from disk
     local imageData = LrFileUtils.readFile(imagePath)
-    table.insert(bodyParts, imageData)
-    table.insert(bodyParts, "\r\n--" .. boundary .. "--\r\n")
+    if not imageData then
+        return nil, LOC("$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath
+    end
 
-    local requestBody = table.concat(bodyParts)
+    -- Construct a multipart/form-data HTTP body with the image
+    local body = table.concat({
+        "--" .. boundary,
+        'Content-Disposition: form-data; name="image"; filename="tempo.jpg"',
+        "Content-Type: image/jpeg",
+        "",
+        imageData,
+        "--" .. boundary .. "--",
+        ""
+    }, "\r\n")
 
-    -- Step 5: Set headers
+    -- Build HTTP headers
     local headers = {
         { field = "Authorization", value = "Bearer " .. token },
+        { field = "User-Agent", value = "LightroomBirdIdentifier/1.0" },
         { field = "Content-Type", value = "multipart/form-data; boundary=" .. boundary },
+        { field = "Accept", value = "application/json" }
     }
 
-    -- Step 6: Send POST request to iNaturalist API
-    local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/observations", requestBody, headers)
+    -- Send POST request
+    local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
 
-    -- Step 7: Handle response
-    if not result or result == "" then
-        logger.logMessage("[UploadObservation] No response from iNaturalist API.")
-        return false, "No response from iNaturalist API."
+    -- Handle HTTP/network error
+    if not result then
+        return nil, LOC("$$$/iNat/Error/NoAPIResponse=API error: No response")
     end
 
-    if hdrs and hdrs.status and hdrs.status >= 200 and hdrs.status < 300 then
-        logger.logMessage("[UploadObservation] Upload successful. Status: " .. tostring(hdrs.status))
-        return true
-    else
-        local status = hdrs and hdrs.status or "unknown"
-        logger.logMessage("[UploadObservation] Upload failed. Status: " .. tostring(status))
-        return false, "iNaturalist upload failed with status: " .. tostring(status)
+    -- Decode JSON response
+    local success, parsed = pcall(json.decode, result)
+    if not success or not parsed then
+        return nil, LOC("$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)
     end
+
+    -- Extract and format results
+    local results = parsed.results or {}
+    if #results == 0 then
+        return LOC("$$$/iNat/Result/None=🕊️ No specie recognized.")
+    end
+
+    -- Normalize scores
+    local max_score = 0
+    for _, r in ipairs(results) do
+        local s = tonumber(r.combined_score) or 0
+        if s > max_score then max_score = s end
+    end
+    if max_score == 0 then max_score = 1 end
+
+    -- Build output
+    local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+    table.insert(output, "")
+    for _, result in ipairs(results) do
+        local taxon = result.taxon or {}
+        local name_fr = taxon.preferred_common_name or LOC("$$$/iNat/Result/UnknownName=Unknown")
+        local name_latin = taxon.name or LOC("$$$/iNat/Result/UnknownName=Unknown")
+        local raw_score = tonumber(result.combined_score) or 0
+        local normalized = math.floor((raw_score / max_score) * 1000 + 0.5) / 10
+        table.insert(output, string.format("- %s (%s) : %.1f%%", name_fr, name_latin, normalized))
+    end
+
+    return table.concat(output, "\n")
 end
 
--- Export module
-return {
-    upload = upload
-}
+-----------------------------------------------------------------------
+-- OBSERVATION SUBMISSION FUNCTION
+-----------------------------------------------------------------------
+function M.submitObservation(photo, keywords, token)
+    -- Extract GPS and date metadata
+    local latitude = photo:getRawMetadata("gpsLatitude")
+    local longitude = photo:getRawMetadata("gpsLongitude")
+    local captureTime = photo:getRawMetadata("dateTimeOriginal") or photo:getRawMetadata("dateTime")
+
+    -- Use first keyword as species name
+    local speciesName
+    if keywords and #keywords > 0 then
+        speciesName = keywords[1]:getName()
+    else
+        return false, LOC("$$$/iNat/Error/NoKeyword=No species keyword found.")
+    end
+
+    if not latitude or not longitude then
+        return false, LOC("$$$/iNat/Error/NoGPS=Missing GPS coordinates.")
+    end
+
+    if not captureTime then
+        captureTime = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- fallback to current UTC
+    else
+        captureTime = LrDate.timeToIsoDate(captureTime)
+    end
+
+    -- Build JSON payload
+    local payload = {
+        observation = {
+            species_guess = speciesName,
+            observed_on_string = captureTime,
+            time_zone = "UTC",
+            latitude = latitude,
+            longitude = longitude,
+            positional_accuracy = 50,
+            captive_flag = false,
+            geoprivacy = "open"
+        }
+    }
+
+    local body = json.encode(payload)
+
+    -- Submit observation metadata
+    local headers = {
+        { field = "Authorization", value = "Bearer " .. token },
+        { field = "Content-Type", value = "application/json" },
+        { field = "Accept", value = "application/json" }
+    }
+
+    local responseBody, responseCode = LrHttp.post(
+        "https://api.inaturalist.org/v1/observations",
+        body,
+        headers
+    )
+
+    if responseCode ~= 200 and responseCode ~= 201 then
+        return false, LOC("$$$/iNat/Error/ObservationFailed=Observation submission failed. Code: ") .. tostring(responseCode)
+    end
+
+    -- Parse observation ID
+    local parsed = json.decode(responseBody)
+    local observationId = parsed.results and parsed.results[1] and parsed.results[1].id
+    if not observationId then
+        return false, LOC("$$$/iNat/Error/NoObservationID=Unable to retrieve observation ID.")
+    end
+
+    -- Check image existence
+    local imagePath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
+    if not LrFileUtils.exists(imagePath) then
+        return false, LOC("$$$/iNat/Error/NoImage=tempo.jpg not found.")
+    end
+
+    -- Create multipart form body for image upload
+    local uploadBody = {
+        { name = "observation_photo[observation_id]", value = tostring(observationId) },
+        { name = "observation_photo[photo]", filePath = imagePath, fileName = "tempo.jpg", contentType = "image/jpeg" }
+    }
+
+    -- Upload photo
+    local uploadRespBody, uploadRespCode = LrHttp.postMultipart(
+        "https://api.inaturalist.org/v1/observation_photos",
+        uploadBody,
+        {
+            { field = "Authorization", value = "Bearer " .. token }
+        }
+    )
+
+    if uploadRespCode ~= 200 and uploadRespCode ~= 201 then
+        return false, LOC("$$$/iNat/Error/PhotoUploadFailed=Photo upload failed. Code: ") .. tostring(uploadRespCode)
+    end
+
+    return true
+end
+
+-- Return the module
+return M
