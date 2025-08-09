@@ -1,89 +1,87 @@
-
-
-## Nom du plugin
 "$$$/iNat/PluginName=Identification iNaturalist"
-
-## Élément du menu d’exportation
 "$$$/iNat/MenuItem=Identifier les animaux via iNaturalist"
 
-## Messages d'erreur
 "$$$/iNat/NoPhotoSelected=Aucune photo sélectionnée."
 "$$$/iNat/UnknownFormat=Format de résultat non reconnu."
 "$$$/iNat/NoSpeciesDetected=Aucune espèce détectée."
 
-## Interface de la boîte de dialogue
 "$$$/iNat/DialogTitle=Sélectionnez les espèces à ajouter comme mots-clés"
 "$$$/iNat/AddKeywords=Ajouter"
-
-## Aucun mot-clé sélectionné
-"$$$/iNat/NoKeywordsSelected=A"ucun mot-clé sélectionné."
+"$$$/iNat/NoKeywordsSelected=Aucun mot-clé sélectionné."
 "$$$/iNat/NoSpeciesCheckedTitle=Aucune espèce sélectionnée"
 "$$$/iNat/NoKeywordsMessage=Aucun mot-clé ne sera ajouté."
 
-## Opérations sur les mots-clés
 "$$$/iNat/AddKeywordsWriteAccess=Ajout de mots-clés"
 "$$$/iNat/KeywordsAdded=Mots-clés ajoutés : "
 
-## Message de succès
 "$$$/iNat/SuccessTitle=Ajout réussi"
 "$$$/iNat/SuccessMessage=Les mots-clés sélectionnés ont été ajoutés avec succès."
 
-## Annulation
 "$$$/iNat/DialogCancelled=Dialogue annulé."
 
-## Messages de démarrage et d'état"
-"$$$/iNat/Bezel/PluginStarted=Plugin démarré"
+"$$$/iNat/Bezel/Started=Plugin démarré"
 "$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."
-"$$$/iNat/Bezel/PhotoName=Photo sélectionnée : "
-"$$$/iNat/Bezel/Cleared=Image précédente supprimée."
-"$$$/iNat/Bezel/ExportFailed=Échec de l’exportation temporaire."
+
+
+"$$$/iNat/Bezel/ExportFailed=Échec de l'exportation de l'image."
 "$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg"
-"$$$/iNat/Bezel/ResultNone=Aucun résultat d'identification ❌"
-"$$$/iNat/Bezel/NoneFound=Aucun résultat trouvé."
-"$$$/iNat/Bezel/AnalysisDone=Analyse terminée."
 
-## Erreurs liées au jeton
-"$$$/iNat/Error/MissingToken=Jeton manquant. Veuillez le saisir dans les préférences."
-"$$$/iNat/Error/InvalidToken=Jeton invalide ou expiré."
 
-## Affichage des résultats
-"$$$/iNat/Title/Result=Résultats de l’identification :"
 
-## Boîte de dialogue de confirmation
-"$$$/iNat/Confirm/Ask=Souhaitez-vous ajouter une ou plusieurs identifications comme mots-clés ?"
-"$$$/iNat/Confirm/Hint=Cliquez sur « Continuer » pour sélectionner les espèces."
-"$$$/iNat/Confirm/Continue=Continuer"
-"$$$/iNat/Confirm/Cancel=Annuler"
 
-## Messages de log pour la suppression d'images
-"$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé :" 
+"$$$/iNat/Bezel/SelectedPhoto=Photo sélectionnée : "
+"$$$/iNat/Bezel/Done=Analyse terminée."
 
-## En-tête du journal au lancement du plugin
+
+
+"$$$/iNat/Error/MissingUpdateScript=Script de mise à jour du token absent : update_token.lua"
+"$$$/iNat/Bezel/NoResult"
+"$$$/iNat/Error/ExportFailed"
+"$$$/iNat/Error/ExportedFileNotFound"
+"$$$/iNat/Error/FileMove"
+"$$$/iNat/Error/TokenInvalid"
+"$$$/iNat/Error/TokenMissing"
+"$$$/iNat/Error/ImageRead=Impossible d'ouvrir l'image: "
+"$$$/iNat/Error/NoAPIResponse=Erreur API: Pas de reponse"
+"$$$/iNat/Error/InvalidJSON=API error: Echec de decodage du JSON: "
+
+"$$$/iNat/Dialog/IdentificationFailed=Échec de l'identification"
+"$$$/iNat/Dialog/UnknownError=Erreur inconnue."
+"$$$/iNat/Dialog/Results=Résultats de l'identification :"
+"$$$/iNat/Dialog/AskTag=Souhaitez-vous ajouter une ou plusieurs identifications comme mots-clés ?"
+"$$$/iNat/Dialog/AskTagDetails=Cliquez sur « Continuer » pour sélectionner les espèces."
+"$$$/iNat/Dialog/Continue=Continuer"
+"$$$/iNat/Dialog/Cancel=Annuler"
+
+
+
+
+
+
+"$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé :"
 "$$$/iNat/Log/PluginStarted=== Nouveau lancement du plugin ==="
-
-## Messages du journal pour la vérification du token
 "$$$/iNat/Log/VerificationModuleLoaded===== CHARGEMENT DU MODULE VerificationToken.lua ====="
 "$$$/iNat/Log/TokenCheckStart=== Début de isTokenValid() ==="
 "$$$/iNat/Log/TokenMissing=⛔ Aucun token trouvé dans les préférences Lightroom."
 "$$$/iNat/Log/TokenDetected=🔑 Token détecté (longueur : "
 "$$$/iNat/Log/Chars= caractères)"
-"$$$/iNat/Log/CurlCommand=📎 Commande curl exécutée :" 
+"$$$/iNat/Log/CurlCommand=📎 Commande curl exécutée :"
 "$$$/iNat/Log/HttpCode=➡️ Code HTTP retourné par iNaturalist : "
 "$$$/iNat/Log/TokenValid=✅ Succès : le token est valide."
 "$$$/iNat/Log/TokenInvalid=❌ Échec : token invalide ou expiré (code 401 Unauthorized)."
 "$$$/iNat/Log/ServerError=💥 Erreur serveur iNaturalist (code 500)."
 "$$$/iNat/Log/NoHttpCode=⚠️ Aucun code HTTP reçu. Vérifiez la connexion internet ou curl."
 "$$$/iNat/Log/UnexpectedCode=⚠️ Réponse inattendue (code "
+"$$$/iNat/Log/Started=Plugin démarré"
+"$$$/iNat/Log/NoPhoto=Aucune photo sélectionnée."
+"$$$/iNat/Log/SelectedPhoto=Photo sélectionnée : "
+"$$$/iNat/Log/ExportFailed=Échec de l'exportation de l'image."
 
-## Interface des préférences (FR)
-"$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist"
-"$$$/iNaturalist/TokenNote=La durée de validité du token est de 24h ; au-delà, vous devez le régénérer à l'adresse suivante :"
-"$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération de token"
-"$$$/iNaturalist/TokenLabel=Token :"
-"$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
-"$$$/iNaturalist/SaveButton=Sauvegarder"
-
-"$$$/iNat/Error/MissingUpdateScript=Script de mise à jour du token absent : update_token.lua"
+"$$$/iNat/Log/Exported=Image exportée sous le nom tempo.jpg"
+"$$$/iNat/Log/APIError=Erreur API : "
+"$$$/iNat/Log/Results=Résultats de l'identification :\n"
+"$$$/iNat/Log/SkippedTag=L'utilisateur a ignoré le marquage."
+"$$$/iNat/Log/NoResult=Aucun résultat d'identification."
 
 "$$$/iNat/TokenDialog/Instruction=Veuillez coller votre token iNaturalist (valide 24h) :"
 "$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du token"
@@ -91,10 +89,17 @@
 "$$$/iNat/TokenDialog/Saved=Token sauvegardé avec succès."
 "$$$/iNat/TokenDialog/Title=Configuration du token iNaturalist"
 
+"$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist"
+"$$$/iNaturalist/TokenNote=La durée de validité du token est de 24h ; au-delà, vous devez le régénérer à l'adresse suivante :"
+"$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération de token"
+"$$$/iNaturalist/TokenLabel=Token :"
+"$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
+"$$$/iNaturalist/SaveButton=Sauvegarder"
 
-## ##########################################################################################
 
-
+"$$$/iNat/Result/None=🕊️ aucune espece reconnue."
+"$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
+"$$$/iNat/Result/UnknownName=Inconnu"
 
 
 "$$$/AiTagger/Language/English=Anglais"
