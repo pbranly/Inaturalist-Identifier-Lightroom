@@ -3,7 +3,7 @@
  Module : call_inaturalist.lua
  Purpose : Handles communication with the iNaturalist API for species identification
            and observation submission from within Lightroom Classic.
- Author  : Philippe Branly (or your name)
+ Author  : Philippe Branly
  Description :
  This module is used by the Lightroom plugin to:
    1. Upload a JPEG photo to iNaturalist’s AI recognition endpoint and receive 
@@ -40,7 +40,7 @@ local LrFileUtils = import("LrFileUtils")
 local LrPathUtils = import("LrPathUtils")
 local LrDate = import("LrDate")
 
--- JSON parser (make sure json.lua is present in your plugin folder)
+-- JSON parser
 local json = require("json")
 
 -- Declare module table
@@ -48,9 +48,6 @@ local M = {}
 
 -----------------------------------------------------------------------
 -- IDENTIFICATION FUNCTION
--- Uses iNaturalist's /v1/computervision/score_image endpoint
--- to identify species in the given photo file (JPEG).
--- Returns a formatted string with the top matches or an error.
 -----------------------------------------------------------------------
 function M.identify(imagePath, token)
     local boundary = "----LightroomFormBoundary123456"
@@ -80,7 +77,7 @@ function M.identify(imagePath, token)
         { field = "Accept", value = "application/json" }
     }
 
-    -- Send POST request to iNaturalist
+    -- Send POST request
     local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
 
     -- Handle HTTP/network error
@@ -125,8 +122,6 @@ end
 
 -----------------------------------------------------------------------
 -- OBSERVATION SUBMISSION FUNCTION
--- Submits the photo metadata and selected species to iNaturalist
--- using /v1/observations followed by /v1/observation_photos
 -----------------------------------------------------------------------
 function M.submitObservation(photo, keywords, token)
     -- Extract GPS and date metadata
@@ -135,7 +130,7 @@ function M.submitObservation(photo, keywords, token)
     local captureTime = photo:getRawMetadata("dateTimeOriginal") or photo:getRawMetadata("dateTime")
 
     -- Use first keyword as species name
-    local speciesName = nil
+    local speciesName
     if keywords and #keywords > 0 then
         speciesName = keywords[1]:getName()
     else
