@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script : file_helpers.lua
+ Script : ImageUtils.lua
  Purpose : Utility module for managing JPEG files in a directory
  Author  : Philippe (or your name here)
  Description :

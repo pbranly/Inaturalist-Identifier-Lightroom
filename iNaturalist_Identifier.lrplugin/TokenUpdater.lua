@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script : runUpdateTokenScript.lua
+ Script : TokenUpdater.lua
  Purpose : Execute an auxiliary script to refresh the iNaturalist token
  Author  : Philippe (or your name here)
  Description :

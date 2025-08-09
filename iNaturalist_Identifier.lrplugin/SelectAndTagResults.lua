@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script : showSelection.lua
+ Script : SelectAndTagResults.lua
  Purpose : Display species identification results for manual keyword selection
  Author  : Philippe (or your name here)
  Description :

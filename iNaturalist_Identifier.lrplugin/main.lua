@@ -1,5 +1,5 @@
 --[[
-    Script: identify.lua
+    Script: main.lua
     --------------------
     This lightweight script serves as an entry point to trigger the species identification
     process using the AnimalIdentifier module.

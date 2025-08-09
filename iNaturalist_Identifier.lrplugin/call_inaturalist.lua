@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Module : inat_api.lua
+ Module : call_inaturalist.lua
  Purpose : Communicate with iNaturalist API to identify species from images and 
            submit observations.
  Author  : Philippe (or your name here)
