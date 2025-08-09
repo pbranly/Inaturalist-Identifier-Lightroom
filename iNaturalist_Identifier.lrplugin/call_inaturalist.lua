@@ -1,3 +1,45 @@
+--[[
+=====================================================================================
+ Script       : call_inaturalist.lua
+ Purpose      : Identify animal species from a JPEG image using iNaturalist's AI API
+ Author       : Philippe
+
+ Functional Overview:
+ This script sends a JPEG image to iNaturalist's computer vision API and returns
+ a formatted list of species predictions with confidence scores. It handles image
+ reading, HTTP request construction, response parsing, and result formatting.
+
+ Workflow Steps:
+ 1. Reads the JPEG image from disk using Lightroom's file utilities.
+ 2. Constructs a multipart/form-data HTTP body containing the image.
+ 3. Builds appropriate HTTP headers including authorization and content type.
+ 4. Sends a POST request to iNaturalist's AI scoring endpoint.
+ 5. Handles network or API errors gracefully.
+ 6. Parses the JSON response returned by the API.
+ 7. Extracts species prediction results from the parsed response.
+ 8. Normalizes confidence scores relative to the highest score.
+ 9. Formats the species names and confidence percentages into a readable string.
+10. Returns the final formatted result string for display or logging.
+
+ Key Features:
+ - Uses Lightroom SDK modules: LrFileUtils, LrHttp
+ - Supports localization via LOC() strings
+ - Normalizes scores to provide relative confidence percentages
+ - Handles missing data and API errors with user-friendly messages
+
+ Dependencies:
+ - Lightroom SDK: LrFileUtils, LrHttp
+ - JSON decoding library (assumed available as `json`)
+ - Token must be a valid iNaturalist API token (Bearer format)
+
+ Notes:
+ - The image must be in JPEG format and accessible via `imagePath`
+ - The token should be retrieved and validated before calling this script
+=====================================================================================
+--]]
+
+
+
 -- Step 1: Read JPEG image content from disk
 local imageData = LrFileUtils.readFile(imagePath)
 if not imageData then
