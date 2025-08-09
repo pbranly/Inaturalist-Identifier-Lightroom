@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script       : verificationtoken.luan
+ Script       : verificationtoken.lua
  Author       : Philippe
 
  Functional Overview:
