@@ -45,14 +45,14 @@ local uploadModule = require("UploadObservation")
 local function showSelection(photo, resultsString, token)
 
     if not photo then
-        logger.logMessage(LOC("$$$/iNat/Log/NoPhoto=No photo provided."))
+        logger.logMessage("No photo provided.")
         return
     end
 
     -- Attempt to locate species result block
     local startIndex = resultsString:find("🕊️")
     if not startIndex then
-        logger.logMessage(LOC("$$$/iNat/Log/NoSpecies=Result format unrecognized or missing species."))
+        logger.logMessage("Result format unrecognized or missing species.")
         return
     end
 
@@ -70,7 +70,7 @@ local function showSelection(photo, resultsString, token)
     end
 
     if #parsedItems == 0 then
-        logger.logMessage(LOC("$$$/iNat/Log/NoParsable=No parsable species entries."))
+        logger.logMessage("No parsable species entries.")
         return
     end
 
@@ -112,7 +112,7 @@ local function showSelection(photo, resultsString, token)
             end
 
             if #selectedKeywords == 0 then
-                logger.logMessage(LOC("$$$/iNat/Log/NoSelection=No species selected by user."))
+                logger.logMessage("No species selected by user.")
                 LrDialogs.message(
                     LOC("$$$/iNat/Msg/NoSpeciesTitle=No species selected"),
                     LOC("$$$/iNat/Msg/NoSpeciesBody=No keywords will be added.")
@@ -140,7 +140,7 @@ local function showSelection(photo, resultsString, token)
                 end
             end)
 
-            logger.logMessage(LOC("$$$/iNat/Log/KeywordsAdded=Keywords added: ") .. table.concat(selectedKeywords, ", "))
+            logger.logMessage("Keywords added: " .. table.concat(selectedKeywords, ", "))
             LrDialogs.message(
                 LOC("$$$/iNat/Msg/SuccessTitle=Success"),
                 LOC("$$$/iNat/Msg/SuccessBody=Selected species have been added as keywords.")
@@ -161,19 +161,19 @@ local function showSelection(photo, resultsString, token)
                         LOC("$$$/iNat/Msg/UploadCompleteTitle=Upload Complete"),
                         LOC("$$$/iNat/Msg/UploadCompleteBody=Observation successfully sent to iNaturalist.")
                     )
-                    logger.logMessage(LOC("$$$/iNat/Log/UploadOK=Observation uploaded successfully."))
+                    logger.logMessage("Observation uploaded successfully.")
                 else
                     LrDialogs.message(
                         LOC("$$$/iNat/Msg/UploadFailedTitle=Upload Failed"),
                         err or LOC("$$$/iNat/Msg/UnknownError=Unknown error.")
                     )
-                    logger.logMessage(LOC("$$$/iNat/Log/UploadError=Upload error: ") .. (err or LOC("$$$/iNat/Msg/UnknownError=Unknown error.")))
+                    logger.logMessage("Upload error: " .. (err or "Unknown error."))
                 end
             else
-                logger.logMessage(LOC("$$$/iNat/Log/UploadDeclined=User declined to upload observation."))
+                logger.logMessage("User declined to upload observation.")
             end
         else
-            logger.logMessage(LOC("$$$/iNat/Log/DialogCancelled=Species selection dialog cancelled."))
+            logger.logMessage("Species selection dialog cancelled.")
         end
     end)
 end
