@@ -64,7 +64,7 @@ local contents = f:column {
     bind_to_object = props,               -- Bind the UI elements to the `props` table
     spacing = f:control_spacing(),        -- Use Lightroom's default spacing
 
-    -- Explanatory static text
+    -- Explanatory static text (UI - keep LOC)
     f:static_text {
         title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
         width = 400,  -- Width in pixels
