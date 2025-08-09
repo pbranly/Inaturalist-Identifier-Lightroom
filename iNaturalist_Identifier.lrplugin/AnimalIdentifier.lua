@@ -21,7 +21,7 @@
 
  Dependencies:
  - Logger.lua             : Logging utility for debugging and tracking.
- - TokenUpdater.lua       : UI helper for token input and updates.
+ - TokenManager.lua       : UI helper for token input and updates.
  - VerificationToken.lua  : Token validation utility.
  - call_inaturalist.lua   : Handles HTTP communication with the iNaturalist API.
  - export_to_tempo.lua    : Responsible for exporting the selected photo to a JPEG file.
@@ -42,7 +42,7 @@ local LrPrefs        = import "LrPrefs"         -- For storing user preferences 
 
 -- Custom plugin modules
 local logger          = require("Logger")            -- Logs actions and errors
-local tokenUpdater    = require("TokenUpdater")      -- UI/dialog for updating the token
+local TokenManager    = require("TokenManager")      -- UI/dialog for updating the token
 local tokenChecker    = require("VerificationToken") -- Validates token format or expiry
 local callAPI         = require("call_inaturalist")  -- Sends photo to iNaturalist for identification
 local export_to_tempo = require("export_to_tempo")   -- Exports selected photo to tempo.jpg
@@ -65,7 +65,7 @@ local function identifyAnimal()
         -- If no token is found, prompt the user to set it up
         if not token or token == "" then
             logger.notify(LOC("$$$/iNat/Error/TokenMissing=Token is missing. Please enter it in Preferences."))
-            tokenUpdater.runUpdateTokenScript()
+            TokenManager.runUpdateTokenScript()
             return
         end
 
@@ -73,7 +73,7 @@ local function identifyAnimal()
         local isValid, msg = tokenChecker.isTokenValid()
         if not isValid then
             logger.notify(LOC("$$$/iNat/Error/TokenInvalid=Invalid or expired token."))
-            tokenUpdater.runUpdateTokenScript()
+            TokenManager.runUpdateTokenScript()
             return
         end
 

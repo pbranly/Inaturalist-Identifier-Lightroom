@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script       : Token Dialog for iNaturalist Plugin
+ Script       : verificationtoken.luan
  Author       : Philippe
 
  Functional Overview:
