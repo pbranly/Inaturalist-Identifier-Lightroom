@@ -35,38 +35,38 @@
 =====================================================================================
 --]]
 
--- Import version information from a dedicated module
+-- Import version information
 local PluginVersion = require("PluginVersion")
 
--- Main plugin descriptor table returned to Lightroom
+-- Main plugin descriptor returned to Lightroom
 return {
-    -- Localized name displayed in Lightroom's Plugin Manager
+    -- Localized name for Lightroom UI
     LrPluginName = LOC("$$$/iNat/PluginName=Identification iNaturalist"),
 
-    -- Unique internal identifier for Lightroom to track the plugin
+    -- Internal identifier (no LOC)
     LrToolkitIdentifier = "com.example.iNaturalistBirdIdentifier",
 
-    -- Supported Lightroom SDK versions
-    LrSdkVersion = 14.0,        -- Current tested version
-    LrSdkMinimumVersion = 10.0, -- Minimum required version
+    -- Supported SDK versions
+    LrSdkVersion = 14.0,
+    LrSdkMinimumVersion = 10.0,
 
-    -- Web link for plugin information or latest release
-    LrPluginInfoUrl = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest", -- Can be updated if needed
+    -- Plugin info URL (no LOC)
+    LrPluginInfoUrl = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest",
 
-    -- Define export menu items (shown under File > Export)
+    -- Menu entry for Lightroom UI (LOC preserved)
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "AnimalIdentifier.lua", -- Script triggered when menu item is selected
+            file = "AnimalIdentifier.lua",
         },
     },
 
-    -- Plugin Manager integration (custom settings and information panel)
+    -- Plugin Manager info panel
     LrPluginInfoProvider = "PluginInfoProvider.lua",
 
-    -- Declare plugin type as "export"
+    -- Plugin type (no LOC)
     LrPluginType = "export",
 
-    -- Plugin version information (used in Plugin Manager and logs)
+    -- Version info (no LOC)
     VERSION = PluginVersion,
 }
