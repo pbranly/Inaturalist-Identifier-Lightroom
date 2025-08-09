@@ -32,112 +32,108 @@
 --]]
 
 -- Lightroom SDK modules
-local LrTasks        = import "LrTasks"        -- Allows asynchronous task execution
-local LrDialogs      = import "LrDialogs"      -- UI dialogs, notifications, and bezels
-local LrApplication  = import "LrApplication"  -- Access to Lightroom's catalog and photo objects
-local LrPrefs        = import "LrPrefs"        -- Access to plugin-specific preferences storage
+local LrTasks        = import "LrTasks"
+local LrDialogs      = import "LrDialogs"
+local LrApplication  = import "LrApplication"
+local LrPrefs        = import "LrPrefs"
 
 -- Custom plugin modules
-local logger          = require("Logger")           -- Centralized logging
-local tokenUpdater    = require("TokenUpdater")     -- Handles token update UI
-local tokenChecker    = require("VerificationToken")-- Token validation utility
-local callAPI         = require("call_inaturalist") -- API request handler
-local export_to_tempo = require("export_to_tempo")  -- Temporary export utility
-local LOC             = LOC                         -- Lightroom's localization function
+local logger          = require("Logger")
+local tokenUpdater    = require("TokenUpdater")
+local tokenChecker    = require("VerificationToken")
+local callAPI         = require("call_inaturalist")
+local export_to_tempo = require("export_to_tempo")
 
 -- Main identification function
 local function identifyAnimal()
-    -- Run the process asynchronously so Lightroom's UI remains responsive
     LrTasks.startAsyncTask(function()
 
-        -- Initialize log file and notify the user
+        -- Initialize log file and internal logs
         logger.initializeLogFile()
-        logger.logMessage(LOC("$$$/iNat/Log/Started=Plugin started"))
+        logger.logMessage("=== Plugin started ===")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Started=Plugin started"), 2)
 
         -- Retrieve API token from plugin preferences
         local prefs = LrPrefs.prefsForPlugin()
         local token = prefs.token
 
-        -- Case 1: No token stored → prompt user to update it
+        -- No token → prompt user
         if not token or token == "" then
-            logger.notify(LOC("$$$/iNat/Error/TokenMissing=Token is missing. Please enter it in Preferences."))
+            logger.logMessage("No token found in preferences.")
+            LrDialogs.message(
+                LOC("$$$/iNat/Error/TokenMissing=Token is missing. Please enter it in Preferences.")
+            )
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- Case 2: Token exists → check if it's still valid
-        local isValid, msg = tokenChecker.isTokenValid()
+        -- Token exists → validate it
+        local isValid, _ = tokenChecker.isTokenValid()
         if not isValid then
-            logger.notify(LOC("$$$/iNat/Error/TokenInvalid=Invalid or expired token."))
+            logger.logMessage("Token invalid or expired.")
+            LrDialogs.message(
+                LOC("$$$/iNat/Error/TokenInvalid=Invalid or expired token.")
+            )
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- Retrieve the active photo from the Lightroom catalog
+        -- Retrieve selected photo
         local catalog = LrApplication.activeCatalog()
         local photo = catalog:getTargetPhoto()
         if not photo then
-            logger.logMessage(LOC("$$$/iNat/Log/NoPhoto=No photo selected."))
+            logger.logMessage("No photo selected.")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
             return
         end
 
-        -- Get photo filename for logs and UI
+        -- Filename for logs
         local filename = photo:getFormattedMetadata("fileName") or "unknown"
-        logger.logMessage(LOC("$$$/iNat/Log/SelectedPhoto=Selected photo: ") .. filename)
+        logger.logMessage("Selected photo: " .. filename)
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)
 
-        -- Export the selected photo as a temporary JPEG file
+        -- Export to tempo.jpg
         local exportedPath, err = export_to_tempo.exportToTempo(photo)
         if not exportedPath then
-            logger.logMessage(LOC("$$$/iNat/Log/ExportFailed=Failed to export image: ") .. (err or "unknown"))
+            logger.logMessage("Image export failed: " .. (err or "unknown"))
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)
             return
         end
 
-        logger.logMessage(LOC("$$$/iNat/Log/Exported=Image exported as tempo.jpg"))
+        logger.logMessage("Image exported as tempo.jpg")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
 
-        -- Send exported image to the iNaturalist API for identification
-        local result, err = callAPI.identify(exportedPath, token)
+        -- Call API
+        local result, apiErr = callAPI.identify(exportedPath, token)
         if not result then
-            logger.logMessage(LOC("$$$/iNat/Log/APIError=API error: ") .. (err or "unknown"))
+            logger.logMessage("API error: " .. (apiErr or "unknown"))
             LrDialogs.message(
                 LOC("$$$/iNat/Dialog/IdentificationFailed=Identification failed"),
-                err or LOC("$$$/iNat/Dialog/UnknownError=Unknown error.")
+                apiErr or LOC("$$$/iNat/Dialog/UnknownError=Unknown error.")
             )
             return
         end
 
-        -- Analyze returned results
-        -- hasTitle: checks if header marker 🕊️ is present
+        -- Parse results
         local hasTitle = result:match("🕊️")
         local count = 0
-        -- Count valid prediction lines (percentage + parentheses for species name)
         for line in result:gmatch("[^\r\n]+") do
             if line:match("%%") and line:match("%(") and line:match("%)") then
                 count = count + 1
             end
         end
 
-        -- If we have a title and at least one valid prediction → proceed
         if hasTitle and count > 0 then
-            logger.logMessage(LOC("$$$/iNat/Log/Results=Identification results:\n") .. result)
-
-            -- Open selection dialog for the user to choose species
+            logger.logMessage("Identification results:\n" .. result)
             local selector = require("SelectAndTagResults")
             selector.showSelection(photo, result, token)
-
         else
-            -- No usable results found
+            logger.logMessage("No identification results.")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoResult=No results found."), 3)
-            logger.logMessage(LOC("$$$/iNat/Log/NoResult=No identification results."))
         end
     end)
 end
 
--- Expose public API for other scripts
 return {
     identify = identifyAnimal
 }
