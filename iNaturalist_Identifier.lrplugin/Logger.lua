@@ -2,7 +2,7 @@
 =====================================================================================
  Script : Logger.lua
  Purpose : Centralized logging utility for the Lightroom plugin
- Author  : Philippe (or your name here)
+ Author  : Philippe
  Description :
  This module provides functions to handle logging for the plugin's operations.
  It is used to create, write to, and display messages from a `log.txt` file stored 
@@ -40,6 +40,7 @@ local function initializeLogFile()
         local f = io.open(getLogFilePath(), "w") -- overwrite at each launch
         if f then
             local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
+            -- Visible message → keep LOC
             f:write(timestamp .. LOC("$$$/iNat/Log/PluginStarted=== Plugin launched ===") .. "\n")
             f:close()
         end
@@ -52,21 +53,23 @@ local function logMessage(message)
         local f = io.open(getLogFilePath(), "a") -- append mode
         if f then
             local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
+            -- Internal log messages remain raw English (no LOC)
             f:write(timestamp .. message .. "\n")
             f:close()
         end
     end
 end
 
--- Shows a message to the user and logs it if enabled
+-- Shows a message to the user (UI) and logs it
 local function notify(message)
-    logMessage(message)
+    logMessage(message) -- raw log
+    -- UI message could be localized before being passed here
     LrDialogs.message(message)
 end
 
 -- Exported functions
 return {
     initializeLogFile = initializeLogFile,
-    logMessage         = logMessage,
-    notify             = notify
+    logMessage        = logMessage,
+    notify            = notify
 }
