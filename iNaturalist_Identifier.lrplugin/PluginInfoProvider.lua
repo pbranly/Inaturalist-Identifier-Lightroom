@@ -200,7 +200,7 @@ return {
                 f:row {
                     spacing = f:control_spacing(),
                     f:push_button {
-                        title = LOC("$$$/iNaturalist/CheckUpdate=Vérifier les mises à jour"),
+                        title = LOC("$$$/iNaturalist/CheckUpdate=Check for updates"),
                         action = function()
                             local PluginVersion = require("PluginVersion")
                             local currentVersion = PluginVersion.asString(PluginVersion)
@@ -216,14 +216,14 @@ return {
                                 -- Compare remote version to current version
                                 if remoteVersion and remoteVersion ~= currentVersion then
                                     local clicked = LrDialogs.confirm(
-                                        "Mise à jour disponible : " .. remoteVersion,
-                                        "Souhaitez-vous télécharger la nouvelle version ?"
+                                        LOC("$$$/iNaturalist/UpdateAvailable=Update available: ") .. remoteVersion,
+                                        LOC("$$$/iNaturalist/DownloadPrompt=Do you want to download the new version?")
                                     )
                                     if clicked == "ok" then
                                         LrHttp.openUrlInBrowser("https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
                                     end
                                 else
-                                    LrDialogs.message("Votre plugin est à jour.")
+                                    LrDialogs.message(LOC("$$$/iNaturalist/UpToDate=Your plugin is up to date."))
                                 end
                             end)
                         end,
