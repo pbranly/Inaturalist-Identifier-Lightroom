@@ -6,8 +6,8 @@
  Description :
  This Lightroom plugin module exports the currently selected photo to a temporary 
  JPEG file named "tempo.jpg" located in the plugin's own folder (cross-platform).
- It intègre désormais les fonctions utilitaires `clearJPEGs` et `findSingleJPEG`
- précédemment contenues dans `imageutils.lua`, afin de simplifier l'architecture.
+ It now integrates the utility functions `clearJPEGs` and `findSingleJPEG`
+ previously contained in `imageutils.lua`, simplifying the architecture.
 
  Use Case:
  - The exported file can be used for external services like image recognition 
@@ -56,7 +56,8 @@ local function clearJPEGs(directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
             LrFileUtils.delete(file)
-            logger.logMessage(LOC("$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)
+            -- Internal log in plain English (no LOC)
+            logger.logMessage("JPG file deleted: " .. file)
         end
     end
 end
@@ -77,7 +78,7 @@ local export_to_tempo = {}
 -- Export currently selected photo to "tempo.jpg" in plugin folder
 function export_to_tempo.exportToTempo(photo)
     if not photo then
-        return nil, "No photo selected."
+        return nil, LOC("$$$/iNat/Error/NoPhoto=No photo selected.")
     end
 
     -- Define export folder as plugin's directory (cross-platform)
@@ -123,14 +124,14 @@ function export_to_tempo.exportToTempo(photo)
             if result then
                 return tempFilePath
             else
-                return nil, "Failed to move exported file."
+                return nil, LOC("$$$/iNat/Error/MoveFailed=Failed to move exported file.")
             end
         else
-            return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
+            return nil, LOC("$$$/iNat/Error/RenderFailed=Failed to render photo: ") .. (pathOrMsg or "unknown error")
         end
     end
 
-    return nil, "No photo was exported."
+    return nil, LOC("$$$/iNat/Error/NoExport=No photo was exported.")
 end
 
 -- Return module
