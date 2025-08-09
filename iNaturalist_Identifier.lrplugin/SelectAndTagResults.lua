@@ -1,67 +1,57 @@
 --[[
 =====================================================================================
  Script    : SelectAndTagResults.lua
- Purpose   : Display species identification results for keyword tagging and 
-             optional upload to iNaturalist.
+ Purpose   : Display species identification results for keyword tagging only.
+             Uploading will be handled externally by the caller.
 
  Description :
- This module parses species recognition results (typically from the iNaturalist API)
- and presents them to the user in a modal dialog. It allows the user to:
+ This module parses species recognition results and presents them to the user
+ in a modal dialog. The user can:
+   - Select species from a checkbox list to be added as keywords to the selected photo.
 
-   1. Select species from a checkbox list to be added as keywords to the selected photo.
-   2. After keyword tagging, the user is asked whether they wish to upload the observation
-      to iNaturalist using the stored API token.
-   3. If confirmed, the UploadObservation.lua script is invoked.
+ It does NOT handle upload to iNaturalist anymore.
 
- Functional Highlights:
-   - Parses result strings containing French and Latin species names with confidence scores.
-   - Displays a scrollable list of checkboxes (one per species).
-   - Applies selected keywords to the photo.
-   - Offers an upload confirmation dialog after tagging.
-   - Logs all actions through the Logger module.
+ Returns:
+   - { keywordsAdded = { ... }, speciesSelected = true/false }
 
  Dependencies:
    - Lightroom SDK:
      LrDialogs, LrFunctionContext, LrBinding, LrView, LrApplication
    - Custom modules:
-     Logger.lua              → Logging utility.
-     UploadObservation.lua   → Handles POSTing observation to iNaturalist.
+     Logger.lua → Logging utility
 
  Author    : Philippe
 =====================================================================================
 --]]
 
--- Lightroom SDK imports
 local LrDialogs = import "LrDialogs"
 local LrFunctionContext = import "LrFunctionContext"
 local LrBinding = import "LrBinding"
 local LrView = import "LrView"
 local LrApplication = import "LrApplication"
 
--- Plugin modules
 local logger = require("Logger")
-local uploadModule = require("UploadObservation")
 
-local function showSelection(photo, resultsString, token)
-
+local function showSelection(photo, resultsString)
     if not photo then
         logger.logMessage("No photo provided.")
-        return
+        return { keywordsAdded = {}, speciesSelected = false }
     end
 
-    -- Attempt to locate species result block
+    -- Locate species result block
     local startIndex = resultsString:find("🕊️")
     if not startIndex then
         logger.logMessage("Result format unrecognized or missing species.")
-        return
+        return { keywordsAdded = {}, speciesSelected = false }
     end
 
     local subResult = resultsString:sub(startIndex)
     local parsedItems = {}
 
-    -- Parse lines with expected pattern
+    -- Parse species lines
     for line in subResult:gmatch("[^\r\n]+") do
-        local name_fr, name_latin, percent = line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)%%")
+        local name_fr, name_latin, percent =
+            line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)%%")
         if name_fr and name_latin and percent then
             local label = string.format("%s (%s) — %s%%", name_fr, name_latin, percent)
             local keyword = string.format("%s (%s)", name_fr, name_latin)
@@ -71,8 +61,10 @@ local function showSelection(photo, resultsString, token)
 
     if #parsedItems == 0 then
         logger.logMessage("No parsable species entries.")
-        return
+        return { keywordsAdded = {}, speciesSelected = false }
     end
+
+    local selectedKeywords = {}
 
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
@@ -102,8 +94,6 @@ local function showSelection(photo, resultsString, token)
         }
 
         if result == "ok" then
-            local selectedKeywords = {}
-
             for i, item in ipairs(parsedItems) do
                 local key = "item_" .. i
                 if props[key] == true then
@@ -145,37 +135,15 @@ local function showSelection(photo, resultsString, token)
                 LOC("$$$/iNat/Msg/SuccessTitle=Success"),
                 LOC("$$$/iNat/Msg/SuccessBody=Selected species have been added as keywords.")
             )
-
-            -- Ask whether to upload
-            local confirm = LrDialogs.confirm(
-                LOC("$$$/iNat/ConfirmUploadTitle=Send observation?"),
-                LOC("$$$/iNat/ConfirmUploadBody=Do you want to upload the observation to iNaturalist?"),
-                LOC("$$$/iNat/Yes=Yes"),
-                LOC("$$$/iNat/No=No")
-            )
-
-            if confirm == "ok" then
-                local success, err = uploadModule.upload(photo, token)
-                if success then
-                    LrDialogs.message(
-                        LOC("$$$/iNat/Msg/UploadCompleteTitle=Upload Complete"),
-                        LOC("$$$/iNat/Msg/UploadCompleteBody=Observation successfully sent to iNaturalist.")
-                    )
-                    logger.logMessage("Observation uploaded successfully.")
-                else
-                    LrDialogs.message(
-                        LOC("$$$/iNat/Msg/UploadFailedTitle=Upload Failed"),
-                        err or LOC("$$$/iNat/Msg/UnknownError=Unknown error.")
-                    )
-                    logger.logMessage("Upload error: " .. (err or "Unknown error."))
-                end
-            else
-                logger.logMessage("User declined to upload observation.")
-            end
         else
             logger.logMessage("Species selection dialog cancelled.")
         end
     end)
+
+    return {
+        keywordsAdded = selectedKeywords,
+        speciesSelected = (#selectedKeywords > 0)
+    }
 end
 
 return { showSelection = showSelection }
