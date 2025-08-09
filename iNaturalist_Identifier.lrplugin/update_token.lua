@@ -1,111 +1,118 @@
 --[[
-    Script: update_token.lua
-    ------------------------
-    This script provides a Lightroom user interface for entering and saving an iNaturalist API token.
+=====================================================================================
+ Script       : update_token.lua
+ Purpose      : UI dialog for entering and saving an iNaturalist API token
+ Author       : Philippe
 
-    Purpose:
-    --------
-    Allows the user to:
-      1. Open the iNaturalist token generation webpage in their default browser.
-      2. Paste the generated token into a text field.
-      3. Save the token to Lightroom plugin preferences for future use (e.g., in API calls).
+ Functional Overview:
+ This script creates a modal dialog in Adobe Lightroom that allows users to enter,
+ save, and manage their iNaturalist API token. The token is required for authenticating
+ API requests such as species identification and observation submission.
 
-    How It Works:
-    -------------
-    - Uses Lightroom's UI framework (`LrView`) to build a simple dialog box.
-    - Provides a push button that opens the browser to the iNaturalist token page.
-    - Accepts the user's token input and stores it persistently using `LrPrefs`.
-    - Executes URL opening logic differently depending on the operating system (Windows, macOS, or Linux).
+ Key Features:
+ - Modal dialog ensures focused interaction
+ - Opens the official token generation page in the user's default browser
+ - Saves token persistently using Lightroom plugin preferences
+ - Pre-fills token field if a token is already stored
+ - Cross-platform support for launching URLs
+ - Localization-ready via `LOC()` strings
 
-    Features:
-    ---------
-    - Modal dialog to ensure focus while entering token.
-    - Cross-platform support for opening URLs.
-    - Localization-ready (uses `LOC()` for translatable strings).
-    - Token is saved and reused automatically without requiring re-entry on each session.
+ How It Works:
+ 1. Builds a UI with a text field and two buttons (open page, save token)
+ 2. Opens the token generation page asynchronously based on OS
+ 3. Stores the token in plugin preferences for reuse across sessions
 
-    Dependencies:
-    -------------
-    - Lightroom SDK modules: `LrPrefs`, `LrDialogs`, `LrView`, `LrTasks`
-    - Plugin-specific localization strings via the `LOC` function
+ Dependencies:
+ - Lightroom SDK: LrPrefs, LrDialogs, LrView, LrTasks
+ - Localization strings via LOC()
+ - Platform detection variables: WIN_ENV, MAC_ENV
 
-    Notes:
-    ------
-    iNaturalist API tokens expire after 24 hours. The user may need to repeat this process periodically.
-]]
+ Notes:
+ - iNaturalist tokens expire after 24 hours; users must renew them periodically.
+=====================================================================================
+--]]
 
 -- Import Lightroom SDK modules
-local LrPrefs   = import "LrPrefs"    -- Module to read/write plugin preferences
-local LrDialogs = import "LrDialogs"  -- Module for UI dialogs (e.g., messages, modal windows)
-local LrView    = import "LrView"     -- UI construction module
-local LrTasks   = import "LrTasks"    -- For executing asynchronous tasks (e.g., launching browser)
+local LrPrefs   = import "LrPrefs"    -- For persistent plugin preferences
+local LrDialogs = import "LrDialogs"  -- For displaying modal dialogs
+local LrView    = import "LrView"     -- For building UI elements
+local LrTasks   = import "LrTasks"    -- For running asynchronous tasks
 
--- Create a UI factory object (used to build Lightroom-native UI controls)
+-- Create a UI factory for constructing controls
 local f = LrView.osFactory()
 
--- Access stored plugin preferences
+-- Load plugin preferences
 local prefs = LrPrefs.prefsForPlugin()
 
--- Create a property table for binding UI values (e.g., token input)
-local props = { token = prefs.token or "" }  -- Default to stored token if it exists
+-- Create a property table for UI binding
+local props = {
+    token = prefs.token or ""  -- Pre-fill with stored token if available
+}
 
--- Function that opens the iNaturalist token generation page in the default browser
+--[[
+ Function: openTokenPage
+ Description:
+ Opens the iNaturalist token generation page in the user's default browser.
+ Uses platform-specific shell commands and runs asynchronously to avoid blocking Lightroom.
+--]]
 local function openTokenPage()
-    local url = "https://www.inaturalist.org/users/api_token"  -- Token generation page
-
-    -- Run this in an asynchronous task to avoid blocking the Lightroom UI
+    local url = "https://www.inaturalist.org/users/api_token"
     LrTasks.startAsyncTask(function()
         local openCommand
-
-        -- OS-specific commands to open a URL
         if WIN_ENV then
-            openCommand = 'start "" "' .. url .. '"'
+            openCommand = 'start "" "' .. url .. '"'     -- Windows
         elseif MAC_ENV then
-            openCommand = 'open "' .. url .. '"'
+            openCommand = 'open "' .. url .. '"'         -- macOS
         else
-            openCommand = 'xdg-open "' .. url .. '"'
+            openCommand = 'xdg-open "' .. url .. '"'     -- Linux/Unix
         end
-
-        -- Execute the command
         LrTasks.execute(openCommand)
     end)
 end
 
--- Build the dialog UI layout using a vertical column layout
+--[[
+ UI Layout: contents
+ Description:
+ Builds the modal dialog layout using a vertical column of UI elements:
+ - Instructional text
+ - Token input field
+ - Button to open token page
+ - Button to save token
+--]]
 local contents = f:column {
-    bind_to_object = props,               -- Binds UI controls to the `props` table
-    spacing = f:control_spacing(),        -- Standard spacing between elements
+    bind_to_object = props,
+    spacing = f:control_spacing(),
 
-    -- Instruction label for the user
     f:static_text {
         title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
-        width = 400,
+        width = 400
     },
 
-    -- Text input field for entering the token
     f:edit_field {
-        value = LrView.bind("token"),     -- Binds the value to props.token
-        width_in_chars = 50               -- Display width
+        value = LrView.bind("token"),
+        width_in_chars = 50
     },
 
-    -- Button to open the token generation page in a browser
     f:push_button {
         title = LOC("$$$/iNat/TokenDialog/OpenPage=Open token generation page"),
         action = openTokenPage
     },
 
-    -- Button to save the entered token to Lightroom plugin preferences
     f:push_button {
         title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
         action = function()
-            prefs.token = props.token    -- Save the token persistently
+            prefs.token = props.token
             LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
         end
     }
 }
 
--- Show the UI as a modal dialog
+--[[
+ Dialog Presentation
+ Description:
+ Displays the constructed UI as a modal dialog. Blocks until the user closes it.
+--]]
 LrDialogs.presentModalDialog {
-    title = LOC("$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),  -- Window title
-    contents = contents                                                 -- UI content defined above
+    title = LOC("$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),
+    contents = contents
 }

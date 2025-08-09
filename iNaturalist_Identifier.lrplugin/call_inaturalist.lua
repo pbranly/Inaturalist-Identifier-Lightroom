@@ -1,214 +1,68 @@
---[[
-=====================================================================================
- Module : call_inaturalist.lua
- Purpose : Communicate with iNaturalist API to identify species from images and 
-           submit observations.
- Author  : Philippe (or your name here)
- Description :
- This module provides two main functions for use in a Lightroom plugin:
-   1. `identify(imagePath, token)`:
-        - Sends a JPEG image to iNaturalist's AI scoring endpoint to identify species.
-        - Returns a formatted list of top matching species and their confidence scores.
-   2. `submitObservation(photo, keywords, token)`:
-        - Submits a photo and selected species as an observation to iNaturalist.
-        - Attaches the photo to the newly created observation.
-
- Prerequisites:
- - A valid iNaturalist API token.
- - GPS and date/time metadata in the photo.
- - `tempo.jpg` must exist in the plugin folder for upload.
-
- Dependencies:
- - Lightroom SDK modules: LrHttp, LrFileUtils, LrPathUtils, LrDate
- - External JSON parser: json.lua (must be present in plugin directory)
-=====================================================================================
---]]
-
--- Required Lightroom modules
-local LrHttp = import("LrHttp")
-local LrFileUtils = import("LrFileUtils")
-local LrPathUtils = import("LrPathUtils")
-local LrDate = import("LrDate")
-
--- JSON parser (make sure json.lua is present in your plugin folder)
-local json = require("json")
-
--- Declare module table
-local M = {}
-
------------------------------------------------------------------------
--- IDENTIFICATION FUNCTION
--- Uses iNaturalist's /v1/computervision/score_image endpoint
--- to identify species in the given photo file (JPEG).
--- Returns a formatted string with the top matches or an error.
------------------------------------------------------------------------
-function M.identify(imagePath, token)
-    local boundary = "----LightroomFormBoundary123456"
-
-    -- Read JPEG image content from disk
-    local imageData = LrFileUtils.readFile(imagePath)
-    if not imageData then
-        return nil, LOC("$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath
-    end
-
-    -- Construct a multipart/form-data HTTP body with the image
-    local body = table.concat({
-        "--" .. boundary,
-        'Content-Disposition: form-data; name="image"; filename="tempo.jpg"',
-        "Content-Type: image/jpeg",
-        "",
-        imageData,
-        "--" .. boundary .. "--",
-        ""
-    }, "\r\n")
-
-    -- Build HTTP headers
-    local headers = {
-        { field = "Authorization", value = "Bearer " .. token },
-        { field = "User-Agent", value = "LightroomBirdIdentifier/1.0" },
-        { field = "Content-Type", value = "multipart/form-data; boundary=" .. boundary },
-        { field = "Accept", value = "application/json" }
-    }
-
-    -- Send POST request to iNaturalist
-    local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
-
-    -- Handle HTTP/network error
-    if not result then
-        return nil, LOC("$$$/iNat/Error/NoAPIResponse=API error: No response")
-    end
-
-    -- Decode JSON response
-    local success, parsed = pcall(json.decode, result)
-    if not success or not parsed then
-        return nil, LOC("$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)
-    end
-
-    -- Extract and format results
-    local results = parsed.results or {}
-    if #results == 0 then
-        return LOC("$$$/iNat/Result/None=🕊️ No specie recognized.")
-    end
-
-    -- Normalize scores
-    local max_score = 0
-    for _, r in ipairs(results) do
-        local s = tonumber(r.combined_score) or 0
-        if s > max_score then max_score = s end
-    end
-    if max_score == 0 then max_score = 1 end
-
-    -- Build output
-    local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
-    table.insert(output, "")
-    for _, result in ipairs(results) do
-        local taxon = result.taxon or {}
-        local name_fr = taxon.preferred_common_name or LOC("$$$/iNat/Result/UnknownName=Unknown")
-        local name_latin = taxon.name or LOC("$$$/iNat/Result/UnknownName=Unknown")
-        local raw_score = tonumber(result.combined_score) or 0
-        local normalized = math.floor((raw_score / max_score) * 1000 + 0.5) / 10
-        table.insert(output, string.format("- %s (%s) : %.1f%%", name_fr, name_latin, normalized))
-    end
-
-    return table.concat(output, "\n")
+-- Step 1: Read JPEG image content from disk
+local imageData = LrFileUtils.readFile(imagePath)
+if not imageData then
+    return nil, LOC("$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath
 end
 
------------------------------------------------------------------------
--- OBSERVATION SUBMISSION FUNCTION
--- Submits the photo metadata and selected species to iNaturalist
--- using /v1/observations followed by /v1/observation_photos
------------------------------------------------------------------------
-function M.submitObservation(photo, keywords, token)
-    -- Extract GPS and date metadata
-    local latitude = photo:getRawMetadata("gpsLatitude")
-    local longitude = photo:getRawMetadata("gpsLongitude")
-    local captureTime = photo:getRawMetadata("dateTimeOriginal") or photo:getRawMetadata("dateTime")
+-- Step 2: Construct multipart/form-data HTTP body with the image
+local body = table.concat({
+    "--" .. boundary,
+    'Content-Disposition: form-data; name="image"; filename="tempo.jpg"',
+    "Content-Type: image/jpeg",
+    "",
+    imageData,
+    "--" .. boundary .. "--",
+    ""
+}, "\r\n")
 
-    -- Use first keyword as species name
-    local speciesName = nil
-    if keywords and #keywords > 0 then
-        speciesName = keywords[1]:getName()
-    else
-        return false, LOC("$$$/iNat/Error/NoKeyword=No species keyword found.")
-    end
+-- Step 3: Build HTTP headers for the request
+local headers = {
+    { field = "Authorization", value = "Bearer " .. token },
+    { field = "User-Agent", value = "LightroomBirdIdentifier/1.0" },
+    { field = "Content-Type", value = "multipart/form-data; boundary=" .. boundary },
+    { field = "Accept", value = "application/json" }
+}
 
-    if not latitude or not longitude then
-        return false, LOC("$$$/iNat/Error/NoGPS=Missing GPS coordinates.")
-    end
+-- Step 4: Send POST request to iNaturalist's AI scoring endpoint
+local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
 
-    if not captureTime then
-        captureTime = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- fallback to current UTC
-    else
-        captureTime = LrDate.timeToIsoDate(captureTime)
-    end
-
-    -- Build JSON payload
-    local payload = {
-        observation = {
-            species_guess = speciesName,
-            observed_on_string = captureTime,
-            time_zone = "UTC",
-            latitude = latitude,
-            longitude = longitude,
-            positional_accuracy = 50,
-            captive_flag = false,
-            geoprivacy = "open"
-        }
-    }
-
-    local body = json.encode(payload)
-
-    -- Submit observation metadata
-    local headers = {
-        { field = "Authorization", value = "Bearer " .. token },
-        { field = "Content-Type", value = "application/json" },
-        { field = "Accept", value = "application/json" }
-    }
-
-    local responseBody, responseCode = LrHttp.post(
-        "https://api.inaturalist.org/v1/observations",
-        body,
-        headers
-    )
-
-    if responseCode ~= 200 and responseCode ~= 201 then
-        return false, LOC("$$$/iNat/Error/ObservationFailed=Observation submission failed. Code: ") .. tostring(responseCode)
-    end
-
-    -- Parse observation ID
-    local parsed = json.decode(responseBody)
-    local observationId = parsed.results and parsed.results[1] and parsed.results[1].id
-    if not observationId then
-        return false, LOC("$$$/iNat/Error/NoObservationID=Unable to retrieve observation ID.")
-    end
-
-    -- Check image existence
-    local imagePath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
-    if not LrFileUtils.exists(imagePath) then
-        return false, LOC("$$$/iNat/Error/NoImage=tempo.jpg not found.")
-    end
-
-    -- Create multipart form body for image upload
-    local uploadBody = {
-        { name = "observation_photo[observation_id]", value = tostring(observationId) },
-        { name = "observation_photo[photo]", filePath = imagePath, fileName = "tempo.jpg", contentType = "image/jpeg" }
-    }
-
-    -- Upload photo
-    local uploadRespBody, uploadRespCode = LrHttp.postMultipart(
-        "https://api.inaturalist.org/v1/observation_photos",
-        uploadBody,
-        {
-            { field = "Authorization", value = "Bearer " .. token }
-        }
-    )
-
-    if uploadRespCode ~= 200 and uploadRespCode ~= 201 then
-        return false, LOC("$$$/iNat/Error/PhotoUploadFailed=Photo upload failed. Code: ") .. tostring(uploadRespCode)
-    end
-
-    return true
+-- Step 5: Handle HTTP/network error
+if not result then
+    return nil, LOC("$$$/iNat/Error/NoAPIResponse=API error: No response")
 end
 
--- Return the module
-return M
+-- Step 6: Decode JSON response from the API
+local success, parsed = pcall(json.decode, result)
+if not success or not parsed then
+    return nil, LOC("$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)
+end
+
+-- Step 7: Extract species results from the parsed response
+local results = parsed.results or {}
+if #results == 0 then
+    return LOC("$$$/iNat/Result/None=🕊️ No specie recognized.")
+end
+
+-- Step 8: Normalize confidence scores relative to the highest score
+local max_score = 0
+for _, r in ipairs(results) do
+    local s = tonumber(r.combined_score) or 0
+    if s > max_score then max_score = s end
+end
+if max_score == 0 then max_score = 1  -- Prevent division by zero
+
+-- Step 9: Format output string with species names and normalized confidence percentages
+local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+table.insert(output, "")  -- Add spacing line
+
+for _, result in ipairs(results) do
+    local taxon = result.taxon or {}
+    local name_fr = taxon.preferred_common_name or LOC("$$$/iNat/Result/UnknownName=Unknown")
+    local name_latin = taxon.name or LOC("$$$/iNat/Result/UnknownName=Unknown")
+    local raw_score = tonumber(result.combined_score) or 0
+    local normalized = math.floor((raw_score / max_score) * 1000 + 0.5) / 10  -- Round to 1 decimal
+    table.insert(output, string.format("- %s (%s) : %.1f%%", name_fr, name_latin, normalized))
+end
+
+-- Step 10: Return the formatted result string
+return table.concat(output, "\n")
