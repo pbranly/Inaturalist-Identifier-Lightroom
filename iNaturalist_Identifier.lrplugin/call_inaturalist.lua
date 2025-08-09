@@ -2,16 +2,13 @@
 =====================================================================================
  Module : call_inaturalist.lua
  Purpose : Handles communication with the iNaturalist API for species identification
-           and observation submission from within Lightroom Classic.
+           and delegates observation submission to UploadObservation.lua
  Author  : Philippe Branly
  Description :
  This module is used by the Lightroom plugin to:
    1. Upload a JPEG photo to iNaturalist’s AI recognition endpoint and receive 
       a list of candidate species with confidence scores.
-   2. Submit a confirmed species observation with GPS and timestamp metadata, 
-      along with the JPEG photo, to the iNaturalist platform.
-
- It serves as the core interface between Lightroom and iNaturalist.
+   2. Delegate confirmed species observation submission to UploadObservation.lua
 
  Functions:
    - identify(imagePath, token):  
@@ -19,8 +16,7 @@
        → Returns formatted species predictions and confidence levels  
 
    - submitObservation(photo, keywords, token):  
-       → Creates an observation on iNaturalist using photo metadata and keyword tags  
-       → Attaches the image file to the observation  
+       → Delegates to UploadObservation.submitObservation()  
 
  Requirements:
    - A valid API token (24-hour lifetime)
@@ -28,20 +24,22 @@
    - Valid EXIF GPS and capture date metadata in the selected photo
 
  Dependencies:
-   - Lightroom SDK modules: LrHttp, LrFileUtils, LrPathUtils, LrDate
+   - Lightroom SDK modules: LrHttp, LrFileUtils, LrPathUtils
    - External JSON parser: json.lua (must be present in plugin directory)
-   - This module is typically called from main.lua or through SelectAndTagResults.lua
+   - UploadObservation.lua for observation upload
 =====================================================================================
 --]]
 
--- Required Lightroom modules
-local LrHttp = import("LrHttp")
+-- Lightroom SDK modules
+local LrHttp      = import("LrHttp")
 local LrFileUtils = import("LrFileUtils")
 local LrPathUtils = import("LrPathUtils")
-local LrDate = import("LrDate")
 
 -- JSON parser
 local json = require("json")
+
+-- External module for observation upload
+local UploadObservation = require("UploadObservation")
 
 -- Declare module table
 local M = {}
@@ -121,98 +119,10 @@ function M.identify(imagePath, token)
 end
 
 -----------------------------------------------------------------------
--- OBSERVATION SUBMISSION FUNCTION
+-- OBSERVATION SUBMISSION FUNCTION (delegation only)
 -----------------------------------------------------------------------
 function M.submitObservation(photo, keywords, token)
-    -- Extract GPS and date metadata
-    local latitude = photo:getRawMetadata("gpsLatitude")
-    local longitude = photo:getRawMetadata("gpsLongitude")
-    local captureTime = photo:getRawMetadata("dateTimeOriginal") or photo:getRawMetadata("dateTime")
-
-    -- Use first keyword as species name
-    local speciesName
-    if keywords and #keywords > 0 then
-        speciesName = keywords[1]:getName()
-    else
-        return false, LOC("$$$/iNat/Error/NoKeyword=No species keyword found.")
-    end
-
-    if not latitude or not longitude then
-        return false, LOC("$$$/iNat/Error/NoGPS=Missing GPS coordinates.")
-    end
-
-    if not captureTime then
-        captureTime = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- fallback to current UTC
-    else
-        captureTime = LrDate.timeToIsoDate(captureTime)
-    end
-
-    -- Build JSON payload
-    local payload = {
-        observation = {
-            species_guess = speciesName,
-            observed_on_string = captureTime,
-            time_zone = "UTC",
-            latitude = latitude,
-            longitude = longitude,
-            positional_accuracy = 50,
-            captive_flag = false,
-            geoprivacy = "open"
-        }
-    }
-
-    local body = json.encode(payload)
-
-    -- Submit observation metadata
-    local headers = {
-        { field = "Authorization", value = "Bearer " .. token },
-        { field = "Content-Type", value = "application/json" },
-        { field = "Accept", value = "application/json" }
-    }
-
-    local responseBody, responseCode = LrHttp.post(
-        "https://api.inaturalist.org/v1/observations",
-        body,
-        headers
-    )
-
-    if responseCode ~= 200 and responseCode ~= 201 then
-        return false, LOC("$$$/iNat/Error/ObservationFailed=Observation submission failed. Code: ") .. tostring(responseCode)
-    end
-
-    -- Parse observation ID
-    local parsed = json.decode(responseBody)
-    local observationId = parsed.results and parsed.results[1] and parsed.results[1].id
-    if not observationId then
-        return false, LOC("$$$/iNat/Error/NoObservationID=Unable to retrieve observation ID.")
-    end
-
-    -- Check image existence
-    local imagePath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
-    if not LrFileUtils.exists(imagePath) then
-        return false, LOC("$$$/iNat/Error/NoImage=tempo.jpg not found.")
-    end
-
-    -- Create multipart form body for image upload
-    local uploadBody = {
-        { name = "observation_photo[observation_id]", value = tostring(observationId) },
-        { name = "observation_photo[photo]", filePath = imagePath, fileName = "tempo.jpg", contentType = "image/jpeg" }
-    }
-
-    -- Upload photo
-    local uploadRespBody, uploadRespCode = LrHttp.postMultipart(
-        "https://api.inaturalist.org/v1/observation_photos",
-        uploadBody,
-        {
-            { field = "Authorization", value = "Bearer " .. token }
-        }
-    )
-
-    if uploadRespCode ~= 200 and uploadRespCode ~= 201 then
-        return false, LOC("$$$/iNat/Error/PhotoUploadFailed=Photo upload failed. Code: ") .. tostring(uploadRespCode)
-    end
-
-    return true
+    return UploadObservation.submitObservation(photo, keywords, token)
 end
 
 -- Return the module
