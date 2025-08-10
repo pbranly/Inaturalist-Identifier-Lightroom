@@ -36,7 +36,7 @@ local LrView    = import "LrView"
 local LrTasks   = import "LrTasks"
 
 -- Simple logger (à remplacer par ton module Logger si besoin)
-local logger = {}
+local logger          = require("Logger")
 function logger.log(msg)
     -- Ici tu peux écrire dans un fichier ou console, exemple simplifié:
     -- print("[TokenManager] " .. msg)
