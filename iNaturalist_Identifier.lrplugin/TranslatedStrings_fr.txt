@@ -1,76 +1,75 @@
 # ===== AnimalIdentifier.lua =====
-"$$$/iNat/Bezel/Started=Plugin started"), 2)"
-"$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)"
-"$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)"
-"$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)"
-"$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)"
-"$$$/iNat/Dialog/IdentificationFailed=Identification failed"),"
-"$$$/iNat/Dialog/UnknownError=Unknown error.")"
-"$$$/iNat/Dialog/Results=Identification results:"), result)"
-"$$$/iNat/Dialog/AskTag=Do you want to add one or more identifications as keywords?"),"
-"$$$/iNat/Dialog/AskTagDetails=Click 'Continue' to select species."),"
-"$$$/iNat/Dialog/Continue=Continue"),"
-"$$$/iNat/Dialog/Cancel=Cancel")"
-"$$$/iNat/Bezel/NoResult=No results found."), 3)"
-"$$$/iNat/Bezel/Done=Analysis completed."), 2)"
+"$$$/iNat/Bezel/Started=Plugin démarré."), 2)"
+"$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."), 3)"
+"$$$/iNat/Bezel/SelectedPhoto=Photo sélectionnée : ") .. filename, 2)"
+"$$$/iNat/Bezel/ExportFailed=Échec de l’exportation de l’image."), 3)"
+"$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg."), 2)"
+"$$$/iNat/Dialog/IdentificationFailed=Échec de l’identification."),"
+"$$$/iNat/Dialog/UnknownError=Erreur inconnue.")"
+"$$$/iNat/Dialog/Results=Résultats de l’identification :"), result)"
+"$$$/iNat/Dialog/AskTag=Souhaitez-vous ajouter une ou plusieurs identifications comme mots-clés ?"),"
+"$$$/iNat/Dialog/AskTagDetails=Cliquez sur « Continuer » pour sélectionner les espèces."),"
+"$$$/iNat/Dialog/Continue=Continuer."),"
+"$$$/iNat/Dialog/Cancel=Annuler.")"
+"$$$/iNat/Bezel/NoResult=Aucun résultat trouvé."), 3)"
+"$$$/iNat/Bezel/Done=Analyse terminée."), 2)"
 
 # ===== Info.lua =====
-"$$$/iNat/PluginName=Identification iNaturalist"),"
-"$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),"
+"$$$/iNat/PluginName=Identification iNaturalist."),"
+"$$$/iNat/MenuItem=Identifier la faune via iNaturalist."),"
 
 # ===== Logger.lua =====
 
 # ===== PluginInfoProvider.lua =====
-"$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),"
-"$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),"
-"$$$/iNaturalist/TokenNote=The token is valid for 24 hours; after that, you must regenerate it at the following address:"),"
-"$$$/iNaturalist/OpenTokenPage=Open token generation page"),"
-"$$$/iNaturalist/TokenLabel=Token:"),"
-"$$$/iNaturalist/SaveButton=Save"),"
+"$$$/iNaturalist/EnableLogging=Activer la journalisation vers log.txt."),"
+"$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist."),"
+"$$$/iNaturalist/TokenNote=Le jeton est valide pendant 24 heures ; ensuite, vous devez le régénérer à l’adresse suivante :"),"
+"$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération du jeton."),"
+"$$$/iNaturalist/TokenLabel=Jeton :"),"
+"$$$/iNaturalist/SaveButton=Enregistrer."),"
 
 # ===== SelectAndTagResults.lua =====
-"$$$/iNat/DialogTitle=Select species to add as keywords"),"
-"$$$/iNat/AddKeywords=Add")"
-"$$$/iNat/NoSpeciesCheckedTitle=No species selected"),"
-"$$$/iNat/NoKeywordsMessage=No keywords will be added.")"
-"$$$/iNat/AddKeywordsWriteAccess=Adding keywords"), function()"
-"$$$/iNat/SuccessTitle=Success"),"
-"$$$/iNat/SuccessMessage=Selected keywords have been successfully added.")"
+"$$$/iNat/DialogTitle=Sélectionnez les espèces à ajouter comme mots-clés."),"
+"$$$/iNat/AddKeywords=Ajouter.")"
+"$$$/iNat/NoSpeciesCheckedTitle=Aucune espèce sélectionnée."),"
+"$$$/iNat/NoKeywordsMessage=Aucun mot-clé ne sera ajouté.")"
+"$$$/iNat/AddKeywordsWriteAccess=Ajout des mots-clés."), function()"
+"$$$/iNat/SuccessTitle=Succès."),"
+"$$$/iNat/SuccessMessage=Les mots-clés sélectionnés ont été ajoutés avec succès.")"
 
 # ===== TokenManager.lua =====
-"$$$/iNat/Error/TokenMissing=Token is missing.")"
-"$$$/iNat/Error/TokenFormat=Invalid token format.")"
-"$$$/iNat/Error/TokenDecode=Unable to decode token payload.")"
-"$$$/iNat/Error/TokenNoExp=Token expiration field missing.")"
-"$$$/iNat/Error/TokenExpInvalid=Invalid expiration format.")"
-"$$$/iNat/Error/TokenExpired=Token has expired.")"
-"$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),"
-"$$$/iNat/TokenDialog/OpenPage=Open token generation page"),"
-"$$$/iNat/TokenDialog/Save=Save token"),"
-"$$$/iNat/TokenDialog/Saved=Token successfully saved."))"
-"$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),"
+"$$$/iNat/Error/TokenMissing=Jeton manquant.")"
+"$$$/iNat/Error/TokenFormat=Format de jeton invalide.")"
+"$$$/iNat/Error/TokenDecode=Impossible de décoder le contenu du jeton.")"
+"$$$/iNat/Error/TokenNoExp=Champ d’expiration du jeton manquant.")"
+"$$$/iNat/Error/TokenExpInvalid=Format d’expiration invalide.")"
+"$$$/iNat/Error/TokenExpired=Le jeton a expiré.")"
+"$$$/iNat/TokenDialog/Instruction=Veuillez coller votre jeton iNaturalist (valide pendant 24 heures) :"),"
+"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du jeton."),"
+"$$$/iNat/TokenDialog/Save=Enregistrer le jeton."),"
+"$$$/iNat/TokenDialog/Saved=Jeton enregistré avec succès."))"
+"$$$/iNat/TokenDialog/Title=Configuration du jeton iNaturalist."),"
 
 # ===== call_inaturalist.lua =====
-"$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath"
-"$$$/iNat/Error/NoAPIResponse=API error: No response")"
-"$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)"
-"$$$/iNat/Result/None=🕊️ No specie recognized.")"
-"$$$/iNat/Result/Header=🕊️ Recognized species:") }"
-"$$$/iNat/Result/UnknownName=Unknown")"
-# "$$$/iNat/Result/UnknownName=Unknown")"  # duplicate of call_inaturalist.lua
+"$$$/iNat/Error/ImageRead=Impossible de lire l’image : ") .. imagePath"
+"$$$/iNat/Error/NoAPIResponse=Erreur API : aucune réponse.")"
+"$$$/iNat/Error/InvalidJSON=Erreur API : échec du décodage de la réponse JSON : ") .. tostring(result)"
+"$$$/iNat/Result/None=🕊️ Aucune espèce reconnue.")"
+"$$$/iNat/Result/Header=🕊️ Espèces reconnues :") }"
+"$$$/iNat/Result/UnknownName=Inconnue.")"
+# "$$$/iNat/Result/UnknownName=Inconnue.")"  # duplicate of call_inaturalist.lua
 
 # ===== export_to_tempo.lua =====
-"$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)"
+"$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé : ") .. file)"
 
 # ===== json.lua =====
 
 # ===== observation_selection.lua =====
-"$$$/iNat/Dialog/AskObservation=Do you want to submit this photo as an observation to iNaturalist?"),"
-"$$$/iNat/Dialog/AskObservationDetails=The selected species will be submitted with the photo."),"
-"$$$/iNat/Dialog/Submit=Submit"),     -- OK button text"
-# "$$$/iNat/Dialog/Cancel=Cancel")      -- Cancel button text"  # duplicate of AnimalIdentifier.lua
-"$$$/iNat/Dialog/ObservationSubmitted=Observation submitted successfully."),"
-"$$$/iNat/Dialog/Thanks=Thank you for contributing to science!")"
-"$$$/iNat/Dialog/ObservationFailed=Failed to submit observation."),"
-# "$$$/iNat/Dialog/UnknownError=Unknown error occurred.")"  # duplicate of AnimalIdentifier.lua
-
+"$$$/iNat/Dialog/AskObservation=Souhaitez-vous soumettre cette photo comme observation à iNaturalist ?"),"
+"$$$/iNat/Dialog/AskObservationDetails=Les espèces sélectionnées seront soumises avec la photo."),"
+"$$$/iNat/Dialog/Submit=Soumettre."),     -- OK button text"
+# "$$$/iNat/Dialog/Cancel=Annuler.")      -- Cancel button text"  # duplicate of AnimalIdentifier.lua
+"$$$/iNat/Dialog/ObservationSubmitted=Observation soumise avec succès."),"
+"$$$/iNat/Dialog/Thanks=Merci de contribuer à la science !")"
+"$$$/iNat/Dialog/ObservationFailed=Échec de la soumission de l’observation."),"
+# "$$$/iNat/Dialog/UnknownError=Erreur inconnue.")"  # duplicate of AnimalIdentifier.lua

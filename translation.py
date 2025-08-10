@@ -16,27 +16,24 @@ For example:
     $$$/iNat/PluginName=Identification iNaturalist
 
 The script performs the following actions:
-1. Prompts the user to select a language code (e.g., fr, en, es).
-2. Iterates through all `.lua` files in the current directory.
-3. Uses a regular expression to find lines that match the Lightroom translation pattern.
-4. Groups translations by their source `.lua` file, adding a section header as a comment:
+1. Iterates through all `.lua` files in the current directory.
+2. Uses a regular expression to find lines that match the Lightroom translation pattern.
+3. Groups translations by their source `.lua` file, adding a section header as a comment:
        # ===== filename.lua =====
-5. Tracks already-seen translation keys to avoid duplicates:
+4. Tracks already-seen translation keys to avoid duplicates:
    - The first occurrence of a key is written as-is.
    - Subsequent occurrences of the same key are commented out and annotated
      with a note indicating where the key was first found.
-6. Generates a single output file named:
-       TranslatedStrings_<lang>.txt
-   where <lang> is the chosen language code.
+5. Generates a single output file named:
+       TranslatedStrings_en.txt
 
 -------------------------------------------------------------------------------
 Usage:
 1. Place this script in the same directory as your `.lua` files.
 2. Open a terminal and run:
        python3 extract_lightroom_translations.py
-3. When prompted, enter the language code (e.g., fr, en, es).
-4. The script will produce a file:
-       TranslatedStrings_<lang>.txt
+3. The script will produce a file:
+       TranslatedStrings_en.txt
 
 Notes:
 - The script assumes UTF-8 encoding for reading `.lua` files.
@@ -49,11 +46,8 @@ Notes:
 import os
 import re
 
-# Ask for language code
-lang = input("Enter language code (e.g., fr, en, es): ").strip().lower()
-if not lang:
-    print("No language code provided. Exiting.")
-    exit(1)
+# Fixed language code
+lang = "en"
 
 # Regular expression to detect Lightroom translation strings
 pattern = re.compile(r'(\$\$\$/[^\s=]+)=(.+)')
