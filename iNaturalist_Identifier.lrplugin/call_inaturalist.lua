@@ -39,7 +39,7 @@
 --]]
 
 -- Simple logger (à adapter si besoin)
-local logger = {}
+local logger          = require("Logger")
 function logger.log(msg)
     -- Par exemple print ou écriture fichier :
     -- print("[call_inaturalist] " .. msg)
