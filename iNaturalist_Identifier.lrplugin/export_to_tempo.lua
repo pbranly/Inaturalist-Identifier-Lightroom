@@ -46,7 +46,6 @@
 local LrExportSession = import "LrExportSession"
 local LrFileUtils     = import "LrFileUtils"
 local LrPathUtils     = import "LrPathUtils"
-local LrApplication   = import "LrApplication"
 
 -- Import logger
 local logger = require("Logger")
@@ -57,7 +56,7 @@ local function clearJPEGs(directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
             LrFileUtils.delete(file)
-            logger.logMessage(LOC("$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)
+            logger.logMessage("JPG file deleted: " .. file)
         end
     end
 end
@@ -79,6 +78,8 @@ end
 local export_to_tempo = {}
 
 -- Export currently selected photo to "tempo.jpg" in plugin folder
+-- Note: This function must be called inside a Lightroom async task (LrTasks.startAsyncTask)
+-- because it calls rendition:waitForRender(), which yields.
 function export_to_tempo.exportToTempo(photo)
     if not photo then
         logger.logMessage("No photo selected for export.")
@@ -125,21 +126,18 @@ function export_to_tempo.exportToTempo(photo)
     exportSession:doExportOnCurrentTask()
     logger.logMessage("Export task finished.")
 
-    -- Step 5: Locate exported JPEG
-    local exportedPhotos = exportSession:countRenditions()
-    logger.logMessage("Number of renditions: " .. tostring(exportedPhotos))
-    for i, rendition in exportSession:renditions() do
+    -- Step 5: Locate exported JPEG and rename to "tempo.jpg"
+    for _, rendition in exportSession:renditions() do
         local success, pathOrMsg = rendition:waitForRender()
         if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
             logger.logMessage("Exported file located at: " .. pathOrMsg)
-            -- Rename/move file to "tempo.jpg"
-            local result = LrFileUtils.move(pathOrMsg, tempFilePath)
-            if result then
+            local moved, moveErr = LrFileUtils.move(pathOrMsg, tempFilePath)
+            if moved then
                 logger.logMessage("Exported file moved to: " .. tempFilePath)
                 return tempFilePath
             else
-                logger.logMessage("Failed to move exported file from " .. pathOrMsg .. " to " .. tempFilePath)
-                return nil, "Failed to move exported file."
+                logger.logMessage("Failed to move exported file: " .. tostring(moveErr))
+                return nil, "Failed to move exported file: " .. tostring(moveErr)
             end
         else
             logger.logMessage("Failed to render photo: " .. tostring(pathOrMsg or "unknown error"))

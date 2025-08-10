@@ -3,29 +3,6 @@
  Script       : TokenManager.lua
  Purpose      : Manage iNaturalist API token within Lightroom plugin (UI + Validation)
  Author       : Philippe
-
- Functional Overview:
- ---------------------
- - Provides a Lightroom-native UI to enter and save the token.
- - Opens iNaturalist token generation page in default browser.
- - Stores token persistently via Lightroom preferences.
- - Validates token format and expiration (JWT standard).
- - Can be called from anywhere in the plugin to prompt user if needed.
-
- Key Features:
- -------------
- - Modal dialog for token input and saving
- - Cross-platform URL opening
- - Decodes JWT token payload to check "exp" timestamp
- - Asynchronous execution for smooth UX
- - Graceful error handling
- - Self-contained: replaces old `update_token.lua` and `VerificationToken.lua`
-
- Dependencies:
- -------------
- - Lightroom SDK: LrPrefs, LrDialogs, LrView, LrTasks
- - Platform detection: WIN_ENV, MAC_ENV
- - Localization via LOC()
 =====================================================================================
 --]]
 
@@ -35,11 +12,10 @@ local LrDialogs = import "LrDialogs"
 local LrView    = import "LrView"
 local LrTasks   = import "LrTasks"
 
--- Simple logger (à remplacer par ton module Logger si besoin)
-local logger          = require("Logger")
+-- Simple logger (remplace si besoin par ton Logger complet)
+local logger = require("Logger") or {}
 function logger.log(msg)
-    -- Ici tu peux écrire dans un fichier ou console, exemple simplifié:
-    -- print("[TokenManager] " .. msg)
+    -- print("[TokenManager] " .. msg) -- activer pour debug console
 end
 
 -- UI factory and plugin preferences
@@ -52,31 +28,28 @@ local props = {
 }
 
 --------------------------------------------------------------------------------
--- Function: openTokenPage
--- Purpose : Opens iNaturalist token generation page in default browser
+-- Function: openTokenPageSync
+-- Purpose : Opens iNaturalist token generation page synchronously (no yield)
 --------------------------------------------------------------------------------
-local function openTokenPage()
+local function openTokenPageSync()
     logger.log("Opening iNaturalist token generation page in default browser.")
     local url = "https://www.inaturalist.org/users/api_token"
-    LrTasks.startAsyncTask(function()
-        local openCommand
-        if WIN_ENV then
-            openCommand = 'start "" "' .. url .. '"'
-        elseif MAC_ENV then
-            openCommand = 'open "' .. url .. '"'
-        else
-            openCommand = 'xdg-open "' .. url .. '"'
-        end
-        local success, err = LrTasks.execute(openCommand)
-        if not success then
-            logger.log("Failed to open URL: " .. tostring(err))
-        end
-    end)
+    local openCommand
+    if WIN_ENV then
+        openCommand = 'start "" "' .. url .. '"'
+    elseif MAC_ENV then
+        openCommand = 'open "' .. url .. '"'
+    else
+        openCommand = 'xdg-open "' .. url .. '"'
+    end
+    local success, err = LrTasks.execute(openCommand)
+    if not success then
+        logger.log("Failed to open URL: " .. tostring(err))
+    end
 end
 
 --------------------------------------------------------------------------------
--- Function: decodeBase64Url
--- Purpose : Decodes base64url-encoded string (used in JWT tokens)
+-- Function: decodeBase64Url (JWT-safe)
 --------------------------------------------------------------------------------
 local function decodeBase64Url(input)
     -- Replace URL-safe chars
@@ -86,13 +59,25 @@ local function decodeBase64Url(input)
     if pad > 0 then
         input = input .. string.rep('=', 4 - pad)
     end
-    -- Decode
-    return LrTasks.decodeBase64(input)
+    -- Decode manually (évite LrTasks.decodeBase64 qui peut yield)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    input = input:gsub('[^'..b..'=]', '')
+    return (input:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r = r .. (f%2^i - f%2^(i-1) > 0 and '1' or '0') end
+        return r
+    end)
+    :gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c = c + (x:sub(i,i) == '1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
 end
 
 --------------------------------------------------------------------------------
 -- Function: isTokenValid
--- Purpose : Checks token presence, format, and expiration date (JWT exp claim)
 --------------------------------------------------------------------------------
 local function isTokenValid(token)
     if not token or token == "" then
@@ -140,7 +125,6 @@ end
 
 --------------------------------------------------------------------------------
 -- Function: showTokenDialog
--- Purpose : Shows modal dialog for token entry
 --------------------------------------------------------------------------------
 local function showTokenDialog()
     logger.log("Showing token input dialog.")
@@ -160,15 +144,21 @@ local function showTokenDialog()
 
         f:push_button {
             title = LOC("$$$/iNat/TokenDialog/OpenPage=Open token generation page"),
-            action = openTokenPage
+            action = function()
+                LrTasks.startAsyncTask(function()
+                    openTokenPageSync()
+                end)
+            end
         },
 
         f:push_button {
             title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
             action = function()
-                prefs.token = props.token
-                logger.log("Token saved by user.")
-                LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
+                LrTasks.startAsyncTask(function()
+                    prefs.token = props.token
+                    logger.log("Token saved by user.")
+                    LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
+                end)
             end
         }
     }
