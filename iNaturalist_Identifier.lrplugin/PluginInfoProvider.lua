@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script       : PlugInInfoProvider.lua
+ Script       : TokenUpdater.lua
  Purpose      : Plugin preferences panel for iNaturalist Lightroom plugin
  Author       : Philippe
 
@@ -31,6 +31,8 @@ local LrPrefs = import "LrPrefs"      -- For persistent plugin preferences
 local LrView = import "LrView"        -- For building UI elements
 local LrTasks = import "LrTasks"      -- For asynchronous command execution
 
+local logger = require("Logger")       -- ajout logger
+
 -- Return the plugin preferences section definition
 return {
     sectionsForTopOfDialog = function(viewFactory)
@@ -52,6 +54,7 @@ return {
 
         -- Function: Opens the iNaturalist token generation page in the default browser
         local function openTokenPage()
+            logger.logMessage("Opening iNaturalist token generation page in browser")
             local url = "https://www.inaturalist.org/users/api_token"
             LrTasks.startAsyncTask(function()
                 local openCommand
@@ -113,6 +116,7 @@ return {
                     action = function()
                         prefs.token = tokenField.value
                         prefs.logEnabled = logCheck.value
+                        logger.logMessage("Preferences saved: token updated, logging " .. (prefs.logEnabled and "enabled" or "disabled"))
                     end
                 }
             }
