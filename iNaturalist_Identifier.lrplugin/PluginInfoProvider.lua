@@ -1,6 +1,6 @@
 --[[
 =====================================================================================
- Script       : TokenUpdater.lua
+ Script       : PlugInInfoProvider.lua
  Purpose      : Plugin preferences panel for iNaturalist Lightroom plugin
  Author       : Philippe
 
