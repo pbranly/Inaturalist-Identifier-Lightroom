@@ -6,7 +6,7 @@
  Description :
  This Lightroom plugin module exports the currently selected photo to a temporary 
  JPEG file named "tempo.jpg" located in the plugin's own folder (cross-platform).
- It intègre désormais les fonctions utilitaires `clearJPEGs` et `findSingleJPEG`
+ Il intègre désormais les fonctions utilitaires `clearJPEGs` et `findSingleJPEG`
  précédemment contenues dans `imageutils.lua`, afin de simplifier l'architecture.
 
  Use Case:
@@ -46,6 +46,7 @@
 local LrExportSession = import "LrExportSession"
 local LrFileUtils     = import "LrFileUtils"
 local LrPathUtils     = import "LrPathUtils"
+local LrTasks         = import "LrTasks"
 
 -- Import logger
 local logger = require("Logger")
@@ -78,15 +79,17 @@ end
 local export_to_tempo = {}
 
 -- Export currently selected photo to "tempo.jpg" in plugin folder
--- Note: This function must be called inside a Lightroom async task (LrTasks.startAsyncTask)
--- because it calls rendition:waitForRender(), which yields.
 function export_to_tempo.exportToTempo(photo)
     if not photo then
         logger.logMessage("No photo selected for export.")
         return nil, "No photo selected."
     end
 
-    -- Define export folder as plugin's directory (cross-platform)
+    -- Debug info to diagnose yield problem
+    logger.logMessage("DEBUG: Entering exportToTempo(), LrTasks.canYield()=" .. tostring(LrTasks.canYield()))
+    logger.logMessage("DEBUG: Call stack:\n" .. debug.traceback())
+
+    -- Define export folder as plugin's directory
     local exportFolder = _PLUGIN.path
     local tempFileName = "tempo.jpg"
     local tempFilePath = LrPathUtils.child(exportFolder, tempFileName)
@@ -121,8 +124,7 @@ function export_to_tempo.exportToTempo(photo)
     }
     logger.logMessage("Export session created.")
 
-    -- Step 4: Perform export
-    logger.logMessage("Starting export task.")
+    -- Step 4: Perform export (must be in a yieldable async context)
     exportSession:doExportOnCurrentTask()
     logger.logMessage("Export task finished.")
 
