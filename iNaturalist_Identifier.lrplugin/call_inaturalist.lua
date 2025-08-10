@@ -38,15 +38,23 @@
 =====================================================================================
 --]]
 
-
+-- Simple logger (à adapter si besoin)
+local logger = {}
+function logger.log(msg)
+    -- Par exemple print ou écriture fichier :
+    -- print("[call_inaturalist] " .. msg)
+end
 
 -- Step 1: Read JPEG image content from disk
+logger.log("Reading image from path: " .. tostring(imagePath))
 local imageData = LrFileUtils.readFile(imagePath)
 if not imageData then
+    logger.log("Failed to read image: " .. tostring(imagePath))
     return nil, LOC("$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath
 end
 
 -- Step 2: Construct multipart/form-data HTTP body with the image
+logger.log("Constructing multipart/form-data body for image upload.")
 local body = table.concat({
     "--" .. boundary,
     'Content-Disposition: form-data; name="image"; filename="tempo.jpg"',
@@ -64,36 +72,46 @@ local headers = {
     { field = "Content-Type", value = "multipart/form-data; boundary=" .. boundary },
     { field = "Accept", value = "application/json" }
 }
+logger.log("HTTP headers prepared with Authorization and Content-Type.")
 
 -- Step 4: Send POST request to iNaturalist's AI scoring endpoint
+logger.log("Sending POST request to iNaturalist API endpoint.")
 local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
 
 -- Step 5: Handle HTTP/network error
 if not result then
+    logger.log("API call failed: no response received.")
     return nil, LOC("$$$/iNat/Error/NoAPIResponse=API error: No response")
 end
 
 -- Step 6: Decode JSON response from the API
+logger.log("Decoding JSON response from API.")
 local success, parsed = pcall(json.decode, result)
 if not success or not parsed then
+    logger.log("Failed to decode JSON response: " .. tostring(result))
     return nil, LOC("$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)
 end
 
 -- Step 7: Extract species results from the parsed response
 local results = parsed.results or {}
 if #results == 0 then
+    logger.log("No species recognized in API response.")
     return LOC("$$$/iNat/Result/None=🕊️ No specie recognized.")
 end
 
 -- Step 8: Normalize confidence scores relative to the highest score
+logger.log("Normalizing confidence scores for recognized species.")
 local max_score = 0
 for _, r in ipairs(results) do
     local s = tonumber(r.combined_score) or 0
     if s > max_score then max_score = s end
 end
 if max_score == 0 then max_score = 1  -- Prevent division by zero
+    logger.log("Max score was zero, adjusted to 1 to avoid division by zero.")
+end
 
 -- Step 9: Format output string with species names and normalized confidence percentages
+logger.log("Formatting results for output.")
 local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
 table.insert(output, "")  -- Add spacing line
 
@@ -107,4 +125,5 @@ for _, result in ipairs(results) do
 end
 
 -- Step 10: Return the formatted result string
+logger.log("Returning formatted species recognition results.")
 return table.concat(output, "\n")
