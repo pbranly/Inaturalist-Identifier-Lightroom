@@ -53,6 +53,7 @@ local logger = require("Logger")
 
 -- Local utility function: Delete all JPEGs in a directory
 local function clearJPEGs(directory)
+    logger.logMessage("Clearing existing JPEG files in directory: " .. directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
             LrFileUtils.delete(file)
@@ -63,11 +64,14 @@ end
 
 -- Local utility function: Find first JPEG file in a directory
 local function findSingleJPEG(directory)
+    logger.logMessage("Searching for a single JPEG file in directory: " .. directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
+            logger.logMessage("Found JPEG file: " .. file)
             return file
         end
     end
+    logger.logMessage("No JPEG files found in directory: " .. directory)
     return nil
 end
 
@@ -77,6 +81,7 @@ local export_to_tempo = {}
 -- Export currently selected photo to "tempo.jpg" in plugin folder
 function export_to_tempo.exportToTempo(photo)
     if not photo then
+        logger.logMessage("No photo selected for export.")
         return nil, "No photo selected."
     end
 
@@ -84,6 +89,9 @@ function export_to_tempo.exportToTempo(photo)
     local exportFolder = _PLUGIN.path
     local tempFileName = "tempo.jpg"
     local tempFilePath = LrPathUtils.child(exportFolder, tempFileName)
+
+    logger.logMessage("Export folder: " .. exportFolder)
+    logger.logMessage("Target export file path: " .. tempFilePath)
 
     -- Step 1: Clear all existing JPEGs in folder
     clearJPEGs(exportFolder)
@@ -103,33 +111,43 @@ function export_to_tempo.exportToTempo(photo)
         LR_removeLocationMetadata = false,
         LR_renamingTokensOn = false,
     }
+    logger.logMessage("Export settings configured.")
 
     -- Step 3: Create export session
     local exportSession = LrExportSession {
         photosToExport = { photo },
         exportSettings = exportSettings,
     }
+    logger.logMessage("Export session created.")
 
     -- Step 4: Perform export
+    logger.logMessage("Starting export task.")
     exportSession:doExportOnCurrentTask()
+    logger.logMessage("Export task finished.")
 
     -- Step 5: Locate exported JPEG
     local exportedPhotos = exportSession:countRenditions()
+    logger.logMessage("Number of renditions: " .. tostring(exportedPhotos))
     for i, rendition in exportSession:renditions() do
         local success, pathOrMsg = rendition:waitForRender()
         if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
+            logger.logMessage("Exported file located at: " .. pathOrMsg)
             -- Rename/move file to "tempo.jpg"
             local result = LrFileUtils.move(pathOrMsg, tempFilePath)
             if result then
+                logger.logMessage("Exported file moved to: " .. tempFilePath)
                 return tempFilePath
             else
+                logger.logMessage("Failed to move exported file from " .. pathOrMsg .. " to " .. tempFilePath)
                 return nil, "Failed to move exported file."
             end
         else
+            logger.logMessage("Failed to render photo: " .. tostring(pathOrMsg or "unknown error"))
             return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
         end
     end
 
+    logger.logMessage("No photo was exported during renditions processing.")
     return nil, "No photo was exported."
 end
 
