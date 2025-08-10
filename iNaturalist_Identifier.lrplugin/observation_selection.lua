@@ -39,7 +39,7 @@ local LrDialogs = import "LrDialogs"         -- Provides dialog boxes (confirmat
 local LrTasks = import "LrTasks"             -- For running asynchronous tasks in Lightroom
 
 -- Import custom modules
-local logger = require("Logger")             -- Custom logging utility for debugging and info messages
+local logger = require("Logger")              -- Custom logging utility for debugging and info messages
 local callAPI = require("call_inaturalist")  -- Module that handles API communication with iNaturalist
 local LOC = LOC                              -- Localization function for translated strings
 
@@ -48,6 +48,8 @@ local observation = {}
 
 -- Main function to ask the user if they want to submit an observation
 function observation.askSubmit(photo, keywords, token)
+    logger.logMessage("[observation_selection] Prompting user for observation submission confirmation.")
+
     -- Show a confirmation dialog asking the user to submit the photo to iNaturalist
     local response = LrDialogs.confirm(
         LOC("$$$/iNat/Dialog/AskObservation=Do you want to submit this photo as an observation to iNaturalist?"),
@@ -58,6 +60,8 @@ function observation.askSubmit(photo, keywords, token)
 
     -- If the user clicked OK (Submit)
     if response == "ok" then
+        logger.logMessage("[observation_selection] User confirmed submission. Starting async task.")
+
         -- Start the submission as an asynchronous task to avoid blocking the Lightroom UI
         LrTasks.startAsyncTask(function()
             logger.logMessage("[observation_selection] Submitting observation...")
@@ -67,12 +71,14 @@ function observation.askSubmit(photo, keywords, token)
 
             -- If submission succeeded
             if success then
+                logger.logMessage("[observation_selection] Observation submitted successfully.")
                 -- Show success message
                 LrDialogs.message(
                     LOC("$$$/iNat/Dialog/ObservationSubmitted=Observation submitted successfully."),
                     LOC("$$$/iNat/Dialog/Thanks=Thank you for contributing to science!")
                 )
             else
+                logger.logMessage("[observation_selection] Observation submission failed: " .. tostring(msg))
                 -- Show error message
                 LrDialogs.message(
                     LOC("$$$/iNat/Dialog/ObservationFailed=Failed to submit observation."),
