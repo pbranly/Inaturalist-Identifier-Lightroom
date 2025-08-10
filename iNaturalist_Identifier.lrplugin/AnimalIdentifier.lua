@@ -56,6 +56,8 @@ local LOC = LOC
 --------------------------------------------------------------------------------
 local function identifyAnimal()
     LrTasks.startAsyncTask(function()
+        logger.logMessage("DEBUG: Entrée dans identifyAnimal()")
+
         local success, err = pcall(function()
 
             -- Initialize logging
@@ -67,10 +69,12 @@ local function identifyAnimal()
             logger.logMessage("Loading stored token from plugin preferences")
             local prefs = LrPrefs.prefsForPlugin()
             local token = prefs.token
+            logger.logMessage("DEBUG: Token actuel = " .. tostring(token))
 
             -- Validate token
             logger.logMessage("Validating API token")
             local isValid, msg = TokenManager.isTokenValid(token)
+            logger.logMessage("DEBUG: Résultat validation token = " .. tostring(isValid) .. " / " .. tostring(msg))
             if not isValid then
                 logger.notify(msg or "Invalid or expired token.")
                 logger.logMessage("Token invalid or expired, opening token dialog")
@@ -79,9 +83,10 @@ local function identifyAnimal()
             end
 
             -- Get selected photo
-            logger.logMessage("Retrieving selected photo from catalog")
+            logger.logMessage("DEBUG: Avant récupération photo depuis catalogue")
             local catalog = LrApplication.activeCatalog()
             local photo = catalog:getTargetPhoto()
+            logger.logMessage("DEBUG: Après récupération photo = " .. tostring(photo))
             if not photo then
                 logger.logMessage("No photo selected.")
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
@@ -94,9 +99,10 @@ local function identifyAnimal()
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)
 
             -- Export photo to tempo.jpg
-            logger.logMessage("Exporting selected photo to tempo.jpg")
-            local exportTask = export_to_tempo.exportToTempo(photo)
-            local exportedPath, expErr = exportTask:wait()  -- attendre la fin de la tâche async
+            logger.logMessage("DEBUG: Appel à export_to_tempo.exportToTempo()")
+            local exportedPath, expErr = export_to_tempo.exportToTempo(photo) -- on suppose maintenant que cette fonction est synchrone
+            logger.logMessage("DEBUG: Retour export_to_tempo : path = " .. tostring(exportedPath) .. ", err = " .. tostring(expErr))
+
             if not exportedPath then
                 logger.logMessage("Failed to export image: " .. (expErr or "unknown"))
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)
@@ -105,10 +111,10 @@ local function identifyAnimal()
             logger.logMessage("Image successfully exported as tempo.jpg")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
 
-
             -- Call the iNaturalist API
-            logger.logMessage("Sending image to iNaturalist API for identification")
+            logger.logMessage("DEBUG: Avant appel callAPI.identify()")
             local result, apiErr = callAPI.identify(exportedPath, token)
+            logger.logMessage("DEBUG: Retour API : result type = " .. type(result) .. ", err = " .. tostring(apiErr))
             if not result then
                 logger.logMessage("API error: " .. (apiErr or "unknown"))
                 LrDialogs.message(
@@ -127,6 +133,7 @@ local function identifyAnimal()
                     count = count + 1
                 end
             end
+            logger.logMessage("DEBUG: hasTitle=" .. tostring(hasTitle) .. ", count=" .. tostring(count))
 
             if hasTitle and count > 0 then
                 logger.logMessage("Identification results:\n" .. result)
