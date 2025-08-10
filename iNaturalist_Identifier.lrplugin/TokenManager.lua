@@ -1,29 +1,31 @@
 --[[
 =====================================================================================
  Script       : TokenManager.lua
- Purpose      : Centralized management of iNaturalist API token in a Lightroom plugin
+ Purpose      : Manage iNaturalist API token within Lightroom plugin (UI + Validation)
  Author       : Philippe
 
- Overview:
- ---------
- This module handles *everything* related to the iNaturalist API token:
-  - Checking if a token exists and is valid
-  - Opening a UI to let the user paste/update it
-  - Saving the token to Lightroom preferences
-  - Opening the official token generation webpage in the user's browser
+ Functional Overview:
+ ---------------------
+ - Provides a Lightroom-native UI to enter and save the token.
+ - Opens iNaturalist token generation page in default browser.
+ - Stores token persistently via Lightroom preferences.
+ - Validates token format and expiration (JWT standard).
+ - Can be called from anywhere in the plugin to prompt user if needed.
 
- With this approach, there is no need for a separate VerificationToken.lua file.
-
- Key Functions:
-  - openTokenPage()              : Opens iNaturalist's token generation page
-  - showOrUpdateTokenDialog()    : Shows the modal UI to paste and save the token
-  - isTokenValid(token)          : Checks if a token is valid (format/expiration)
-  - ensureValidToken()           : Returns a valid token or prompts the user
+ Key Features:
+ -------------
+ - Modal dialog for token input and saving
+ - Cross-platform URL opening
+ - Decodes JWT token payload to check "exp" timestamp
+ - Asynchronous execution for smooth UX
+ - Graceful error handling
+ - Self-contained: replaces old `update_token.lua` and `VerificationToken.lua`
 
  Dependencies:
-  - Lightroom SDK: LrPrefs, LrDialogs, LrView, LrTasks
-  - Localization via LOC()
-  - OS detection: WIN_ENV, MAC_ENV
+ -------------
+ - Lightroom SDK: LrPrefs, LrDialogs, LrView, LrTasks
+ - Platform detection: WIN_ENV, MAC_ENV
+ - Localization via LOC()
 =====================================================================================
 --]]
 
@@ -37,48 +39,92 @@ local LrTasks   = import "LrTasks"
 local f     = LrView.osFactory()
 local prefs = LrPrefs.prefsForPlugin()
 
--- Property table bound to UI controls
-local props = { token = prefs.token or "" }
+-- Property table for UI binding
+local props = {
+    token = prefs.token or ""
+}
 
 --------------------------------------------------------------------------------
 -- Function: openTokenPage
--- Opens the iNaturalist API token generation page in the user's default browser
+-- Purpose : Opens iNaturalist token generation page in default browser
 --------------------------------------------------------------------------------
 local function openTokenPage()
     local url = "https://www.inaturalist.org/users/api_token"
     LrTasks.startAsyncTask(function()
         local openCommand
         if WIN_ENV then
-            openCommand = 'start "" "' .. url .. '"'      -- Windows
+            openCommand = 'start "" "' .. url .. '"'
         elseif MAC_ENV then
-            openCommand = 'open "' .. url .. '"'          -- macOS
+            openCommand = 'open "' .. url .. '"'
         else
-            openCommand = 'xdg-open "' .. url .. '"'      -- Linux/Unix
+            openCommand = 'xdg-open "' .. url .. '"'
         end
         LrTasks.execute(openCommand)
     end)
 end
 
 --------------------------------------------------------------------------------
--- Function: isTokenValid
--- Checks if a token is valid. Currently only checks existence and non-empty.
--- You can expand this to check:
---  - Expiration date (24h validity for iNat tokens)
---  - Proper JWT format (3 parts separated by '.')
+-- Function: decodeBase64Url
+-- Purpose : Decodes base64url-encoded string (used in JWT tokens)
 --------------------------------------------------------------------------------
-local function isTokenValid(token)
-    return (token ~= nil) and (token ~= "")
+local function decodeBase64Url(input)
+    -- Replace URL-safe chars
+    input = input:gsub('-', '+'):gsub('_', '/')
+    -- Add padding if needed
+    local pad = #input % 4
+    if pad > 0 then
+        input = input .. string.rep('=', 4 - pad)
+    end
+    -- Decode
+    return LrTasks.decodeBase64(input)
 end
 
 --------------------------------------------------------------------------------
--- Function: showOrUpdateTokenDialog
--- Displays a modal dialog for the user to paste and save the token.
--- Pre-fills with the current token if it exists.
+-- Function: isTokenValid
+-- Purpose : Checks token presence, format, and expiration date (JWT exp claim)
 --------------------------------------------------------------------------------
-local function showOrUpdateTokenDialog()
-    -- Refresh props from preferences
-    props.token = prefs.token or ""
+local function isTokenValid(token)
+    if not token or token == "" then
+        return false, LOC("$$$/iNat/Error/TokenMissing=Token is missing.")
+    end
 
+    -- JWT tokens have 3 parts separated by "."
+    local header, payload = token:match("([^%.]+)%.([^%.]+)%.")
+    if not payload then
+        return false, LOC("$$$/iNat/Error/TokenFormat=Invalid token format.")
+    end
+
+    -- Decode payload JSON
+    local payloadJson = decodeBase64Url(payload)
+    if not payloadJson then
+        return false, LOC("$$$/iNat/Error/TokenDecode=Unable to decode token payload.")
+    end
+
+    -- Extract "exp" field (Unix timestamp)
+    local exp = payloadJson:match('"exp"%s*:%s*(%d+)')
+    if not exp then
+        return false, LOC("$$$/iNat/Error/TokenNoExp=Token expiration field missing.")
+    end
+
+    exp = tonumber(exp)
+    if not exp then
+        return false, LOC("$$$/iNat/Error/TokenExpInvalid=Invalid expiration format.")
+    end
+
+    -- Compare with current time
+    local now = os.time()
+    if now >= exp then
+        return false, LOC("$$$/iNat/Error/TokenExpired=Token has expired.")
+    end
+
+    return true
+end
+
+--------------------------------------------------------------------------------
+-- Function: showTokenDialog
+-- Purpose : Shows modal dialog for token entry
+--------------------------------------------------------------------------------
+local function showTokenDialog()
     local contents = f:column {
         bind_to_object = props,
         spacing = f:control_spacing(),
@@ -114,29 +160,9 @@ local function showOrUpdateTokenDialog()
 end
 
 --------------------------------------------------------------------------------
--- Function: ensureValidToken
--- Returns a valid token or prompts the user until they provide one.
--- Returns nil if the user cancels without entering a valid token.
---------------------------------------------------------------------------------
-local function ensureValidToken()
-    local token = prefs.token
-
-    if not isTokenValid(token) then
-        showOrUpdateTokenDialog()
-        token = prefs.token
-        if not isTokenValid(token) then
-            return nil
-        end
-    end
-
-    return token
-end
-
---------------------------------------------------------------------------------
 -- Exported functions
 --------------------------------------------------------------------------------
 return {
-    openTokenPage = openTokenPage,
-    showOrUpdateTokenDialog = showOrUpdateTokenDialog,
-    ensureValidToken = ensureValidToken
+    showTokenDialog = showTokenDialog,
+    isTokenValid    = isTokenValid
 }
