@@ -1,120 +1,76 @@
-"$$$/iNat/PluginName=Identification iNaturalist"
-"$$$/iNat/MenuItem=Identifier les animaux via iNaturalist"
+# ===== AnimalIdentifier.lua =====
+"$$$/iNat/Bezel/Started=Plugin started"), 2)"
+"$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)"
+"$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)"
+"$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)"
+"$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)"
+"$$$/iNat/Dialog/IdentificationFailed=Identification failed"),"
+"$$$/iNat/Dialog/UnknownError=Unknown error.")"
+"$$$/iNat/Dialog/Results=Identification results:"), result)"
+"$$$/iNat/Dialog/AskTag=Do you want to add one or more identifications as keywords?"),"
+"$$$/iNat/Dialog/AskTagDetails=Click 'Continue' to select species."),"
+"$$$/iNat/Dialog/Continue=Continue"),"
+"$$$/iNat/Dialog/Cancel=Cancel")"
+"$$$/iNat/Bezel/NoResult=No results found."), 3)"
+"$$$/iNat/Bezel/Done=Analysis completed."), 2)"
 
-"$$$/iNat/NoPhotoSelected=Aucune photo sélectionnée."
-"$$$/iNat/UnknownFormat=Format de résultat non reconnu."
-"$$$/iNat/NoSpeciesDetected=Aucune espèce détectée."
+# ===== Info.lua =====
+"$$$/iNat/PluginName=Identification iNaturalist"),"
+"$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),"
 
-"$$$/iNat/DialogTitle=Sélectionnez les espèces à ajouter comme mots-clés"
-"$$$/iNat/AddKeywords=Ajouter"
-"$$$/iNat/NoKeywordsSelected=Aucun mot-clé sélectionné."
-"$$$/iNat/NoSpeciesCheckedTitle=Aucune espèce sélectionnée"
-"$$$/iNat/NoKeywordsMessage=Aucun mot-clé ne sera ajouté."
+# ===== Logger.lua =====
 
-"$$$/iNat/AddKeywordsWriteAccess=Ajout de mots-clés"
-"$$$/iNat/KeywordsAdded=Mots-clés ajoutés : "
+# ===== PluginInfoProvider.lua =====
+"$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),"
+"$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),"
+"$$$/iNaturalist/TokenNote=The token is valid for 24 hours; after that, you must regenerate it at the following address:"),"
+"$$$/iNaturalist/OpenTokenPage=Open token generation page"),"
+"$$$/iNaturalist/TokenLabel=Token:"),"
+"$$$/iNaturalist/SaveButton=Save"),"
 
-"$$$/iNat/SuccessTitle=Ajout réussi"
-"$$$/iNat/SuccessMessage=Les mots-clés sélectionnés ont été ajoutés avec succès."
+# ===== SelectAndTagResults.lua =====
+"$$$/iNat/DialogTitle=Select species to add as keywords"),"
+"$$$/iNat/AddKeywords=Add")"
+"$$$/iNat/NoSpeciesCheckedTitle=No species selected"),"
+"$$$/iNat/NoKeywordsMessage=No keywords will be added.")"
+"$$$/iNat/AddKeywordsWriteAccess=Adding keywords"), function()"
+"$$$/iNat/SuccessTitle=Success"),"
+"$$$/iNat/SuccessMessage=Selected keywords have been successfully added.")"
 
-"$$$/iNat/DialogCancelled=Dialogue annulé."
+# ===== TokenManager.lua =====
+"$$$/iNat/Error/TokenMissing=Token is missing.")"
+"$$$/iNat/Error/TokenFormat=Invalid token format.")"
+"$$$/iNat/Error/TokenDecode=Unable to decode token payload.")"
+"$$$/iNat/Error/TokenNoExp=Token expiration field missing.")"
+"$$$/iNat/Error/TokenExpInvalid=Invalid expiration format.")"
+"$$$/iNat/Error/TokenExpired=Token has expired.")"
+"$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),"
+"$$$/iNat/TokenDialog/OpenPage=Open token generation page"),"
+"$$$/iNat/TokenDialog/Save=Save token"),"
+"$$$/iNat/TokenDialog/Saved=Token successfully saved."))"
+"$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),"
 
-"$$$/iNat/Bezel/Started=Plugin démarré"
-"$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."
+# ===== call_inaturalist.lua =====
+"$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath"
+"$$$/iNat/Error/NoAPIResponse=API error: No response")"
+"$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)"
+"$$$/iNat/Result/None=🕊️ No specie recognized.")"
+"$$$/iNat/Result/Header=🕊️ Recognized species:") }"
+"$$$/iNat/Result/UnknownName=Unknown")"
+# "$$$/iNat/Result/UnknownName=Unknown")"  # duplicate of call_inaturalist.lua
 
+# ===== export_to_tempo.lua =====
+"$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)"
 
-"$$$/iNat/Bezel/ExportFailed=Échec de l'exportation de l'image."
-"$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg"
+# ===== json.lua =====
 
+# ===== observation_selection.lua =====
+"$$$/iNat/Dialog/AskObservation=Do you want to submit this photo as an observation to iNaturalist?"),"
+"$$$/iNat/Dialog/AskObservationDetails=The selected species will be submitted with the photo."),"
+"$$$/iNat/Dialog/Submit=Submit"),     -- OK button text"
+# "$$$/iNat/Dialog/Cancel=Cancel")      -- Cancel button text"  # duplicate of AnimalIdentifier.lua
+"$$$/iNat/Dialog/ObservationSubmitted=Observation submitted successfully."),"
+"$$$/iNat/Dialog/Thanks=Thank you for contributing to science!")"
+"$$$/iNat/Dialog/ObservationFailed=Failed to submit observation."),"
+# "$$$/iNat/Dialog/UnknownError=Unknown error occurred.")"  # duplicate of AnimalIdentifier.lua
 
-
-
-"$$$/iNat/Bezel/SelectedPhoto=Photo sélectionnée : "
-"$$$/iNat/Bezel/Done=Analyse terminée."
-
-
-
-"$$$/iNat/Error/MissingUpdateScript=Script de mise à jour du token absent : update_token.lua"
-"$$$/iNat/Bezel/NoResult"
-"$$$/iNat/Error/ExportFailed"
-"$$$/iNat/Error/ExportedFileNotFound"
-"$$$/iNat/Error/FileMove"
-"$$$/iNat/Error/TokenInvalid"
-"$$$/iNat/Error/TokenMissing"
-"$$$/iNat/Error/ImageRead=Impossible d'ouvrir l'image: "
-"$$$/iNat/Error/NoAPIResponse=Erreur API: Pas de reponse"
-"$$$/iNat/Error/InvalidJSON=API error: Echec de decodage du JSON: "
-
-"$$$/iNat/Dialog/IdentificationFailed=Échec de l'identification"
-"$$$/iNat/Dialog/UnknownError=Erreur inconnue."
-"$$$/iNat/Dialog/Results=Résultats de l'identification :"
-"$$$/iNat/Dialog/AskTag=Souhaitez-vous ajouter une ou plusieurs identifications comme mots-clés ?"
-"$$$/iNat/Dialog/AskTagDetails=Cliquez sur « Continuer » pour sélectionner les espèces."
-"$$$/iNat/Dialog/Continue=Continuer"
-"$$$/iNat/Dialog/Cancel=Annuler"
-
-
-
-
-
-
-"$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé :"
-"$$$/iNat/Log/PluginStarted=== Nouveau lancement du plugin ==="
-"$$$/iNat/Log/VerificationModuleLoaded===== CHARGEMENT DU MODULE VerificationToken.lua ====="
-"$$$/iNat/Log/TokenCheckStart=== Début de isTokenValid() ==="
-"$$$/iNat/Log/TokenMissing=⛔ Aucun token trouvé dans les préférences Lightroom."
-"$$$/iNat/Log/TokenDetected=🔑 Token détecté (longueur : "
-"$$$/iNat/Log/Chars= caractères)"
-"$$$/iNat/Log/CurlCommand=📎 Commande curl exécutée :"
-"$$$/iNat/Log/HttpCode=➡️ Code HTTP retourné par iNaturalist : "
-"$$$/iNat/Log/TokenValid=✅ Succès : le token est valide."
-"$$$/iNat/Log/TokenInvalid=❌ Échec : token invalide ou expiré (code 401 Unauthorized)."
-"$$$/iNat/Log/ServerError=💥 Erreur serveur iNaturalist (code 500)."
-"$$$/iNat/Log/NoHttpCode=⚠️ Aucun code HTTP reçu. Vérifiez la connexion internet ou curl."
-"$$$/iNat/Log/UnexpectedCode=⚠️ Réponse inattendue (code "
-"$$$/iNat/Log/Started=Plugin démarré"
-"$$$/iNat/Log/NoPhoto=Aucune photo sélectionnée."
-"$$$/iNat/Log/SelectedPhoto=Photo sélectionnée : "
-"$$$/iNat/Log/ExportFailed=Échec de l'exportation de l'image."
-
-"$$$/iNat/Log/Exported=Image exportée sous le nom tempo.jpg"
-"$$$/iNat/Log/APIError=Erreur API : "
-"$$$/iNat/Log/Results=Résultats de l'identification :\n"
-"$$$/iNat/Log/SkippedTag=L'utilisateur a ignoré le marquage."
-"$$$/iNat/Log/NoResult=Aucun résultat d'identification."
-
-"$$$/iNat/TokenDialog/Instruction=Veuillez coller votre token iNaturalist (valide 24h) :"
-"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du token"
-"$$$/iNat/TokenDialog/Save=Sauvegarder le token"
-"$$$/iNat/TokenDialog/Saved=Token sauvegardé avec succès."
-"$$$/iNat/TokenDialog/Title=Configuration du token iNaturalist"
-
-"$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist"
-"$$$/iNaturalist/TokenNote=La durée de validité du token est de 24h ; au-delà, vous devez le régénérer à l'adresse suivante :"
-"$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération de token"
-"$$$/iNaturalist/TokenLabel=Token :"
-"$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"
-"$$$/iNaturalist/SaveButton=Sauvegarder"
-
-
-"$$$/iNat/Result/None=🕊️ aucune espece reconnue."
-"$$$/iNat/Result/Header=🕊️ Espece reconnue:\n"
-"$$$/iNat/Result/UnknownName=Inconnu"
-
-
-"$$$/AiTagger/Language/English=Anglais"
-"$$$/AiTagger/Language/Spanish=Espagnol"
-"$$$/AiTagger/Language/French=Français"
-"$$$/AiTagger/Language/German=Allemand"
-"$$$/AiTagger/Language/Italian=Italien"
-"$$$/AiTagger/Language/Portuguese=Portugais"
-"$$$/AiTagger/Language/Russian=Russe"
-"$$$/AiTagger/Language/Japanese=Japonais"
-"$$$/AiTagger/Language/Korean=Coréen"
-"$$$/AiTagger/Language/ChineseSimplified=Chinois (Simplifié)"
-"$$$/AiTagger/Language/Dutch=Néerlandais"
-"$$$/AiTagger/Language/Polish=Polonais"
-"$$$/AiTagger/Language/Turkish=Turc"
-"$$$/AiTagger/Language/Arabic=Arabe"
-"$$$/AiTagger/Language/Hindi=Hindi"
-"$$$/AiTagger/Language/Tamil=Tamoul"

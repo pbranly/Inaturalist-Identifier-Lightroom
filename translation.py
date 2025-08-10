@@ -29,12 +29,6 @@ The script performs the following actions:
        TranslatedStrings_<lang>.txt
    where <lang> is the chosen language code.
 
-This script is useful when:
-- You have multiple Lightroom plugin Lua scripts and want to centralize
-  all translation strings into one file.
-- You need to ensure there are no duplicate translation keys.
-- You want to preserve the origin of each translation for reference.
-
 -------------------------------------------------------------------------------
 Usage:
 1. Place this script in the same directory as your `.lua` files.
@@ -83,10 +77,10 @@ for filename in sorted(os.listdir(".")):
                     
                     if key not in found_strings:
                         found_strings[key] = (value, filename)
-                        lines_out.append(f"{key}={value}\n")
+                        lines_out.append(f'"{key}={value}"\n')
                     else:
                         # Duplicate: comment it out
-                        lines_out.append(f"# {key}={value}  # duplicate of {found_strings[key][1]}\n")
+                        lines_out.append(f'# "{key}={value}"  # duplicate of {found_strings[key][1]}\n')
         lines_out.append("\n")
 
 # Write final output file
