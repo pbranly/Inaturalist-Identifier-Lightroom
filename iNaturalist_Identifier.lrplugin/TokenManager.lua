@@ -35,6 +35,13 @@ local LrDialogs = import "LrDialogs"
 local LrView    = import "LrView"
 local LrTasks   = import "LrTasks"
 
+-- Simple logger (à remplacer par ton module Logger si besoin)
+local logger = {}
+function logger.log(msg)
+    -- Ici tu peux écrire dans un fichier ou console, exemple simplifié:
+    -- print("[TokenManager] " .. msg)
+end
+
 -- UI factory and plugin preferences
 local f     = LrView.osFactory()
 local prefs = LrPrefs.prefsForPlugin()
@@ -49,6 +56,7 @@ local props = {
 -- Purpose : Opens iNaturalist token generation page in default browser
 --------------------------------------------------------------------------------
 local function openTokenPage()
+    logger.log("Opening iNaturalist token generation page in default browser.")
     local url = "https://www.inaturalist.org/users/api_token"
     LrTasks.startAsyncTask(function()
         local openCommand
@@ -59,7 +67,10 @@ local function openTokenPage()
         else
             openCommand = 'xdg-open "' .. url .. '"'
         end
-        LrTasks.execute(openCommand)
+        local success, err = LrTasks.execute(openCommand)
+        if not success then
+            logger.log("Failed to open URL: " .. tostring(err))
+        end
     end)
 end
 
@@ -85,38 +96,45 @@ end
 --------------------------------------------------------------------------------
 local function isTokenValid(token)
     if not token or token == "" then
+        logger.log("Token validation failed: token missing.")
         return false, LOC("$$$/iNat/Error/TokenMissing=Token is missing.")
     end
 
     -- JWT tokens have 3 parts separated by "."
     local header, payload = token:match("([^%.]+)%.([^%.]+)%.")
     if not payload then
+        logger.log("Token validation failed: invalid format.")
         return false, LOC("$$$/iNat/Error/TokenFormat=Invalid token format.")
     end
 
     -- Decode payload JSON
     local payloadJson = decodeBase64Url(payload)
     if not payloadJson then
+        logger.log("Token validation failed: unable to decode payload.")
         return false, LOC("$$$/iNat/Error/TokenDecode=Unable to decode token payload.")
     end
 
     -- Extract "exp" field (Unix timestamp)
     local exp = payloadJson:match('"exp"%s*:%s*(%d+)')
     if not exp then
+        logger.log("Token validation failed: expiration field missing.")
         return false, LOC("$$$/iNat/Error/TokenNoExp=Token expiration field missing.")
     end
 
     exp = tonumber(exp)
     if not exp then
+        logger.log("Token validation failed: invalid expiration format.")
         return false, LOC("$$$/iNat/Error/TokenExpInvalid=Invalid expiration format.")
     end
 
     -- Compare with current time
     local now = os.time()
     if now >= exp then
+        logger.log("Token validation failed: token expired.")
         return false, LOC("$$$/iNat/Error/TokenExpired=Token has expired.")
     end
 
+    logger.log("Token is valid.")
     return true
 end
 
@@ -125,6 +143,7 @@ end
 -- Purpose : Shows modal dialog for token entry
 --------------------------------------------------------------------------------
 local function showTokenDialog()
+    logger.log("Showing token input dialog.")
     local contents = f:column {
         bind_to_object = props,
         spacing = f:control_spacing(),
@@ -148,6 +167,7 @@ local function showTokenDialog()
             title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
             action = function()
                 prefs.token = props.token
+                logger.log("Token saved by user.")
                 LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
             end
         }
