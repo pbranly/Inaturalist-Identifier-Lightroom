@@ -58,18 +58,17 @@ local function identifyAnimal()
     LrTasks.startAsyncTask(function()
         local success, err = pcall(function()
 
-            -- Initialize logging
+            -- Initialize logging and UI feedback
             logger.initializeLogFile()
             logger.logMessage("=== Plugin launched ===")
             logger.logMessage("Plugin started")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Started=Plugin started"), 2)
 
-            -- Load stored token
-            logger.logMessage("Loading stored token from plugin preferences")
+            -- Load stored API token from preferences
             local prefs = LrPrefs.prefsForPlugin()
             local token = prefs.token
 
-            -- Validate token
+            -- Validate the token (format and expiration)
             logger.logMessage("Validating API token")
             local isValid, msg = TokenManager.isTokenValid(token)
             if not isValid then
@@ -79,7 +78,7 @@ local function identifyAnimal()
                 return
             end
 
-            -- Get selected photo
+            -- Retrieve the currently selected photo in Lightroom
             logger.logMessage("Retrieving selected photo from catalog")
             local catalog = LrApplication.activeCatalog()
             local photo = catalog:getTargetPhoto()
@@ -89,27 +88,27 @@ local function identifyAnimal()
                 return
             end
 
-            -- Log photo filename
+            -- Log the selected photo's filename for debugging
             local filename = photo:getFormattedMetadata("fileName") or "unknown"
             logger.logMessage("Selected photo: " .. filename)
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)
 
-            -- Debug: check yield context
+            -- Debug info for yield context (optional, diagnostic)
             logger.logMessage("DEBUG: Before export, LrTasks.canYield()=" .. tostring(LrTasks.canYield()))
             logger.logMessage("DEBUG: Call stack:\n" .. debug.traceback())
 
-            -- Export photo to tempo.jpg (inside async context)
+            -- Export the selected photo asynchronously to a temporary JPEG file named "tempo.jpg"
             logger.logMessage("Exporting selected photo to tempo.jpg")
-            local exportedPath, expErr = export_to_tempo.exportToTempo(photo)
+            local exportedPath, exportErr = export_to_tempo.exportToTempo(photo)
             if not exportedPath then
-                logger.logMessage("Failed to export image: " .. (expErr or "unknown"))
+                logger.logMessage("Failed to export image: " .. (exportErr or "unknown"))
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)
                 return
             end
             logger.logMessage("Image successfully exported as tempo.jpg")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
 
-            -- Call the iNaturalist API
+            -- Send the exported photo to iNaturalist API for identification
             logger.logMessage("Sending image to iNaturalist API for identification")
             local result, apiErr = callAPI.identify(exportedPath, token)
             if not result then
@@ -121,9 +120,9 @@ local function identifyAnimal()
                 return
             end
 
-            -- Validate result format
+            -- Validate and parse the identification results
             logger.logMessage("Validating identification results")
-            local hasTitle = result:match("🕊️")
+            local hasTitle = result:match("🕊️") -- Example check for presence of title/emojis
             local count = 0
             for line in result:gmatch("[^\r\n]+") do
                 if line:match("%%") and line:match("%(") and line:match("%)") then
@@ -135,6 +134,7 @@ local function identifyAnimal()
                 logger.logMessage("Identification results:\n" .. result)
                 LrDialogs.message(LOC("$$$/iNat/Dialog/Results=Identification results:"), result)
 
+                -- Prompt user for optionally adding identifications as keywords
                 logger.logMessage("Prompting user for keyword tagging")
                 local choix = LrDialogs.confirm(
                     LOC("$$$/iNat/Dialog/AskTag=Do you want to add one or more identifications as keywords?"),
@@ -160,7 +160,7 @@ local function identifyAnimal()
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Done=Analysis completed."), 2)
         end)
 
-        -- Catch unexpected errors globally
+        -- Global error catch for unexpected errors in async task
         if not success then
             logger.logMessage("Unexpected error: " .. tostring(err))
             LrDialogs.message(
@@ -172,12 +172,12 @@ local function identifyAnimal()
 end
 
 --------------------------------------------------------------------------------
--- Auto-execution when called via Lightroom menu
+-- Auto-execute when this module is called via Lightroom menu
 --------------------------------------------------------------------------------
 identifyAnimal()
 
 --------------------------------------------------------------------------------
--- Module export for external calls
+-- Export module interface for external calls if needed
 --------------------------------------------------------------------------------
 return {
     identify = identifyAnimal
