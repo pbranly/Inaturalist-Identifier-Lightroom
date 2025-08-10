@@ -40,37 +40,21 @@ local LrApplication = import "LrApplication"         -- For accessing Lightroom 
 -- Import custom logger module
 local logger = require("Logger")
 
---[[
- Function: showSelection
- Description:
- Parses a formatted result string containing species identifications and presents a
- modal dialog for the user to select which species to add as keywords. Adds selected
- keywords to the currently selected photo in Lightroom.
-
- Steps:
- 1. Get the currently selected photo from the catalog.
- 2. Validate the presence of a photo and the expected result format.
- 3. Parse species data from the result string.
- 4. Build a scrollable UI dialog with checkboxes for each species.
- 5. Handle user selection and add chosen keywords to the photo.
---]]
 local function showSelection(resultsString)
     local catalog = LrApplication.activeCatalog()
-    local photo = catalog:getTargetPhoto() -- Step 1: Get selected photo
+    local photo = catalog:getTargetPhoto()
 
     if not photo then
-        logger.logMessage(LOC("$$$/iNat/NoPhotoSelected=No photo selected."))
+        logger.logMessage("No photo selected.")
         return
     end
 
-    -- Step 2: Locate the bird icon marking the start of results
     local startIndex = resultsString:find("🕊️")
     if not startIndex then
-        logger.logMessage(LOC("$$$/iNat/UnknownFormat=Unrecognized result format."))
+        logger.logMessage("Unrecognized result format.")
         return
     end
 
-    -- Step 3: Extract and parse species lines
     local subResult = resultsString:sub(startIndex)
     local parsedItems = {}
 
@@ -84,11 +68,12 @@ local function showSelection(resultsString)
     end
 
     if #parsedItems == 0 then
-        logger.logMessage(LOC("$$$/iNat/NoSpeciesDetected=No species detected."))
+        logger.logMessage("No species detected.")
         return
     end
 
-    -- Step 4: Build and show the selection dialog
+    logger.logMessage(string.format("Parsed %d species, opening selection dialog.", #parsedItems))
+
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
@@ -116,7 +101,6 @@ local function showSelection(resultsString)
             actionVerb = LOC("$$$/iNat/AddKeywords=Add")
         }
 
-        -- Step 5: Process user selection
         if result == "ok" then
             local selectedKeywords = {}
 
@@ -128,7 +112,7 @@ local function showSelection(resultsString)
             end
 
             if #selectedKeywords == 0 then
-                logger.logMessage(LOC("$$$/iNat/NoKeywordsSelected=No keywords selected."))
+                logger.logMessage("No keywords selected.")
                 LrDialogs.message(
                     LOC("$$$/iNat/NoSpeciesCheckedTitle=No species selected"),
                     LOC("$$$/iNat/NoKeywordsMessage=No keywords will be added.")
@@ -136,7 +120,6 @@ local function showSelection(resultsString)
                 return
             end
 
-            -- Add keywords to photo with write access
             catalog:withWriteAccessDo(LOC("$$$/iNat/AddKeywordsWriteAccess=Adding keywords"), function()
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
@@ -155,19 +138,17 @@ local function showSelection(resultsString)
                 end
             end)
 
-            -- Confirm success
-            logger.logMessage(LOC("$$$/iNat/KeywordsAdded=Keywords added: ") .. table.concat(selectedKeywords, ", "))
+            logger.logMessage("Keywords added: " .. table.concat(selectedKeywords, ", "))
             LrDialogs.message(
                 LOC("$$$/iNat/SuccessTitle=Success"),
                 LOC("$$$/iNat/SuccessMessage=Selected keywords have been successfully added.")
             )
         else
-            logger.logMessage(LOC("$$$/iNat/DialogCancelled=Dialog cancelled."))
+            logger.logMessage("Dialog cancelled.")
         end
     end)
 end
 
--- Export the function for external use
 return {
     showSelection = showSelection
 }
