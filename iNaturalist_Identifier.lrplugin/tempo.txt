@@ -1,7 +1,0 @@
-Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin
-
-**** Error 1
-
-Une erreur s'est produite lors de la tentative de chargement de ce module externe.
-Info.lua:65: attempt to call global 'require' (a nil value)
-
