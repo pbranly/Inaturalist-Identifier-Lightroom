@@ -1,46 +1,46 @@
 --[[
 ============================================================
-Description fonctionnelle
+Functional Description
 ------------------------------------------------------------
-Ce module `PythonRunner.lua` permet d'exécuter un script Python
-externe pour identifier un animal à partir d'une image exportée.
+This module `PythonRunner.lua` allows executing an external 
+Python script to identify an animal from an exported image.
 
-Fonctionnalités principales :
-1. Construire une commande shell pour lancer le script Python
-   avec les arguments requis (chemin du script, chemin de l'image,
-   et token d'authentification).
-2. Exécuter la commande et récupérer la sortie standard.
-3. Retourner le résultat (output du script Python) pour traitement
-   ultérieur dans le plugin.
-
-------------------------------------------------------------
-Étapes numérotées
-1. Importer le module Lightroom pour la gestion des chemins.
-2. Importer le module personnalisé de journalisation.
-3. Définir la fonction runPythonIdentifier qui :
-    3.1. Construit la commande shell.
-    3.2. Logge la commande.
-    3.3. Exécute la commande en capturant la sortie.
-    3.4. Retourne le résultat ou une chaîne vide.
-4. Exporter la fonction pour usage externe.
+Main features:
+1. Build a shell command to run the Python script
+   with the required arguments (script path, image path,
+   and authentication token).
+2. Execute the command and capture its standard output.
+3. Return the result (output of the Python script) for further
+   processing in the plugin.
 
 ------------------------------------------------------------
-Scripts appelés
-- Logger.lua (pour journaliser la commande exécutée)
+Numbered Steps
+1. Import the Lightroom module for path management.
+2. Import the custom logging module.
+3. Define the function runPythonIdentifier which:
+    3.1. Builds the shell command.
+    3.2. Logs the command.
+    3.3. Executes the command while capturing its output.
+    3.4. Returns the result or an empty string.
+4. Export the function for external usage.
 
 ------------------------------------------------------------
-Script appelant
-- AnimalIdentifier.lua via le module principal (main.lua)
+Called scripts
+- Logger.lua (for logging the executed command)
+
+------------------------------------------------------------
+Calling script
+- AnimalIdentifier.lua via the main module (main.lua)
 ============================================================
 ]]
 
--- [Étape 1] Lightroom SDK import for path utilities
+-- [Step 1] Lightroom SDK import for path utilities
 local LrPathUtils = import "LrPathUtils"
 
--- [Étape 2] Custom logger module
+-- [Step 2] Custom logger module
 local logger = require("Logger")
 
--- [Étape 3] Runs a Python script that performs identification
+-- [Step 3] Runs a Python script that performs identification
 -- Parameters:
 --   pythonScript: full path to the Python script
 --   imagePath: full path to the exported image
@@ -62,7 +62,7 @@ local function runPythonIdentifier(pythonScript, imagePath, token)
     return result or ""
 end
 
--- [Étape 4] Export the function for external use
+-- [Step 4] Export the function for external use
 return {
     runPythonIdentifier = runPythonIdentifier
 }
