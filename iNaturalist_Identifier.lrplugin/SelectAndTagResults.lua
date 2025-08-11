@@ -1,63 +1,87 @@
 --[[
-=====================================================================================
- Script : showSelection.lua
- Purpose : Display species identification results for manual keyword selection
- Author  : Philippe (or your name here)
- Description :
- This module processes identification results (typically from an AI or external service)
- and presents a dialog in Lightroom allowing the user to select which species names
- to add as keywords to the currently selected photo.
+============================================================
+Functional Description
+------------------------------------------------------------
+This module `selectAndTagResults.lua` parses a text string 
+resulting from animal identification (iNaturalist results), 
+extracts the list of recognized species, then displays a 
+Lightroom UI allowing the user to select which species to add 
+as keywords to the active photo.
 
- Key Features:
-   - Parses results from a string that includes species names, Latin names, and confidence percentages.
-   - Presents results in a modal UI dialog with checkboxes for each identified species.
-   - Lets the user choose which keywords to apply.
-   - Adds the selected keywords to the photo in Lightroom, creating them if necessary.
+Main features:
+1. Identify the selected photo in the Lightroom catalog.
+2. Parse the results string to extract each detected species 
+   with its French name, Latin name, and confidence percentage.
+3. Display a modal dialog listing these species as checkboxes.
+4. Allow the user to select species to add as Lightroom keywords.
+5. Create keywords if they don't exist, then add them to the photo.
+6. Log the various steps and show error or success messages.
 
- Expected Input Format (from result string):
-   🕊️
-   - Eurasian Blue Tit (Cyanistes caeruleus) : 96.3%
-   - Great Tit (Parus major) : 2.1%
-   ...
+------------------------------------------------------------
+Numbered Steps
+1. Import required Lightroom modules and the logger.
+2. Define the function `showSelection` which:
+    2.1. Retrieves the active photo from the catalog.
+    2.2. Checks if a photo is selected, else logs and quits.
+    2.3. Finds the recognized animals section in the results string.
+    2.4. Extracts species with French name, Latin name, and confidence.
+    2.5. Checks if any species were detected, else logs and quits.
+    2.6. Creates a modal interface with checkboxes for each species.
+    2.7. On user confirmation, collects selected species.
+    2.8. If none selected, warns the user and exits.
+    2.9. Adds the keywords to the photo (creating if necessary).
+    2.10. Logs the addition and shows a success message.
+    2.11. Logs if the dialog was cancelled.
+3. Export the function for external use.
 
- Dependencies:
- - Lightroom SDK: LrDialogs, LrFunctionContext, LrBinding, LrView, LrApplication
- - Logger module (custom)
-=====================================================================================
---]]
+------------------------------------------------------------
+Called Scripts
+- Logger.lua (for logging)
+- Lightroom SDK (for UI, catalog and keyword management)
 
--- Import necessary Lightroom SDK modules
-local LrDialogs = import "LrDialogs"                -- To show dialogs and messages
-local LrFunctionContext = import "LrFunctionContext"-- To manage UI lifecycle
-local LrBinding = import "LrBinding"                -- To bind UI elements to variables
-local LrView = import "LrView"                      -- For building UI layouts
-local LrApplication = import "LrApplication"        -- To interact with Lightroom catalog
+------------------------------------------------------------
+Calling Script
+- AnimalIdentifier.lua (after identification, to propose keywords)
+============================================================
+]]
 
--- Import custom logger module
+-- [Step 1] Import Lightroom SDK modules
+local LrDialogs = import "LrDialogs"
+local LrFunctionContext = import "LrFunctionContext"
+local LrBinding = import "LrBinding"
+local LrView = import "LrView"
+local LrApplication = import "LrApplication"
+
+-- [Step 1] Import logger
 local logger = require("Logger")
 
--- Function to parse the identification results and allow user to select keywords
+-- [Step 2] Main function: show species selection dialog
 local function showSelection(resultsString)
+    -- [2.1] Get the active photo
     local catalog = LrApplication.activeCatalog()
-    local photo = catalog:getTargetPhoto()          -- Get the currently selected photo
-
+    local photo = catalog:getTargetPhoto()
+    
+    -- [2.2] Check if photo is selected
     if not photo then
-        logger.logMessage(LOC("$$$/iNat/NoPhotoSelected=No photo selected."))
+        logger.logMessage("No photo selected.")
         return
     end
 
-    -- Find the position of the bird icon marking the start of results
-    local startIndex = resultsString:find("🕊️")
+    -- [2.3] Find the recognized animals section in the results string
+    -- Recherche des titres possibles en français ou anglais
+    local startIndex = resultsString:find("🕊️%s*Recognized species%s*:")
     if not startIndex then
-        logger.logMessage(LOC("$$$/iNat/UnknownFormat=Unrecognized result format."))
+        logger.logMessage("Unrecognized result format: no recognized animals section found.")
         return
     end
 
-    -- Extract the relevant section of results
+    -- Extraire la sous-chaîne à partir de cette position
     local subResult = resultsString:sub(startIndex)
-    local parsedItems = {}
 
-    -- Parse each line that contains: - name_fr (latin_name) : XX%
+    -- [2.4] Parse species lines : format attendu
+    -- Exemple de ligne :
+    -- - Nom français (Nom latin) : 98.76%
+    local parsedItems = {}
     for line in subResult:gmatch("[^\r\n]+") do
         local nom_fr, nom_latin, pourcent = line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)%%")
         if nom_fr and nom_latin and pourcent then
@@ -67,12 +91,13 @@ local function showSelection(resultsString)
         end
     end
 
+    -- [2.5] Check at least one species detected
     if #parsedItems == 0 then
-        logger.logMessage(LOC("$$$/iNat/NoSpeciesDetected=No species detected."))
+        logger.logMessage("No species detected in the results.")
         return
     end
 
-    -- Create and show a dialog with checkboxes for each species
+    -- [2.6] Create modal UI with checkboxes for each species
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
@@ -80,7 +105,7 @@ local function showSelection(resultsString)
 
         for i, item in ipairs(parsedItems) do
             local key = "item_" .. i
-            props[key] = false  -- Default: checkbox unchecked
+            props[key] = false
             table.insert(checkboxes, f:checkbox {
                 title = item.label,
                 value = LrView.bind(key)
@@ -94,14 +119,14 @@ local function showSelection(resultsString)
             f:column(checkboxes)
         }
 
-        -- Present the modal dialog to the user
+        -- [2.7] Show dialog and wait for user response
         local result = LrDialogs.presentModalDialog {
-            title = LOC("$$$/iNat/DialogTitle=Select species to add as keywords"),
+            title = "Select species to add as keywords",
             contents = contents,
-            actionVerb = LOC("$$$/iNat/AddKeywords=Add")
+            actionVerb = "Add"
         }
 
-        -- Handle user selection
+        -- [2.8] If user confirmed, gather selected keywords
         if result == "ok" then
             local selectedKeywords = {}
 
@@ -112,18 +137,18 @@ local function showSelection(resultsString)
                 end
             end
 
-            -- If no keywords selected
+            -- [2.9] If none selected, inform and quit
             if #selectedKeywords == 0 then
-                logger.logMessage(LOC("$$$/iNat/NoKeywordsSelected=No keywords selected."))
+                logger.logMessage("No keywords selected.")
                 LrDialogs.message(
-                    LOC("$$$/iNat/NoSpeciesCheckedTitle=No species selected"),
-                    LOC("$$$/iNat/NoKeywordsMessage=No keywords will be added.")
+                    "No species selected",
+                    "No keywords will be added."
                 )
                 return
             end
 
-            -- Add the selected keywords to the photo
-            catalog:withWriteAccessDo(LOC("$$$/iNat/AddKeywordsWriteAccess=Adding keywords"), function()
+            -- [2.10] Add selected keywords to the photo (create if needed)
+            catalog:withWriteAccessDo("Adding keywords", function()
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
                         if kw:getName() == name then
@@ -141,19 +166,19 @@ local function showSelection(resultsString)
                 end
             end)
 
-            -- Log and confirm success
-            logger.logMessage(LOC("$$$/iNat/KeywordsAdded=Keywords added: ") .. table.concat(selectedKeywords, ", "))
+            logger.logMessage("Keywords added: " .. table.concat(selectedKeywords, ", "))
             LrDialogs.message(
-                LOC("$$$/iNat/SuccessTitle=Success"),
-                LOC("$$$/iNat/SuccessMessage=Selected keywords have been successfully added.")
+                "Success",
+                "Selected keywords have been successfully added."
             )
         else
-            logger.logMessage(LOC("$$$/iNat/DialogCancelled=Dialog cancelled."))
+            -- [2.11] Log user cancelled dialog
+            logger.logMessage("Dialog cancelled.")
         end
     end)
 end
 
--- Expose the function for use by other modules
+-- [Step 3] Export function
 return {
     showSelection = showSelection
 }

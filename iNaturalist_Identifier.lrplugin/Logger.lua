@@ -1,40 +1,51 @@
 --[[
-=====================================================================================
- Script : Logger.lua
- Purpose : Centralized logging utility for the Lightroom plugin
- Author  : Philippe (or your name here)
- Description :
- This module provides functions to handle logging for the plugin's operations.
- It is used to create, write to, and display messages from a `log.txt` file stored 
- in the plugin’s folder. Logging can be enabled or disabled using a plugin preference.
+============================================================
+Functional Description
+------------------------------------------------------------
+This `logger.lua` module handles logging for the plugin.
+It allows:
+1. Determining the location of the log file.
+2. Initializing the log file at plugin startup.
+3. Adding timestamped messages to the log file.
+4. Displaying messages to the user while also recording them.
 
- Main Functions:
-   - initializeLogFile(): Creates and starts the log file at plugin launch.
-   - logMessage(msg): Appends timestamped messages to the log file.
-   - notify(msg): Logs a message and displays it to the user via a dialog box.
+Logging is controlled by the `logEnabled` plugin preference.
 
- The logger helps in debugging and tracing plugin behavior without affecting Lightroom’s UI.
+------------------------------------------------------------
+Numbered Steps
+1. Import the necessary Lightroom SDK modules.
+2. Access plugin-specific preferences.
+3. Define a function to return the path to the log file.
+4. Define a function to initialize the log file.
+5. Define a function to write a message to the log file.
+6. Define a function to display a message and log it.
+7. Export the module’s functions.
 
- Dependencies:
- - Lightroom SDK: LrPrefs for preferences, LrDialogs for alerts, LrPathUtils for paths.
+------------------------------------------------------------
+Called Scripts
+- No external Lua scripts (Lightroom SDK API only).
 
-=====================================================================================
---]]
+------------------------------------------------------------
+Calling Script
+- Called by `AnimalIdentifier.lua` and potentially other modules
+  to record logs.
+============================================================
+]]
 
--- Lightroom API imports
+-- [Step 1] Lightroom API imports
 local LrPathUtils = import "LrPathUtils"
 local LrDialogs  = import "LrDialogs"
 local LrPrefs    = import "LrPrefs"
 
--- Access plugin-specific preferences
+-- [Step 2] Access plugin-specific preferences
 local prefs = LrPrefs.prefsForPlugin()
 
--- Returns the absolute path to the log file
+-- [Step 3] Returns the absolute path to the log file
 local function getLogFilePath()
     return LrPathUtils.child(_PLUGIN.path, "log.txt")
 end
 
--- Initializes the log file (if logging is enabled in preferences)
+-- [Step 4] Initializes the log file (if logging is enabled in preferences)
 local function initializeLogFile()
     if prefs.logEnabled then
         local f = io.open(getLogFilePath(), "w") -- overwrite at each launch
@@ -46,7 +57,7 @@ local function initializeLogFile()
     end
 end
 
--- Writes a message to the log (if logging is enabled)
+-- [Step 5] Writes a message to the log (if logging is enabled)
 local function logMessage(message)
     if prefs.logEnabled then
         local f = io.open(getLogFilePath(), "a") -- append mode
@@ -58,13 +69,13 @@ local function logMessage(message)
     end
 end
 
--- Shows a message to the user and logs it if enabled
+-- [Step 6] Shows a message to the user and logs it if enabled
 local function notify(message)
     logMessage(message)
     LrDialogs.message(message)
 end
 
--- Exported functions
+-- [Step 7] Exported functions
 return {
     initializeLogFile = initializeLogFile,
     logMessage         = logMessage,

@@ -1,99 +1,117 @@
 --[[
-=====================================================================================
- Script : Token Dialog for iNaturalist Plugin
- Author : Philippe (or your name if you prefer)
- Description :
- This script creates a modal dialog in Adobe Lightroom that allows the user to paste 
- their iNaturalist API token. This token is required for the plugin to interact with 
- the iNaturalist API and identify species from exported photos.
+============================================================
+Functional Description
+------------------------------------------------------------
+This module `VerificationToken.lua` verifies the validity of the 
+iNaturalist authentication token stored in the plugin preferences.
 
- Features:
- - Prompts the user to paste a personal iNaturalist token (valid for 24 hours).
- - Includes a button to open the official iNaturalist token generation webpage.
- - Saves the token into persistent plugin preferences so it's remembered across sessions.
- - If a token is already stored, it is pre-filled into the input field.
+Main features:
+1. Read the token from Lightroom preferences.
+2. Perform an HTTP request (using curl) to the iNaturalist API to 
+   verify the token's validity.
+3. Analyze the HTTP response code to determine if the token is valid, 
+   expired, or if an error occurred.
+4. Log each step and result to aid debugging.
+5. Return a boolean and a message describing the token status.
 
- This script uses Lightroom SDK modules such as LrView, LrDialogs, LrPrefs, and LrTasks.
- It also runs system-level browser-opening commands asynchronously to avoid freezing the UI.
+------------------------------------------------------------
+Numbered Steps
+1. Import necessary Lightroom modules and the logging module.
+2. Load the plugin preferences.
+3. Log the module loading event.
+4. Define the function `isTokenValid` which:
+    4.1. Logs the start of validation.
+    4.2. Retrieves the token from preferences.
+    4.3. Checks if the token is missing or empty.
+    4.4. Builds the curl command to query the iNaturalist API.
+    4.5. Executes the command and retrieves the HTTP code.
+    4.6. Logs the HTTP response code.
+    4.7. Returns true if code is 200, otherwise false with an error message.
+5. Export the function for external use.
 
-=====================================================================================
---]]
+------------------------------------------------------------
+Called Scripts
+- Logger.lua (for logging events)
 
--- Import Lightroom SDK modules
-local LrPrefs   = import "LrPrefs"    -- For storing and retrieving persistent plugin preferences
-local LrDialogs = import "LrDialogs"  -- For showing modal and non-modal dialog windows
-local LrView    = import "LrView"     -- For creating Lightroom-native user interface elements
-local LrTasks   = import "LrTasks"    -- For background tasks (e.g., launching external commands)
+------------------------------------------------------------
+Calling Scripts
+- AnimalIdentifier.lua (to validate the token before identification)
+============================================================
+]]
 
--- Create a factory for building UI elements
-local f = LrView.osFactory()
+-- [Step 1] Lightroom module imports
+local LrPrefs     = import "LrPrefs"
+local LrPathUtils = import "LrPathUtils"
+local LrFileUtils = import "LrFileUtils"
+local LrDialogs   = import "LrDialogs"
 
--- Load saved preferences for this plugin (used to remember token across sessions)
+-- [Step 1] Custom logging module
+local logger = require("Logger")
+
+-- [Step 2] Load plugin preferences
 local prefs = LrPrefs.prefsForPlugin()
 
--- Create a property table used to bind values between UI and data
--- If a token has already been saved, it is loaded here
-local props = {
-    token = prefs.token or ""  -- Default to empty string if no token is stored
-}
+-- [Step 3] Log module load
+logger.logMessage(LOC("$$$/iNat/Log/VerificationModuleLoaded===== Loaded VerificationToken.lua module ====="))
 
--- Function to open the iNaturalist token generation page in the default web browser
-local function openTokenPage()
-    local url = "https://www.inaturalist.org/users/api_token"  -- Official URL to generate a new token
+-- [Step 4] Validate the iNaturalist token using the API
+local function isTokenValid()
+    -- [4.1] Log start of validation
+    logger.logMessage(LOC("$$$/iNat/Log/TokenCheckStart=== Start of isTokenValid() ==="))
 
-    -- Run browser launch asynchronously so Lightroom doesn't freeze
-    LrTasks.startAsyncTask(function()
-        local openCommand
+    -- [4.2] Retrieve token
+    local token = prefs.token
 
-        -- Detect and build platform-specific shell commands to open a browser
-        if WIN_ENV then
-            openCommand = 'start "" "' .. url .. '"'    -- Windows
-        elseif MAC_ENV then
-            openCommand = 'open "' .. url .. '"'        -- macOS
-        else
-            openCommand = 'xdg-open "' .. url .. '"'    -- Linux/other Unix
-        end
+    -- [4.3] Check for missing or empty token
+    if not token or token == "" then
+        local msg = LOC("$$$/iNat/Log/TokenMissing=⛔ No token found in Lightroom preferences.")
+        logger.logMessage(msg)
+        return false, msg
+    end
 
-        -- Execute the command to open the browser
-        LrTasks.execute(openCommand)
-    end)
+    -- Log token length (info only)
+    logger.logMessage(LOC("$$$/iNat/Log/TokenDetected=🔑 Token detected (length: ") .. tostring(#token) .. LOC("$$$/iNat/Log/Chars= characters)"))
+
+    -- [4.4] Build curl command to verify token validity
+    local url = "https://api.inaturalist.org/v1/users/me"
+    local command = string.format(
+        'curl -s -o /dev/null -w "%%{http_code}" -H "Authorization: Bearer %s" "%s"',
+        token,
+        url
+    )
+
+    -- Log curl command
+    logger.logMessage(LOC("$$$/iNat/Log/CurlCommand=📎 Executing curl command: ") .. command)
+
+    -- [4.5] Execute the command and read HTTP response code
+    local handle = io.popen(command)
+    local httpCode = handle:read("*l")
+    handle:close()
+
+    -- [4.6] Log HTTP code
+    logger.logMessage(LOC("$$$/iNat/Log/HttpCode=➡️ HTTP response code from iNaturalist: ") .. tostring(httpCode))
+
+    local msg
+    -- [4.7] Analyze HTTP code and return result accordingly
+    if httpCode == "200" then
+        msg = LOC("$$$/iNat/Log/TokenValid=✅ Success: token is valid.")
+        logger.logMessage(msg)
+        return true, msg
+    elseif httpCode == "401" then
+        msg = LOC("$$$/iNat/Log/TokenInvalid=❌ Failure: token is invalid or expired (401 Unauthorized).")
+    elseif httpCode == "500" then
+        msg = LOC("$$$/iNat/Log/ServerError=💥 iNaturalist server error (500).")
+    elseif httpCode == "000" or not httpCode then
+        msg = LOC("$$$/iNat/Log/NoHttpCode=⚠️ No HTTP code received. Check internet connection or curl installation.")
+    else
+        msg = LOC("$$$/iNat/Log/UnexpectedCode=⚠️ Unexpected response (code ") .. tostring(httpCode) .. ")."
+    end
+
+    logger.logMessage(msg)
+    return false, msg
 end
 
--- Build the dialog layout using a vertical column of elements
-local contents = f:column {
-    bind_to_object = props,               -- Bind the UI elements to the `props` table
-    spacing = f:control_spacing(),        -- Use Lightroom's default spacing
-
-    -- Explanatory static text
-    f:static_text {
-        title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
-        width = 400,  -- Width in pixels
-    },
-
-    -- Text field for the user to paste the API token
-    f:edit_field {
-        value = LrView.bind("token"),     -- Binds the field to props.token
-        width_in_chars = 50               -- Display width (approximate number of characters)
-    },
-
-    -- Button that opens the token generation webpage in the browser
-    f:push_button {
-        title = LOC("$$$/iNat/TokenDialog/OpenPage=Open token generation page"),
-        action = openTokenPage            -- Calls the function defined above
-    },
-
-    -- Button to save the entered token to plugin preferences
-    f:push_button {
-        title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
-        action = function()
-            prefs.token = props.token     -- Store the token persistently in plugin preferences
-            LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved.")) -- Confirmation
-        end
-    }
-}
-
--- Display the UI as a modal dialog (blocking until the user closes it)
-LrDialogs.presentModalDialog {
-    title = LOC("$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),  -- Title shown in the dialog window
-    contents = contents                                                 -- UI layout defined above
+-- [Step 5] Export function
+return {
+    isTokenValid = isTokenValid
 }
