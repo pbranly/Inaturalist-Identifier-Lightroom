@@ -63,21 +63,25 @@ local function showSelection(resultsString)
     
     -- [2.2] Check if photo is selected
     if not photo then
-        logger.logMessage(LOC("$$$/iNat/NoPhotoSelected=No photo selected."))
+        logger.logMessage("No photo selected.")
         return
     end
 
-    -- [2.3] Find the recognized animals section in the results
-    local startIndex = resultsString:find("🕊️%s*Animaux reconnus%s*:") or resultsString:find("🕊️%s*Recognized animals%s*:")
+    -- [2.3] Find the recognized animals section in the results string
+    -- Recherche des titres possibles en français ou anglais
+    local startIndex = resultsString:find("🕊️%s*Recognized species%s*:")
     if not startIndex then
-        logger.logMessage(LOC("$$$/iNat/UnknownFormat=Unrecognized result format."))
+        logger.logMessage("Unrecognized result format: no recognized animals section found.")
         return
     end
 
-    -- [2.4] Extract species info (French name, Latin name, confidence %)
+    -- Extraire la sous-chaîne à partir de cette position
     local subResult = resultsString:sub(startIndex)
-    local parsedItems = {}
 
+    -- [2.4] Parse species lines : format attendu
+    -- Exemple de ligne :
+    -- - Nom français (Nom latin) : 98.76%
+    local parsedItems = {}
     for line in subResult:gmatch("[^\r\n]+") do
         local nom_fr, nom_latin, pourcent = line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)%%")
         if nom_fr and nom_latin and pourcent then
@@ -89,7 +93,7 @@ local function showSelection(resultsString)
 
     -- [2.5] Check at least one species detected
     if #parsedItems == 0 then
-        logger.logMessage(LOC("$$$/iNat/NoSpeciesDetected=No species detected."))
+        logger.logMessage("No species detected in the results.")
         return
     end
 
@@ -117,9 +121,9 @@ local function showSelection(resultsString)
 
         -- [2.7] Show dialog and wait for user response
         local result = LrDialogs.presentModalDialog {
-            title = LOC("$$$/iNat/DialogTitle=Select species to add as keywords"),
+            title = "Select species to add as keywords",
             contents = contents,
-            actionVerb = LOC("$$$/iNat/AddKeywords=Add")
+            actionVerb = "Add"
         }
 
         -- [2.8] If user confirmed, gather selected keywords
@@ -135,16 +139,16 @@ local function showSelection(resultsString)
 
             -- [2.9] If none selected, inform and quit
             if #selectedKeywords == 0 then
-                logger.logMessage(LOC("$$$/iNat/NoKeywordsSelected=No keywords selected."))
+                logger.logMessage("No keywords selected.")
                 LrDialogs.message(
-                    LOC("$$$/iNat/NoSpeciesCheckedTitle=No species selected"),
-                    LOC("$$$/iNat/NoKeywordsMessage=No keywords will be added.")
+                    "No species selected",
+                    "No keywords will be added."
                 )
                 return
             end
 
             -- [2.10] Add selected keywords to the photo (create if needed)
-            catalog:withWriteAccessDo(LOC("$$$/iNat/AddKeywordsWriteAccess=Adding keywords"), function()
+            catalog:withWriteAccessDo("Adding keywords", function()
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
                         if kw:getName() == name then
@@ -162,14 +166,14 @@ local function showSelection(resultsString)
                 end
             end)
 
-            logger.logMessage(LOC("$$$/iNat/KeywordsAdded=Keywords added: ") .. table.concat(selectedKeywords, ", "))
+            logger.logMessage("Keywords added: " .. table.concat(selectedKeywords, ", "))
             LrDialogs.message(
-                LOC("$$$/iNat/SuccessTitle=Success"),
-                LOC("$$$/iNat/SuccessMessage=Selected keywords have been successfully added.")
+                "Success",
+                "Selected keywords have been successfully added."
             )
         else
             -- [2.11] Log user cancelled dialog
-            logger.logMessage(LOC("$$$/iNat/DialogCancelled=Dialog cancelled."))
+            logger.logMessage("Dialog cancelled.")
         end
     end)
 end

@@ -1,0 +1,12 @@
+Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin
+
+**** Error 1
+
+Une erreur s'est produite lors de la tentative d'exécution d'un script du module externe.
+Inaturalist_Identifier.lua:222: 'end' expected (to close 'function' at line 186) near '<eof>')
+
+**** Error 2
+
+Le module externe a rencontré une erreur lors de l'activation de la commande “Identifier les animaux via iNaturalist”.
+Inaturalist_Identifier.lua:222: 'end' expected (to close 'function' at line 186) near '<eof>')
+

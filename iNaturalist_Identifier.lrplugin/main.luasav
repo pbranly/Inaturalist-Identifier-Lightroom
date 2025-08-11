@@ -10,12 +10,12 @@ Its simple but essential role is to:
 
 ------------------------------------------------------------
 Numbered Steps
-1. Import the `AnimalIdentifier` module containing the identification logic.
+1. Import the `Inaturalist_Identifier` module containing the identification logic.
 2. Call the `identify()` function from this module to perform identification.
 
 ------------------------------------------------------------
 Called Scripts
-- AnimalIdentifier.lua (main identification module)
+- Inaturalist_Identifier.lua (main identification module)
 
 ------------------------------------------------------------
 Calling Script
@@ -26,7 +26,7 @@ Calling Script
 ]]
 
 -- [Step 1] Import the module responsible for identifying animals
-local identifyanimal = require("AnimalIdentifier")
+local identifier = require("Inaturalist_Identifier")
 
--- [Step 2] Call the 'identify' function defined in the AnimalIdentifier module
-identifyanimal.identify()
+-- [Step 2] Call the 'identify' function defined in the Inaturalist_Identifier module
+identifier.identify()

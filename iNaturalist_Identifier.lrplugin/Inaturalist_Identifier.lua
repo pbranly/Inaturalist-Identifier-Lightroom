@@ -18,7 +18,7 @@ When called (from main.lua), it performs the following actions:
 8. Configures export settings (format, size, quality).
 9. Exports the selected photo into the plugin folder.
 10. Renames the exported file to `tempo.jpg`.
-11. Runs the Python identification script.
+11. Runs the identification script via the call_inaturalist module.
 12. Displays and logs the identification results.
 13. Asks the user if they want to add identifications as keywords.
 14. If accepted, launches the selection and tagging module.
@@ -43,9 +43,9 @@ Numbered Steps
 15. Perform the export.
 16. Check if the export succeeded.
 17. Rename the exported file to `tempo.jpg`.
-18. Run the Python identification script.
-19. Check the Python script result.
-20. Display results and ask the user if tagging is desired.
+18. Run the identification script via `call_inaturalist`.
+19. Check the identification result.
+20. Display results and ask user if tagging is desired.
 21. If yes, call the selection and tagging module.
 22. If no, log that tagging is skipped.
 23. If no result, display a "no result" message.
@@ -55,11 +55,11 @@ Numbered Steps
 Called Scripts
 - Logger.lua
 - ImageUtils.lua
-- PythonRunner.lua
+- call_inaturalist.lua
 - TokenUpdater.lua
 - VerificationToken.lua
 - SelectAndTagResults.lua
-- identifier_animal.py (Python script)
+
 
 ------------------------------------------------------------
 Calling Script
@@ -83,11 +83,11 @@ local LrPrefs = import "LrPrefs"
 -- [Step 2] Import plugin custom modules
 local logger = require("Logger")
 local imageUtils = require("ImageUtils")
-local pythonRunner = require("PythonRunner")
+local callInaturalist = require("call_inaturalist")  -- MODIFICATION ICI
 local tokenUpdater = require("TokenUpdater")
 local tokenChecker = require("VerificationToken")
 
--- [Step 3] Main function: exports selected photo, runs Python script, and processes result
+-- [Step 3] Main function: exports selected photo, runs identification, and processes result
 local function identify()
     -- [Step 4] Launch asynchronous Lightroom task
     LrTasks.startAsyncTask(function()
@@ -183,46 +183,47 @@ local function identify()
         logger.logMessage("Image exported as tempo.jpg")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
 
-        -- [Step 18] Run Python identification script
-        local result = pythonRunner.runPythonIdentifier(
-            LrPathUtils.child(pluginFolder, "identifier_animal.py"),
-            finalPath,
-            token
-        )
-
-        -- [Step 19] Check and display result
-        if result:match("🕊️") then
-            -- [Step 20] Display results and ask user if tagging is desired
-            local title = LOC("$$$/iNat/Title/Result=Identification results:")
-            logger.logMessage(title .. "\n" .. result)
-            LrDialogs.message(title, result)
-
-            local choice = LrDialogs.confirm(
-                LOC("$$$/iNat/Confirm/Ask=Do you want to add one or more identifications as keywords?"),
-                LOC("$$$/iNat/Confirm/Hint=Click 'Continue' to select species."),
-                LOC("$$$/iNat/Confirm/Continue=Continue"),
-                LOC("$$$/iNat/Confirm/Cancel=Cancel")
-            )
-
-            -- [Step 21] If yes, run selection and tagging module
-            if choice == "ok" then
-                local selector = require("SelectAndTagResults")
-                selector.showSelection(result)
-            else
-                -- [Step 22] If no, log skipping
-                logger.logMessage("Keyword tagging skipped by user.")
+        -- [Step 18] Run identification script via call_inaturalist module asynchronously
+        callInaturalist.identifyAsync(finalPath, token, function(result, err)
+            if err then
+                logger.logMessage("Identification error: " .. err)
+                LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), err)
+                return
             end
-        else
-            -- [Step 23] No results from Python script
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ResultNone=No identification results ❌"), 3)
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoneFound=No results found."), 3)
-        end
 
-        -- [Step 24] Final log and notification
-        logger.logMessage("Analysis completed.")
-        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
-    end)
-end
+            -- [Step 19] Check and display result
+            if result:match("🕊️") then
+                -- [Step 20] Display results and ask user if tagging is desired
+                local title = LOC("$$$/iNat/Title/Result=Identification results:")
+                logger.logMessage(title .. "\n" .. result)
+                LrDialogs.message(title, result)
+
+                local choice = LrDialogs.confirm(
+                    LOC("$$$/iNat/Confirm/Ask=Do you want to add one or more identifications as keywords?"),
+                    LOC("$$$/iNat/Confirm/Hint=Click 'Continue' to select species."),
+                    LOC("$$$/iNat/Confirm/Continue=Continue"),
+                    LOC("$$$/iNat/Confirm/Cancel=Cancel")
+                )
+
+                if choice == "ok" then
+                    local selector = require("SelectAndTagResults")
+                    selector.showSelection(result)
+                else
+                    logger.logMessage("Keyword tagging skipped by user.")
+                end
+            else
+                -- [Step 23] No results from identification
+                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ResultNone=No identification results ❌"), 3)
+                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoneFound=No results found."), 3)
+            end
+
+            -- [Step 24] Final log and notification
+            logger.logMessage("Analysis completed.")
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
+        end) -- end callback function for identifyAsync
+
+    end) -- end LrTasks.startAsyncTask
+end -- end identify()
 
 return {
     identify = identify

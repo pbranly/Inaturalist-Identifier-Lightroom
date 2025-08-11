@@ -59,7 +59,7 @@ return {
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "main.lua",
+            file = "Inaturalist_Identifier.lua",
         },
     },
 

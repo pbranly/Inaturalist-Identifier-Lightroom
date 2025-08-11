@@ -31,6 +31,8 @@
 local LrFileUtils = import "LrFileUtils"
 local LrHttp      = import "LrHttp"
 local LrTasks     = import "LrTasks"
+local json = require("json")
+
 
 -- Localization
 local LOC = LOC
@@ -123,7 +125,7 @@ local function identifyAsync(imagePath, token, callback)
 
         -- Step 9: Format species names and confidence percentages
         logger.log("Formatting results for output.")
-        local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+        local output = { "🕊️ Recognized species:" }
         table.insert(output, "")  -- Add spacing line
 
         for _, result in ipairs(results) do
