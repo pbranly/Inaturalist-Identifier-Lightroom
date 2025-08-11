@@ -1,84 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
--------------------------------------------------------------------------------
-Script Name: extract_lightroom_translations.py
-Author: Philippe's Python Helper (GPT-5)
--------------------------------------------------------------------------------
-Functional Description:
-This script scans all `.lua` files in the current working directory to extract
-Lightroom-style translation strings of the form:
-
-    $$$/namespace/key=Translated Text
-
-For example:
-    $$$/iNat/PluginName=Identification iNaturalist
-
-The script performs the following actions:
-1. Iterates through all `.lua` files in the current directory.
-2. Uses a regular expression to find lines that match the Lightroom translation pattern.
-3. Groups translations by their source `.lua` file, adding a section header as a comment:
-       # ===== filename.lua =====
-4. Tracks already-seen translation keys to avoid duplicates:
-   - The first occurrence of a key is written as-is.
-   - Subsequent occurrences of the same key are commented out and annotated
-     with a note indicating where the key was first found.
-5. Generates a single output file named:
-       TranslatedStrings_en.txt
-
--------------------------------------------------------------------------------
-Usage:
-1. Place this script in the same directory as your `.lua` files.
-2. Open a terminal and run:
-       python3 extract_lightroom_translations.py
-3. The script will produce a file:
-       TranslatedStrings_en.txt
-
-Notes:
-- The script assumes UTF-8 encoding for reading `.lua` files.
-- Non-matching lines in `.lua` files are ignored.
-- Duplicates are commented out, not removed, to preserve context.
-
--------------------------------------------------------------------------------
-"""
-
 import os
 import re
 
-# Fixed language code
-lang = "en"
+def extract_lightroom_strings(text):
+    # Capture les chaînes de type LOC("$$$/clé=valeur")
+    pattern = re.compile(r'LOC\("(\$\$\$/[^\s=]+)=([^\n")]+)"')
+    return pattern.findall(text)
 
-# Regular expression to detect Lightroom translation strings
-pattern = re.compile(r'(\$\$\$/[^\s=]+)=(.+)')
+def format_translation(key, value):
+    return f'"{key}={value}"'
 
-output_file = f"TranslatedStrings_{lang}.txt"
-found_strings = {}  # key = identifier (e.g., "$$$/iNat/PluginName"), value = (text, source file)
+def process_scripts_in_current_directory(output_path):
+    seen_lines = set()
+    output_lines = []
 
-lines_out = []
+    for filename in sorted(os.listdir(".")):
+        if filename.lower().endswith(".lua"):
+            with open(filename, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
 
-# Scan all .lua files in the current directory
-for filename in sorted(os.listdir(".")):
-    if filename.lower().endswith(".lua"):
-        lines_out.append(f"# ===== {filename} =====\n")
-        
-        with open(filename, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                match = pattern.search(line)
-                if match:
-                    key = match.group(1).strip()
-                    value = match.group(2).strip()
-                    
-                    if key not in found_strings:
-                        found_strings[key] = (value, filename)
-                        lines_out.append(f'"{key}={value}"\n')
+            translations = extract_lightroom_strings(content)
+            if translations:
+                output_lines.append(f'# {filename}')
+                for key, value in translations:
+                    line = format_translation(key, value)
+                    if line in seen_lines:
+                        output_lines.append(f'# {line}')
                     else:
-                        # Duplicate: comment it out
-                        lines_out.append(f'# "{key}={value}"  # duplicate of {found_strings[key][1]}\n')
-        lines_out.append("\n")
+                        output_lines.append(line)
+                        seen_lines.add(line)
+                output_lines.append('')  # Ligne vide entre blocs
 
-# Write final output file
-with open(output_file, "w", encoding="utf-8") as out:
-    out.writelines(lines_out)
+    # Écriture du fichier final
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write('\n'.join(output_lines))
 
-print(f"File '{output_file}' generated successfully.")
+# 🔧 Exécution dans le répertoire courant
+output_file = "TranslatedStrings_en.txt"
+process_scripts_in_current_directory(output_file)
+
+print(f"Fichier '{output_file}' généré avec succès.")
