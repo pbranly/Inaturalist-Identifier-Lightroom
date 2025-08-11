@@ -26,7 +26,7 @@ Calling Script
 ]]
 
 -- [Step 1] Import the module responsible for identifying animals
-local identify = require("Inaturalist_Identifier")
+local identifier = require("Inaturalist_Identifier")
 
 -- [Step 2] Call the 'identify' function defined in the Inaturalist_Identifier module
-identify.identify()
+identifier.identify()
