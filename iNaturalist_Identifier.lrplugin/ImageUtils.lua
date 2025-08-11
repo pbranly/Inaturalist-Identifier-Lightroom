@@ -1,43 +1,43 @@
 --[[
 ============================================================
-Description fonctionnelle
+Functional Description
 ------------------------------------------------------------
-Ce module `ImageUtils.lua` fournit des utilitaires pour gérer
-les fichiers JPEG dans un répertoire donné.
+This module `ImageUtils.lua` provides utilities for managing
+JPEG files in a given directory.
 
-Fonctionnalités principales :
-1. Supprimer tous les fichiers JPEG (.jpg) dans un dossier.
-2. Trouver et retourner le premier fichier JPEG présent dans un dossier.
+Main functionalities:
+1. Delete all JPEG (.jpg) files in a folder.
+2. Find and return the first JPEG file present in a folder.
 
-Ces fonctions sont utilisées notamment pour gérer les images
-temporaires exportées par le plugin.
-
-------------------------------------------------------------
-Étapes numérotées
-1. Importer les modules Lightroom nécessaires à la gestion des fichiers.
-2. Importer le module personnalisé de journalisation.
-3. Définir la fonction clearJPEGs pour supprimer tous les fichiers .jpg dans un dossier.
-4. Définir la fonction findSingleJPEG pour retrouver un fichier JPEG dans un dossier.
-5. Exporter les fonctions pour utilisation externe.
+These functions are mainly used to manage temporary images
+exported by the plugin.
 
 ------------------------------------------------------------
-Scripts appelés
-- Logger.lua (pour enregistrer la suppression de fichiers)
+Numbered Steps
+1. Import the necessary Lightroom modules for file handling.
+2. Import the custom logging module.
+3. Define the clearJPEGs function to delete all .jpg files in a folder.
+4. Define the findSingleJPEG function to locate a JPEG file in a folder.
+5. Export the functions for external use.
 
 ------------------------------------------------------------
-Script appelant
-- AnimalIdentifier.lua (notamment pour nettoyage avant export)
+Called Scripts
+- Logger.lua (for logging file deletions)
+
+------------------------------------------------------------
+Calling Script
+- AnimalIdentifier.lua (especially for cleanup before export)
 ============================================================
 ]]
 
--- [Étape 1] Import Lightroom utilities for file and path handling
+-- [Step 1] Import Lightroom utilities for file and path handling
 local LrFileUtils = import "LrFileUtils"
 local LrPathUtils = import "LrPathUtils"
 
--- [Étape 2] Import custom logger
+-- [Step 2] Import custom logger
 local logger = require("Logger")
 
--- [Étape 3] Deletes all JPEG (.jpg) files in the given directory
+-- [Step 3] Deletes all JPEG (.jpg) files in the given directory
 local function clearJPEGs(directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
@@ -47,7 +47,7 @@ local function clearJPEGs(directory)
     end
 end
 
--- [Étape 4] Returns the first JPEG file found in the directory
+-- [Step 4] Returns the first JPEG file found in the directory
 local function findSingleJPEG(directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
@@ -57,7 +57,7 @@ local function findSingleJPEG(directory)
     return nil
 end
 
--- [Étape 5] Export functions
+-- [Step 5] Export functions for external use
 return {
     clearJPEGs = clearJPEGs,
     findSingleJPEG = findSingleJPEG
