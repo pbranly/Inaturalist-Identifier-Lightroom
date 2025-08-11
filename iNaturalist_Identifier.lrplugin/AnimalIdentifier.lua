@@ -1,72 +1,71 @@
 --[[
 ============================================================
-Description fonctionnelle
+Functional Description
 ------------------------------------------------------------
-Ce script définit la fonction `identifyAnimal()` qui constitue 
-le cœur du processus d’identification d’animaux dans Lightroom.
-Lorsqu’il est appelé (depuis main.lua), il exécute les actions 
-suivantes :
+This script defines the function `identifyAnimal()` which is 
+the core of the animal identification process in Lightroom.
+When called (from main.lua), it performs the following actions:
 
-1. Lance une tâche asynchrone Lightroom.
-2. Initialise le journal (log) et affiche un message de démarrage.
-3. Récupère et vérifie le jeton d’accès (token) dans les préférences.
-4. Valide le token via un module de vérification.
-5. Récupère la photo sélectionnée dans le catalogue Lightroom.
-6. Affiche et journalise le nom de la photo sélectionnée.
-7. Nettoie les JPEG temporaires existants dans le dossier du plugin.
-8. Configure les paramètres d’exportation (format, taille, qualité).
-9. Exporte la photo sélectionnée dans le dossier du plugin.
-10. Renomme le fichier exporté en `tempo.jpg`.
-11. Lance le script Python d’identification.
-12. Affiche et journalise les résultats d’identification.
-13. Propose à l’utilisateur d’ajouter les identifications comme mots-clés.
-14. Si accepté, lance le module de sélection et de marquage.
-15. Affiche un message de fin d’analyse.
-
-------------------------------------------------------------
-Étapes numérotées
-1. Importer les modules Lightroom requis.
-2. Importer les modules personnalisés du plugin.
-3. Définir la fonction principale `identifyAnimal`.
-4. Lancer une tâche asynchrone Lightroom.
-5. Initialiser le log et notifier le démarrage.
-6. Récupérer le token depuis les préférences.
-7. Si le token est vide ou absent, lancer le script de mise à jour.
-8. Vérifier la validité du token.
-9. Si invalide, lancer le script de mise à jour.
-10. Récupérer la photo sélectionnée.
-11. Si aucune photo, journaliser et arrêter.
-12. Afficher le nom du fichier sélectionné.
-13. Supprimer les JPEG existants dans le dossier du plugin.
-14. Définir les paramètres d’exportation.
-15. Lancer l’export de la photo.
-16. Vérifier que l’export a réussi.
-17. Renommer l’image exportée en `tempo.jpg`.
-18. Lancer le script Python d’identification.
-19. Vérifier le résultat du script Python.
-20. Afficher les résultats et demander à l’utilisateur s’il veut taguer.
-21. Si oui, appeler le module de sélection et marquage.
-22. Si non, journaliser que le marquage est ignoré.
-23. Si aucun résultat, afficher un message d’absence de résultat.
-24. Journaliser et notifier la fin du processus.
+1. Launches a Lightroom asynchronous task.
+2. Initializes the log and displays a startup message.
+3. Retrieves and checks the access token from preferences.
+4. Validates the token via a verification module.
+5. Retrieves the selected photo from the Lightroom catalog.
+6. Displays and logs the name of the selected photo.
+7. Cleans up any temporary JPEGs in the plugin folder.
+8. Configures export settings (format, size, quality).
+9. Exports the selected photo into the plugin folder.
+10. Renames the exported file to `tempo.jpg`.
+11. Runs the Python identification script.
+12. Displays and logs the identification results.
+13. Asks the user if they want to add identifications as keywords.
+14. If accepted, launches the selection and tagging module.
+15. Displays an end-of-analysis message.
 
 ------------------------------------------------------------
-Scripts appelés
+Numbered Steps
+1. Import the required Lightroom modules.
+2. Import the plugin's custom modules.
+3. Define the main `identifyAnimal` function.
+4. Launch a Lightroom asynchronous task.
+5. Initialize the log and show a start message.
+6. Retrieve the token from preferences.
+7. If the token is missing, run the update script.
+8. Validate the token.
+9. If invalid, run the update script.
+10. Retrieve the selected photo.
+11. If no photo, log and stop.
+12. Display the selected filename.
+13. Delete existing JPEGs in the plugin folder.
+14. Define export settings.
+15. Perform the export.
+16. Check if the export succeeded.
+17. Rename the exported file to `tempo.jpg`.
+18. Run the Python identification script.
+19. Check the Python script result.
+20. Display results and ask the user if tagging is desired.
+21. If yes, call the selection and tagging module.
+22. If no, log that tagging is skipped.
+23. If no result, display a "no result" message.
+24. Log and notify the end of the process.
+
+------------------------------------------------------------
+Called Scripts
 - Logger.lua
 - ImageUtils.lua
 - PythonRunner.lua
 - TokenUpdater.lua
 - VerificationToken.lua
 - SelectAndTagResults.lua
-- identifier_animal.py (script Python)
+- identifier_animal.py (Python script)
 
 ------------------------------------------------------------
-Script appelant
-- main.lua → appelé depuis Lightroom via Info.lua
+Calling Script
+- main.lua → called from Lightroom via Info.lua
 ============================================================
 ]]
 
--- [Étape 1] Import required Lightroom modules
+-- [Step 1] Import required Lightroom modules
 local LrTasks = import "LrTasks"
 local LrDialogs = import "LrDialogs"
 local LrApplication = import "LrApplication"
@@ -75,64 +74,64 @@ local LrFileUtils = import "LrFileUtils"
 local LrExportSession = import "LrExportSession"
 local LrPrefs = import "LrPrefs"
 
--- [Étape 2] Custom modules
+-- [Step 2] Import plugin custom modules
 local logger = require("Logger")
 local imageUtils = require("ImageUtils")
 local pythonRunner = require("PythonRunner")
 local tokenUpdater = require("TokenUpdater")
 local tokenChecker = require("VerificationToken")
 
--- [Étape 3] Main function: exports selected photo, runs Python script, and handles result
+-- [Step 3] Main function: exports selected photo, runs Python script, and processes result
 local function identifyAnimal()
-    -- [Étape 4] Launch asynchronous Lightroom task
+    -- [Step 4] Launch asynchronous Lightroom task
     LrTasks.startAsyncTask(function()
-        -- [Étape 5] Initialization
+        -- [Step 5] Initialization
         logger.initializeLogFile()
         logger.logMessage("Plugin started")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PluginStarted=Plugin started"), 3)
 
-        -- [Étape 6] Retrieve token from preferences
+        -- [Step 6] Retrieve token from preferences
         local prefs = LrPrefs.prefsForPlugin()
         local token = prefs.token
 
-        -- [Étape 7] Check if token is missing
+        -- [Step 7] Check if token is missing
         if not token or token == "" then
             logger.notify(LOC("$$$/iNat/Error/MissingToken=Token is missing. Please enter it in Preferences."))
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- [Étape 8] Validate token
+        -- [Step 8] Validate token
         local isValid, msg = tokenChecker.isTokenValid()
-        -- [Étape 9] If token invalid, prompt update
+        -- [Step 9] If token invalid, prompt update
         if not isValid then
             logger.notify(LOC("$$$/iNat/Error/InvalidToken=Invalid or expired token."))
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- [Étape 10] Get the selected photo
+        -- [Step 10] Get the selected photo
         local catalog = LrApplication.activeCatalog()
         local photo = catalog:getTargetPhoto()
-        -- [Étape 11] Stop if no photo selected
+        -- [Step 11] Stop if no photo selected
         if not photo then
             logger.logMessage("No photo selected.")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
             return
         end
 
-        -- [Étape 12] Display selected photo filename
+        -- [Step 12] Display selected photo filename
         local filename = photo:getFormattedMetadata("fileName") or "unknown"
         logger.logMessage("Selected photo: " .. filename)
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PhotoName=Selected photo: ") .. filename, 3)
 
-        -- [Étape 13] Prepare export folder and cleanup
+        -- [Step 13] Prepare export folder and cleanup
         local pluginFolder = _PLUGIN.path
         imageUtils.clearJPEGs(pluginFolder)
         logger.logMessage("Previous JPEGs deleted.")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Cleared=Previous image removed."), 3)
 
-        -- [Étape 14] Export settings
+        -- [Step 14] Define export settings
         local exportSettings = {
             LR_export_destinationType = "specificFolder",
             LR_export_destinationPathPrefix = pluginFolder,
@@ -147,7 +146,7 @@ local function identifyAnimal()
             LR_renamingTokens = "{{image_name}}",
         }
 
-        -- [Étape 15] Perform export
+        -- [Step 15] Perform export
         local exportSession = LrExportSession({
             photosToExport = { photo },
             exportSettings = exportSettings
@@ -157,7 +156,7 @@ local function identifyAnimal()
             exportSession:doExportOnCurrentTask()
         end)
 
-        -- [Étape 16] Check if export succeeded
+        -- [Step 16] Check if export succeeded
         local exportedPath = imageUtils.findSingleJPEG(pluginFolder)
         if not exportedPath then
             logger.logMessage("Failed to export temporary image.")
@@ -165,7 +164,7 @@ local function identifyAnimal()
             return
         end
 
-        -- [Étape 17] Rename the exported file to tempo.jpg
+        -- [Step 17] Rename the exported file to tempo.jpg
         local finalPath = LrPathUtils.child(pluginFolder, "tempo.jpg")
         local ok, err = LrFileUtils.move(exportedPath, finalPath)
         if not ok then
@@ -178,42 +177,42 @@ local function identifyAnimal()
         logger.logMessage("Image exported as tempo.jpg")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
 
-        -- [Étape 18] Run Python identification script
+        -- [Step 18] Run Python identification script
         local result = pythonRunner.runPythonIdentifier(
             LrPathUtils.child(pluginFolder, "identifier_animal.py"),
             finalPath,
             token
         )
 
-        -- [Étape 19] Check and display result
+        -- [Step 19] Check and display result
         if result:match("🕊️") then
-            -- [Étape 20] Display results and ask user if tagging is desired
-            local titre = LOC("$$$/iNat/Title/Result=Identification results:")
-            logger.logMessage(titre .. "\n" .. result)
-            LrDialogs.message(titre, result)
+            -- [Step 20] Display results and ask user if tagging is desired
+            local title = LOC("$$$/iNat/Title/Result=Identification results:")
+            logger.logMessage(title .. "\n" .. result)
+            LrDialogs.message(title, result)
 
-            local choix = LrDialogs.confirm(
+            local choice = LrDialogs.confirm(
                 LOC("$$$/iNat/Confirm/Ask=Do you want to add one or more identifications as keywords?"),
                 LOC("$$$/iNat/Confirm/Hint=Click 'Continue' to select species."),
                 LOC("$$$/iNat/Confirm/Continue=Continue"),
                 LOC("$$$/iNat/Confirm/Cancel=Cancel")
             )
 
-            -- [Étape 21] If yes, run selection and tagging module
-            if choix == "ok" then
+            -- [Step 21] If yes, run selection and tagging module
+            if choice == "ok" then
                 local selector = require("SelectAndTagResults")
                 selector.showSelection(result)
             else
-                -- [Étape 22] If no, log skipping
+                -- [Step 22] If no, log skipping
                 logger.logMessage("Keyword tagging skipped by user.")
             end
         else
-            -- [Étape 23] No results from Python script
+            -- [Step 23] No results from Python script
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ResultNone=No identification results ❌"), 3)
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoneFound=No results found."), 3)
         end
 
-        -- [Étape 24] Final log and notification
+        -- [Step 24] Final log and notification
         logger.logMessage("Analysis completed.")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
     end)
