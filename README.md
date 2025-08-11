@@ -1,5 +1,7 @@
 # iNaturalist Identifier
 
+![iNaturalist Identifier screenshot](docs/images/plugin_ui.png)
+
 *A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.*  
 *Un plugin pour Lightroom Classic qui identifie les espèces présentes sur les photos en utilisant l'API iNaturalist.*
 
@@ -157,3 +159,4 @@ If this plugin is useful to you, consider supporting its development:
   *Offrez-moi un café*
 - Donate via PayPal: [paypal.me/philippebranly](https://www.paypal.me/philippebranly)  
   *Ou faites un don via PayPal*  
+
