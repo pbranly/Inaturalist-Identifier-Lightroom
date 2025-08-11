@@ -42,7 +42,7 @@ local function clearJPEGs(directory)
     for file in LrFileUtils.files(directory) do
         if string.lower(LrPathUtils.extension(file)) == "jpg" then
             LrFileUtils.delete(file)
-            logger.logMessage(LOC("$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)
+            logger.logMessage("JPG file deleted: " .. file)
         end
     end
 end
