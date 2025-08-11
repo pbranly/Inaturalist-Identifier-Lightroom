@@ -59,10 +59,11 @@ return {
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "Inaturalist_Identifier.lua",
+            file = "main.lua",
         },
     },
 
+	 
     -- [Step 6] Interface for the Plugin Manager
     LrPluginInfoProvider = "PluginInfoProvider.lua",
 

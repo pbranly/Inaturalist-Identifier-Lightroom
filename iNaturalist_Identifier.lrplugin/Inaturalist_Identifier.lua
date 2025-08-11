@@ -60,7 +60,6 @@ Called Scripts
 - VerificationToken.lua
 - SelectAndTagResults.lua
 
-
 ------------------------------------------------------------
 Calling Script
 - main.lua → called from Lightroom via Info.lua
@@ -83,7 +82,7 @@ local LrPrefs = import "LrPrefs"
 -- [Step 2] Import plugin custom modules
 local logger = require("Logger")
 local imageUtils = require("ImageUtils")
-local callInaturalist = require("call_inaturalist")  -- MODIFICATION ICI
+local callInaturalist = require("call_inaturalist")
 local tokenUpdater = require("TokenUpdater")
 local tokenChecker = require("VerificationToken")
 
@@ -220,11 +219,17 @@ local function identify()
             -- [Step 24] Final log and notification
             logger.logMessage("Analysis completed.")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
-        end) -- end callback function for identifyAsync
+        end) -- fin de la callback identifyAsync
 
-    end) -- end LrTasks.startAsyncTask
-end -- end identify()
+    end) -- fin de LrTasks.startAsyncTask
+end -- fin de la fonction identify
+
+-- Fonction que Lightroom appelle au lancement de l’export (optionnel)
+local function processRenderedPhotos(functionContext, exportContext)
+    identify()
+end
 
 return {
-    identify = identify
+    processRenderedPhotos = processRenderedPhotos,
+    identify = identify,
 }
