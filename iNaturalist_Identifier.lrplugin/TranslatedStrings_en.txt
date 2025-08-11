@@ -1,76 +1,112 @@
-# ===== AnimalIdentifier.lua =====
-"$$$/iNat/Bezel/Started=Plugin started"), 2)"
-"$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)"
-"$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)"
-"$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)"
-"$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)"
-"$$$/iNat/Dialog/IdentificationFailed=Identification failed"),"
-"$$$/iNat/Dialog/UnknownError=Unknown error.")"
-"$$$/iNat/Dialog/Results=Identification results:"), result)"
-"$$$/iNat/Dialog/AskTag=Do you want to add one or more identifications as keywords?"),"
-"$$$/iNat/Dialog/AskTagDetails=Click 'Continue' to select species."),"
-"$$$/iNat/Dialog/Continue=Continue"),"
-"$$$/iNat/Dialog/Cancel=Cancel")"
-"$$$/iNat/Bezel/NoResult=No results found."), 3)"
-"$$$/iNat/Bezel/Done=Analysis completed."), 2)"
+## Plugin name
+"$$$/iNat/PluginName=Identification iNaturalist"
 
-# ===== Info.lua =====
-"$$$/iNat/PluginName=Identification iNaturalist"),"
-"$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),"
+## Export menu item
+"$$$/iNat/MenuItem=Identify wildlife via iNaturalist"
 
-# ===== Logger.lua =====
+## Error messages
+"$$$/iNat/NoPhotoSelected=No photo selected."
+"$$$/iNat/UnknownFormat=Unrecognized result format."
+"$$$/iNat/NoSpeciesDetected=No species detected."
 
-# ===== PluginInfoProvider.lua =====
-"$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),"
-"$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),"
-"$$$/iNaturalist/TokenNote=The token is valid for 24 hours; after that, you must regenerate it at the following address:"),"
-"$$$/iNaturalist/OpenTokenPage=Open token generation page"),"
-"$$$/iNaturalist/TokenLabel=Token:"),"
-"$$$/iNaturalist/SaveButton=Save"),"
+## Dialog interface
+"$$$/iNat/DialogTitle=Select species to add as keywords"
+"$$$/iNat/AddKeywords=Add"
 
-# ===== SelectAndTagResults.lua =====
-"$$$/iNat/DialogTitle=Select species to add as keywords"),"
-"$$$/iNat/AddKeywords=Add")"
-"$$$/iNat/NoSpeciesCheckedTitle=No species selected"),"
-"$$$/iNat/NoKeywordsMessage=No keywords will be added.")"
-"$$$/iNat/AddKeywordsWriteAccess=Adding keywords"), function()"
-"$$$/iNat/SuccessTitle=Success"),"
-"$$$/iNat/SuccessMessage=Selected keywords have been successfully added.")"
+## No selection messages
+"$$$/iNat/NoKeywordsSelected=No keywords selected."
+"$$$/iNat/NoSpeciesCheckedTitle=No species selected"
+"$$$/iNat/NoKeywordsMessage=No keywords will be added."
 
-# ===== TokenManager.lua =====
-"$$$/iNat/Error/TokenMissing=Token is missing.")"
-"$$$/iNat/Error/TokenFormat=Invalid token format.")"
-"$$$/iNat/Error/TokenDecode=Unable to decode token payload.")"
-"$$$/iNat/Error/TokenNoExp=Token expiration field missing.")"
-"$$$/iNat/Error/TokenExpInvalid=Invalid expiration format.")"
-"$$$/iNat/Error/TokenExpired=Token has expired.")"
-"$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),"
-"$$$/iNat/TokenDialog/OpenPage=Open token generation page"),"
-"$$$/iNat/TokenDialog/Save=Save token"),"
-"$$$/iNat/TokenDialog/Saved=Token successfully saved."))"
-"$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),"
+## Keyword operations
+"$$$/iNat/AddKeywordsWriteAccess=Adding keywords"
+"$$$/iNat/KeywordsAdded=Keywords added: "
 
-# ===== call_inaturalist.lua =====
-"$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath"
-"$$$/iNat/Error/NoAPIResponse=API error: No response")"
-"$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result)"
-"$$$/iNat/Result/None=🕊️ No specie recognized.")"
-"$$$/iNat/Result/Header=🕊️ Recognized species:") }"
-"$$$/iNat/Result/UnknownName=Unknown")"
-# "$$$/iNat/Result/UnknownName=Unknown")"  # duplicate of call_inaturalist.lua
+## Success message
+"$$$/iNat/SuccessTitle=Success"
+"$$$/iNat/SuccessMessage=Selected keywords have been successfully added."
 
-# ===== export_to_tempo.lua =====
-"$$$/iNat/Log/JPGDeleted=JPG file deleted: ") .. file)"
+## Cancel
+"$$$/iNat/DialogCancelled=Dialog cancelled."
 
-# ===== json.lua =====
+## Startup and status messages
+"$$$/iNat/Bezel/PluginStarted=Plugin started"
+"$$$/iNat/Bezel/NoPhoto=No photo selected."
+"$$$/iNat/Bezel/PhotoName=Selected photo:" 
+"$$$/iNat/Bezel/Cleared=Previous image removed."
+"$$$/iNat/Bezel/ExportFailed=Temporary export failed."
+"$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"
+"$$$/iNat/Bezel/ResultNone=No identification results ❌"
+"$$$/iNat/Bezel/NoneFound=No results found."
+"$$$/iNat/Bezel/AnalysisDone=Analysis completed."
 
-# ===== observation_selection.lua =====
-"$$$/iNat/Dialog/AskObservation=Do you want to submit this photo as an observation to iNaturalist?"),"
-"$$$/iNat/Dialog/AskObservationDetails=The selected species will be submitted with the photo."),"
-"$$$/iNat/Dialog/Submit=Submit"),     -- OK button text"
-# "$$$/iNat/Dialog/Cancel=Cancel")      -- Cancel button text"  # duplicate of AnimalIdentifier.lua
-"$$$/iNat/Dialog/ObservationSubmitted=Observation submitted successfully."),"
-"$$$/iNat/Dialog/Thanks=Thank you for contributing to science!")"
-"$$$/iNat/Dialog/ObservationFailed=Failed to submit observation."),"
-# "$$$/iNat/Dialog/UnknownError=Unknown error occurred.")"  # duplicate of AnimalIdentifier.lua
+## Token errors
+"$$$/iNat/Error/MissingToken=Token is missing. Please enter it in Preferences."
+"$$$/iNat/Error/InvalidToken=Invalid or expired token."
 
+## Result display
+"$$$/iNat/Title/Result=Identification results:"
+
+## Confirmation dialog
+"$$$/iNat/Confirm/Ask=Do you want to add one or more identifications as keywords?"
+"$$$/iNat/Confirm/Hint=Click 'Continue' to select species."
+"$$$/iNat/Confirm/Continue=Continue"
+"$$$/iNat/Confirm/Cancel=Cancel"
+
+## Logging messages for image deletion
+"$$$/iNat/Log/JPGDeleted=JPG file deleted: "
+
+## Log header when the plugin is launched
+"$$$/iNat/Log/PluginStarted=== Plugin launched ==="
+
+## Logger messages for token verification
+"$$$/iNat/Log/VerificationModuleLoaded===== Loaded VerificationToken.lua module ====="
+"$$$/iNat/Log/TokenCheckStart=== Start of isTokenValid() ==="
+"$$$/iNat/Log/TokenMissing=⛔ No token found in Lightroom preferences."
+"$$$/iNat/Log/TokenDetected=🔑 Token detected (length: "
+"$$$/iNat/Log/Chars= characters)"
+"$$$/iNat/Log/CurlCommand=📎 Executing curl command: "
+"$$$/iNat/Log/HttpCode=➡️ HTTP response code from iNaturalist: "
+"$$$/iNat/Log/TokenValid=✅ Success: token is valid."
+"$$$/iNat/Log/TokenInvalid=❌ Failure: token is invalid or expired (401 Unauthorized)."
+"$$$/iNat/Log/ServerError=💥 iNaturalist server error (500)."
+"$$$/iNat/Log/NoHttpCode=⚠️ No HTTP code received. Check internet or curl installation."
+"$$$/iNat/Log/UnexpectedCode=⚠️ Unexpected response (code "
+
+## Preferences UI Strings (EN)
+"$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"
+"$$$/iNaturalist/TokenNote=The token is valid for 24 hours; after that, you must regenerate it at the following address:"
+"$$$/iNaturalist/OpenTokenPage=Open token generation page"
+"$$$/iNaturalist/TokenLabel=Token:"
+"$$$/iNaturalist/EnableLogging=Enable logging to log.txt"
+"$$$/iNaturalist/SaveButton=Save"
+
+"$$$/iNat/Error/MissingUpdateScript=Token update script missing: update_token.lua"
+
+"$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"
+"$$$/iNat/TokenDialog/OpenPage=Open token generation page"
+"$$$/iNat/TokenDialog/Save=Save token"
+"$$$/iNat/TokenDialog/Saved=Token successfully saved."
+"$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"
+
+
+## ##########################################################################################
+
+
+
+"$$$/AiTagger/Language/English=English"
+"$$$/AiTagger/Language/Spanish=Spanish"
+"$$$/AiTagger/Language/French=French"
+"$$$/AiTagger/Language/German=German"
+"$$$/AiTagger/Language/Italian=Italian"
+"$$$/AiTagger/Language/Portuguese=Portuguese"
+"$$$/AiTagger/Language/Russian=Russian"
+"$$$/AiTagger/Language/Japanese=Japanese"
+"$$$/AiTagger/Language/Korean=Korean"
+"$$$/AiTagger/Language/ChineseSimplified=Chinese (Simplified)"
+"$$$/AiTagger/Language/Dutch=Dutch"
+"$$$/AiTagger/Language/Polish=Polish"
+"$$$/AiTagger/Language/Turkish=Turkish"
+"$$$/AiTagger/Language/Arabic=Arabic"
+"$$$/AiTagger/Language/Hindi=Hindi"
+"$$$/AiTagger/Language/Tamil=Tamil"
