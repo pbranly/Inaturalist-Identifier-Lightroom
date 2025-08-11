@@ -1,58 +1,92 @@
---[[
-============================================================
+--[[============================================================
 Functional Description
 ------------------------------------------------------------
-This module `TokenUpdater.lua` manages the execution of the 
-`update_token.lua` script that updates the iNaturalist 
-authentication token.
+This module `TokenUpdater.lua` manages the iNaturalist 
+authentication token update by directly presenting a modal 
+dialog to the user.
 
 Main features:
-1. Verify the presence of the `update_token.lua` script.
-2. Run this update script asynchronously in a Lightroom task 
-   to avoid blocking the UI.
-3. Display an error message if the script is missing.
+1. Display a modal dialog to enter and save the token.
+2. Open the official token generation webpage in the browser.
+3. Save the token in Lightroom plugin preferences.
 
 ------------------------------------------------------------
 Numbered Steps
-1. Import necessary Lightroom modules (paths, files, tasks, dialogs).
+1. Import necessary Lightroom modules (paths, files, tasks, dialogs, prefs, view).
 2. Define the function `runUpdateTokenScript` which:
-    2.1. Builds the full path to `update_token.lua`.
-    2.2. Checks if the script exists.
-    2.3. Runs the script asynchronously if present.
-    2.4. Shows an error message otherwise.
+    2.1. Builds the modal UI.
+    2.2. Opens the token generation page.
+    2.3. Saves the token in preferences.
 3. Export the function for external use.
-
-------------------------------------------------------------
-Called Scripts
-- `update_token.lua` (the token update script)
 
 ------------------------------------------------------------
 Calling Script
 - AnimalIdentifier.lua (e.g. when token is missing or invalid)
-============================================================
-]]
+============================================================]]
 
 -- [Step 1] Lightroom SDK imports
-local LrPathUtils = import "LrPathUtils"
-local LrFileUtils = import "LrFileUtils"
-local LrTasks    = import "LrTasks"
-local LrDialogs  = import "LrDialogs"
+local LrPrefs   = import "LrPrefs"
+local LrDialogs = import "LrDialogs"
+local LrView    = import "LrView"
+local LrTasks   = import "LrTasks"
 
--- [Step 2] Function to run update_token.lua asynchronously
+-- [Step 2] Function to run token update UI
 local function runUpdateTokenScript()
-    -- [2.1] Construct full path of update_token.lua
-    local updateScriptPath = LrPathUtils.child(_PLUGIN.path, "update_token.lua")
+    LrTasks.startAsyncTask(function()
+        -- 2.1 Create UI factory and bind properties
+        local f = LrView.osFactory()
+        local prefs = LrPrefs.prefsForPlugin()
+        local props = { token = prefs.token or "" }
 
-    -- [2.2] Check if script exists
-    if LrFileUtils.exists(updateScriptPath) then
-        -- [2.3] Run script in background async task
-        LrTasks.startAsyncTask(function()
-            dofile(updateScriptPath)
-        end)
-    else
-        -- [2.4] Show error if script missing
-        LrDialogs.message(LOC("$$$/iNat/Error/MissingUpdateScript=Token update script missing: update_token.lua"))
-    end
+        -- 2.2 Define function to open token generation page
+        local function openTokenPage()
+            local url = "https://www.inaturalist.org/users/api_token"
+            local openCommand
+            if WIN_ENV then
+                openCommand = 'start "" "' .. url .. '"'
+            elseif MAC_ENV then
+                openCommand = 'open "' .. url .. '"'
+            else
+                openCommand = 'xdg-open "' .. url .. '"'
+            end
+            LrTasks.execute(openCommand)
+        end
+
+        -- 2.3 Build modal UI
+        local contents = f:column {
+            bind_to_object = props,
+            spacing = f:control_spacing(),
+
+            f:static_text {
+                title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
+                width = 400,
+            },
+
+            f:edit_field {
+                value = LrView.bind("token"),
+                width_in_chars = 80
+            },
+
+            f:push_button {
+                title = LOC("$$$/iNat/TokenDialog/OpenPage=Open token generation page"),
+                action = openTokenPage
+            },
+
+            f:push_button {
+                title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
+                action = function()
+                    prefs.token = props.token
+                    LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
+                end
+            }
+        }
+
+        -- 2.4 Show modal dialog
+        LrDialogs.presentModalDialog {
+            title = LOC("$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"),
+            contents = contents
+        }
+    end)
 end
 
 -- [Step 3] Export the function

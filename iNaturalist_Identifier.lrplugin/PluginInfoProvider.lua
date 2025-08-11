@@ -52,7 +52,7 @@ return {
         -- [Step 3] Token input field
         local tokenField = viewFactory:edit_field {
             value = prefs.token or "",
-            width_in_chars = 50,
+            width_in_chars = 80,
         }
 
         -- [Step 4] Checkbox to enable logging
