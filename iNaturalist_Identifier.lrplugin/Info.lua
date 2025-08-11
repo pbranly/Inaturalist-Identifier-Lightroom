@@ -1,62 +1,61 @@
 --[[
 ============================================================
-Description fonctionnelle
+Functional Description
 ------------------------------------------------------------
-Ce script `Info.lua` définit les métadonnées et la configuration 
-principale d’un plugin Lightroom pour identifier la faune via 
-la plateforme iNaturalist.
+This `Info.lua` script defines the metadata and main configuration
+for a Lightroom plugin that identifies wildlife using the 
+iNaturalist platform.
 
-Il s’agit d’un fichier de configuration Lua spécifique au SDK 
-de Lightroom, qui permet :
-1. D’indiquer le nom, l’identifiant unique et la compatibilité 
-   avec les versions du SDK Lightroom.
-2. De fournir l’URL d’informations sur le plugin.
-3. De définir les éléments de menu dans Lightroom, en précisant 
-   le script principal à exécuter lors du choix de l’option.
-4. De spécifier les scripts annexes comme le fournisseur 
-   d’informations pour le gestionnaire de plugins.
-5. De définir le type de plugin et sa version.
-
-------------------------------------------------------------
-Étapes numérotées
-1. Déclarer le nom du plugin affiché dans Lightroom.
-2. Définir l’identifiant unique du plugin (Toolkit Identifier).
-3. Spécifier les versions du SDK Lightroom supportées.
-4. Fournir l’URL vers les informations du plugin.
-5. Déclarer l’élément de menu dans "Fichier > Exporter" et 
-   le script à lancer.
-6. Spécifier le script d’interface pour le gestionnaire de plugins.
-7. Indiquer le type de plugin.
-8. Définir la version du plugin.
+This is a Lightroom SDK-specific Lua configuration file that:
+1. Declares the plugin name, unique identifier, and supported 
+   Lightroom SDK versions.
+2. Provides a URL for plugin information.
+3. Defines menu items in Lightroom and specifies the main script
+   to run when selected.
+4. Specifies additional scripts such as the plugin information
+   provider for the Plugin Manager.
+5. Declares the plugin type and version.
 
 ------------------------------------------------------------
-Scripts appelés
-- main.lua (script principal exécuté via le menu Exporter)
-- PluginInfoProvider.lua (script pour l’affichage d’informations 
-  dans le gestionnaire de plugins Lightroom)
+Numbered Steps
+1. Declare the plugin name displayed in Lightroom.
+2. Define the plugin's unique Toolkit Identifier.
+3. Specify the supported Lightroom SDK versions.
+4. Provide the plugin information URL.
+5. Declare the menu item under "File > Export" and link it to 
+   the main script.
+6. Specify the information provider script for the Plugin Manager.
+7. Define the plugin type.
+8. Set the plugin version.
 
 ------------------------------------------------------------
-Script appelant
-- Lightroom (application hôte) via son moteur interne de 
-  chargement de plugins SDK.
+Called scripts
+- main.lua (main script launched via the Export menu)
+- PluginInfoProvider.lua (script for displaying plugin information
+  in Lightroom's Plugin Manager)
+
+------------------------------------------------------------
+Calling script
+- Lightroom (host application) via its internal SDK plugin 
+  loading engine.
 ============================================================
 ]]
 
 return {
-    -- [Étape 1] Display name in Lightroom (localized)
-    LrPluginName = LOC("$$$/iNat/PluginName=Identification iNaturalist"),
+    -- [Step 1] Display name in Lightroom (localized)
+    LrPluginName = LOC("$$$/iNat/PluginName=iNaturalist Identification"),
 
-    -- [Étape 2] Unique identifier for the plugin
+    -- [Step 2] Unique identifier for the plugin
     LrToolkitIdentifier = "com.example.iNaturalistBirdIdentifier",
 
-    -- [Étape 3] Supported Lightroom SDK versions
+    -- [Step 3] Supported Lightroom SDK versions
     LrSdkVersion = 14.0,
     LrSdkMinimumVersion = 10.0,
 
-    -- [Étape 4] Link to plugin information website
+    -- [Step 4] Link to plugin information website
     LrPluginInfoUrl = "https://www.inaturalist.org",
 
-    -- [Étape 5] Script launched from the "File > Export" menu
+    -- [Step 5] Script launched from the "File > Export" menu
     LrExportMenuItems = {
         {
             title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
@@ -64,17 +63,17 @@ return {
         },
     },
 
-    -- [Étape 6] Interface for the Plugin Manager
+    -- [Step 6] Interface for the Plugin Manager
     LrPluginInfoProvider = "PluginInfoProvider.lua",
 
-    -- [Étape 7] Plugin type
+    -- [Step 7] Plugin type
     LrPluginType = "export",
 
-    -- [Étape 8] Plugin version number
+    -- [Step 8] Plugin version number
     VERSION = {
         major = 0,
-        minor = 0,
-        revision = 0,
+        minor = 1,
+        revision = 4,
         build = 1,
     },
 }
