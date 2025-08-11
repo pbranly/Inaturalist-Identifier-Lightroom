@@ -7,25 +7,33 @@ Script Name: extract_lightroom_translations.py
 Author: Philippe's Python Helper (GPT-5)
 -------------------------------------------------------------------------------
 Functional Description:
-This script scans all `.lua` files in the current working directory to extract
-Lightroom-style translation strings of the form:
+This script scans all `.lua` files in its current working directory to extract
+Lightroom-style translation strings embedded in LOC() calls, such as:
 
-    $$$/namespace/key=Translated Text
+    LOC("$$$/namespace/key=Translated Text")
 
 For example:
-    $$$/iNat/PluginName=Identification iNaturalist
+    LOC("$$$/iNat/Bezel/Started=Plugin started")
 
 The script performs the following actions:
 1. Iterates through all `.lua` files in the current directory.
-2. Uses a regular expression to find lines that match the Lightroom translation pattern.
-3. Groups translations by their source `.lua` file, adding a section header as a comment:
-       # ===== filename.lua =====
-4. Tracks already-seen translation keys to avoid duplicates:
-   - The first occurrence of a key is written as-is.
-   - Subsequent occurrences of the same key are commented out and annotated
-     with a note indicating where the key was first found.
-5. Generates a single output file named:
+2. Uses a regular expression to find translation strings inside LOC() calls.
+3. Extracts the key and value from each match.
+4. Formats each translation line as:
+       "$$$/namespace/key=Translated Text"
+   with straight double quotes surrounding the entire line.
+5. Groups translations by their source `.lua` file, adding a section header:
+       # filename.lua
+6. Tracks already-seen translation lines to avoid duplication:
+   - The first occurrence of a line is written normally.
+   - Subsequent occurrences of the same line are commented out with a `#`.
+7. Generates a single output file named:
        TranslatedStrings_en.txt
+
+This script is useful when:
+- You want to centralize all Lightroom translation strings from multiple Lua scripts.
+- You need to detect and annotate duplicate translation keys across files.
+- You prefer a clean, structured output grouped by source file.
 
 -------------------------------------------------------------------------------
 Usage:
@@ -37,8 +45,9 @@ Usage:
 
 Notes:
 - The script assumes UTF-8 encoding for reading `.lua` files.
-- Non-matching lines in `.lua` files are ignored.
+- Only LOC()-style translation strings are extracted.
 - Duplicates are commented out, not removed, to preserve context.
+- The output file is overwritten each time the script runs.
 
 -------------------------------------------------------------------------------
 """
@@ -46,39 +55,41 @@ Notes:
 import os
 import re
 
-# Fixed language code
-lang = "en"
+def extract_lightroom_strings(text):
+    # Capture translation strings inside LOC("$$$/key=value")
+    pattern = re.compile(r'LOC\("(\$\$\$/[^\s=]+)=([^\n")]+)"')
+    return pattern.findall(text)
 
-# Regular expression to detect Lightroom translation strings
-pattern = re.compile(r'(\$\$\$/[^\s=]+)=(.+)')
+def format_translation(key, value):
+    return f'"{key}={value}"'
 
-output_file = f"TranslatedStrings_{lang}.txt"
-found_strings = {}  # key = identifier (e.g., "$$$/iNat/PluginName"), value = (text, source file)
+def process_scripts_in_current_directory(output_path):
+    seen_lines = set()
+    output_lines = []
 
-lines_out = []
+    for filename in sorted(os.listdir(".")):
+        if filename.lower().endswith(".lua"):
+            with open(filename, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
 
-# Scan all .lua files in the current directory
-for filename in sorted(os.listdir(".")):
-    if filename.lower().endswith(".lua"):
-        lines_out.append(f"# ===== {filename} =====\n")
-        
-        with open(filename, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                match = pattern.search(line)
-                if match:
-                    key = match.group(1).strip()
-                    value = match.group(2).strip()
-                    
-                    if key not in found_strings:
-                        found_strings[key] = (value, filename)
-                        lines_out.append(f'"{key}={value}"\n')
+            translations = extract_lightroom_strings(content)
+            if translations:
+                output_lines.append(f'# {filename}')
+                for key, value in translations:
+                    line = format_translation(key, value)
+                    if line in seen_lines:
+                        output_lines.append(f'# {line}')
                     else:
-                        # Duplicate: comment it out
-                        lines_out.append(f'# "{key}={value}"  # duplicate of {found_strings[key][1]}\n')
-        lines_out.append("\n")
+                        output_lines.append(line)
+                        seen_lines.add(line)
+                output_lines.append('')  # Blank line between blocks
 
-# Write final output file
-with open(output_file, "w", encoding="utf-8") as out:
-    out.writelines(lines_out)
+    # Write final output file
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write('\n'.join(output_lines))
+
+# 🔧 Run in current working directory
+output_file = "TranslatedStrings_en.txt"
+process_scripts_in_current_directory(output_file)
 
 print(f"File '{output_file}' generated successfully.")
