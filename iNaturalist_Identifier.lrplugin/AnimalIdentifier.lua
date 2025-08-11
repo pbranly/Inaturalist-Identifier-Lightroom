@@ -55,63 +55,71 @@ local LOC = LOC
 -- Main function: identifies the animal in the selected Lightroom photo
 --------------------------------------------------------------------------------
 local function identifyAnimal()
-    LrTasks.startAsyncTask(function()
-        local success, err = pcall(function()
+    local success, err = pcall(function()
 
-            -- Initialize logging and UI feedback
-            logger.initializeLogFile()
-            logger.logMessage("=== Plugin launched ===")
-            logger.logMessage("Plugin started")
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Started=Plugin started"), 2)
+        print("🔍 Plugin launched")
+        logger.initializeLogFile()
+        logger.logMessage("=== Plugin launched ===")
+        logger.logMessage("Plugin started")
+        print("✅ Plugin started")
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Started=Plugin started"), 2)
 
-            -- Load stored API token from preferences
-            local prefs = LrPrefs.prefsForPlugin()
-            local token = prefs.token
+        -- Load stored API token from preferences
+        print("🔐 Loading API token")
+        local prefs = LrPrefs.prefsForPlugin()
+        local token = prefs.token
 
-            -- Validate the token (format and expiration)
-            logger.logMessage("Validating API token")
-            local isValid, msg = TokenManager.isTokenValid(token)
-            if not isValid then
-                logger.notify(msg or "Invalid or expired token.")
-                logger.logMessage("Token invalid or expired, opening token dialog")
-                TokenManager.showTokenDialog()
-                return
-            end
+        -- Validate the token (format and expiration)
+        print("🔎 Validating token")
+        logger.logMessage("Validating API token")
+        local isValid, msg = TokenManager.isTokenValid(token)
+        if not isValid then
+            print("❌ Token invalid or expired")
+            logger.notify(msg or "Invalid or expired token.")
+            logger.logMessage("Token invalid or expired, opening token dialog")
+            TokenManager.showTokenDialog()
+            return
+        end
+        print("✅ Token valid")
 
-            -- Retrieve the currently selected photo in Lightroom
-            logger.logMessage("Retrieving selected photo from catalog")
-            local catalog = LrApplication.activeCatalog()
-            local photo = catalog:getTargetPhoto()
-            if not photo then
-                logger.logMessage("No photo selected.")
-                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
-                return
-            end
+        -- Retrieve the currently selected photo in Lightroom
+        print("🖼️ Retrieving selected photo")
+        logger.logMessage("Retrieving selected photo from catalog")
+        local catalog = LrApplication.activeCatalog()
+        local photo = catalog:getTargetPhoto()
+        if not photo then
+            print("⚠️ No photo selected")
+            logger.logMessage("No photo selected.")
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
+            return
+        end
 
-            -- Log the selected photo's filename for debugging
-            local filename = photo:getFormattedMetadata("fileName") or "unknown"
-            logger.logMessage("Selected photo: " .. filename)
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)
+        -- Log the selected photo's filename for debugging
+        local filename = photo:getFormattedMetadata("fileName") or "unknown"
+        print("📷 Selected photo: " .. filename)
+        logger.logMessage("Selected photo: " .. filename)
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/SelectedPhoto=Selected photo: ") .. filename, 2)
 
-            -- Debug info for yield context (optional, diagnostic)
-            logger.logMessage("DEBUG: Before export, LrTasks.canYield()=" .. tostring(LrTasks.canYield()))
-            logger.logMessage("DEBUG: Call stack:\n" .. debug.traceback())
+        -- Export the selected photo to a temporary JPEG file named "tempo.jpg"
+        print("📤 Exporting photo to tempo.jpg")
+        logger.logMessage("Exporting selected photo to tempo.jpg")
+        local exportedPath, exportErr = export_to_tempo.exportToTempo(photo)
+        if not exportedPath then
+            print("❌ Export failed: " .. (exportErr or "unknown"))
+            logger.logMessage("Failed to export image: " .. (exportErr or "unknown"))
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)
+            return
+        end
+        print("✅ Export successful: " .. exportedPath)
+        logger.logMessage("Image successfully exported as tempo.jpg")
+        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
 
-            -- Export the selected photo asynchronously to a temporary JPEG file named "tempo.jpg"
-            logger.logMessage("Exporting selected photo to tempo.jpg")
-            local exportedPath, exportErr = export_to_tempo.exportToTempo(photo)
-            if not exportedPath then
-                logger.logMessage("Failed to export image: " .. (exportErr or "unknown"))
-                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Image export failed."), 3)
-                return
-            end
-            logger.logMessage("Image successfully exported as tempo.jpg")
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 2)
-
-            -- Send the exported photo to iNaturalist API for identification
-            logger.logMessage("Sending image to iNaturalist API for identification")
-            local result, apiErr = callAPI.identify(exportedPath, token)
+        -- Send the exported photo to iNaturalist API for identification (asynchronous)
+        print("🌐 Sending image to iNaturalist API")
+        logger.logMessage("Sending image to iNaturalist API for identification")
+        callAPI.identifyAsync(exportedPath, token, function(result, apiErr)
             if not result then
+                print("❌ API error: " .. (apiErr or "unknown"))
                 logger.logMessage("API error: " .. (apiErr or "unknown"))
                 LrDialogs.message(
                     LOC("$$$/iNat/Dialog/IdentificationFailed=Identification failed"),
@@ -120,9 +128,9 @@ local function identifyAnimal()
                 return
             end
 
-            -- Validate and parse the identification results
+            print("📊 Parsing identification results")
             logger.logMessage("Validating identification results")
-            local hasTitle = result:match("🕊️") -- Example check for presence of title/emojis
+            local hasTitle = result:match("🕊️")
             local count = 0
             for line in result:gmatch("[^\r\n]+") do
                 if line:match("%%") and line:match("%(") and line:match("%)") then
@@ -131,10 +139,11 @@ local function identifyAnimal()
             end
 
             if hasTitle and count > 0 then
+                print("✅ Species identified")
                 logger.logMessage("Identification results:\n" .. result)
                 LrDialogs.message(LOC("$$$/iNat/Dialog/Results=Identification results:"), result)
 
-                -- Prompt user for optionally adding identifications as keywords
+                print("🏷️ Prompting user for keyword tagging")
                 logger.logMessage("Prompting user for keyword tagging")
                 local choix = LrDialogs.confirm(
                     LOC("$$$/iNat/Dialog/AskTag=Do you want to add one or more identifications as keywords?"),
@@ -144,37 +153,43 @@ local function identifyAnimal()
                 )
 
                 if choix == "ok" then
+                    print("📝 User accepted tagging")
                     logger.logMessage("User chose to continue with tagging")
                     local selector = require("SelectAndTagResults")
                     selector.showSelection(result)
                 else
+                    print("🚫 User skipped tagging")
                     logger.logMessage("User skipped tagging.")
                 end
             else
+                print("⚠️ No identification results")
                 logger.logMessage("No identification results.")
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoResult=No results found."), 3)
             end
 
-            -- Final notification
+            print("✅ Analysis completed")
             logger.logMessage("Analysis completed.")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Done=Analysis completed."), 2)
         end)
-
-        -- Global error catch for unexpected errors in async task
-        if not success then
-            logger.logMessage("Unexpected error: " .. tostring(err))
-            LrDialogs.message(
-                LOC("$$$/iNat/Dialog/Error=Unexpected error"),
-                tostring(err)
-            )
-        end
     end)
+
+    -- Global error catch for unexpected errors
+    if not success then
+        print("🔥 Unexpected error: " .. tostring(err))
+        logger.logMessage("Unexpected error: " .. tostring(err))
+        LrDialogs.message(
+            LOC("$$$/iNat/Dialog/Error=Unexpected error"),
+            tostring(err)
+        )
+    end
 end
 
 --------------------------------------------------------------------------------
 -- Auto-execute when this module is called via Lightroom menu
 --------------------------------------------------------------------------------
-identifyAnimal()
+LrTasks.startAsyncTask(function()
+    identifyAnimal()
+end)
 
 --------------------------------------------------------------------------------
 -- Export module interface for external calls if needed
