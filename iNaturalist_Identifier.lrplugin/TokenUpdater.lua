@@ -1,61 +1,61 @@
 --[[
 ============================================================
-Description fonctionnelle
+Functional Description
 ------------------------------------------------------------
-Ce module `TokenUpdater.lua` gère le lancement du script 
-`update_token.lua` qui permet de mettre à jour le token 
-d’authentification iNaturalist.
+This module `TokenUpdater.lua` manages the execution of the 
+`update_token.lua` script that updates the iNaturalist 
+authentication token.
 
-Fonctionnalités principales :
-1. Vérifier la présence du script `update_token.lua`.
-2. Exécuter ce script de mise à jour dans une tâche asynchrone 
-   Lightroom pour ne pas bloquer l’interface.
-3. Afficher un message d’erreur si le script est absent.
-
-------------------------------------------------------------
-Étapes numérotées
-1. Importer les modules Lightroom nécessaires (chemins, fichiers, tâches, dialogues).
-2. Définir la fonction `runUpdateTokenScript` qui :
-    2.1. Construit le chemin complet du script `update_token.lua`.
-    2.2. Vérifie si le script existe.
-    2.3. Lance l’exécution du script dans une tâche asynchrone si présent.
-    2.4. Affiche un message d’erreur sinon.
-3. Exporter la fonction pour utilisation externe.
+Main features:
+1. Verify the presence of the `update_token.lua` script.
+2. Run this update script asynchronously in a Lightroom task 
+   to avoid blocking the UI.
+3. Display an error message if the script is missing.
 
 ------------------------------------------------------------
-Scripts appelés
-- `update_token.lua` (script de mise à jour du token)
+Numbered Steps
+1. Import necessary Lightroom modules (paths, files, tasks, dialogs).
+2. Define the function `runUpdateTokenScript` which:
+    2.1. Builds the full path to `update_token.lua`.
+    2.2. Checks if the script exists.
+    2.3. Runs the script asynchronously if present.
+    2.4. Shows an error message otherwise.
+3. Export the function for external use.
 
 ------------------------------------------------------------
-Script appelant
-- AnimalIdentifier.lua (notamment lors d’un token manquant ou invalide)
+Called Scripts
+- `update_token.lua` (the token update script)
+
+------------------------------------------------------------
+Calling Script
+- AnimalIdentifier.lua (e.g. when token is missing or invalid)
 ============================================================
 ]]
 
--- [Étape 1] Lightroom SDK imports
+-- [Step 1] Lightroom SDK imports
 local LrPathUtils = import "LrPathUtils"
 local LrFileUtils = import "LrFileUtils"
-local LrTasks     = import "LrTasks"
-local LrDialogs   = import "LrDialogs"
+local LrTasks    = import "LrTasks"
+local LrDialogs  = import "LrDialogs"
 
--- [Étape 2] Function to run the update_token.lua script asynchronously
+-- [Step 2] Function to run update_token.lua asynchronously
 local function runUpdateTokenScript()
-    -- [2.1] Construct the full path of update_token.lua
+    -- [2.1] Construct full path of update_token.lua
     local updateScriptPath = LrPathUtils.child(_PLUGIN.path, "update_token.lua")
 
-    -- [2.2] Check if the script exists
+    -- [2.2] Check if script exists
     if LrFileUtils.exists(updateScriptPath) then
-        -- [2.3] Execute the script in a background async task
+        -- [2.3] Run script in background async task
         LrTasks.startAsyncTask(function()
             dofile(updateScriptPath)
         end)
     else
-        -- [2.4] Show an error message if the script is missing
+        -- [2.4] Show error if script missing
         LrDialogs.message(LOC("$$$/iNat/Error/MissingUpdateScript=Token update script missing: update_token.lua"))
     end
 end
 
--- [Étape 3] Export the function
+-- [Step 3] Export the function
 return {
     runUpdateTokenScript = runUpdateTokenScript
 }
