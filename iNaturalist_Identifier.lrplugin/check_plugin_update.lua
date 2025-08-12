@@ -1,153 +1,134 @@
---[[ 
+--[[
 =====================================================================================
- Script       : check_plugin_update.lua
- Purpose      : Compare local plugin version from Info.lua with the latest GitHub release
- Author       : Philippe (adapted by ChatGPT)
+ Script       : check_plugin_version.lua
+ Purpose      : Compare current plugin version (from Info.lua) with latest release 
+                version on GitHub and notify user if a newer version is available.
 
  Functional Overview:
- This script loads the local plugin version declared in Info.lua,
- fetches the latest release version from GitHub API, compares
- major, minor, and revision numbers, then shows a localized message
- to the user if a newer version is available.
-
- Workflow Steps:
- 1. Load Info.lua as a Lua module to get the local version table.
- 2. Fetch the latest GitHub release information from GitHub API.
- 3. Extract and normalize version numbers from GitHub tag string.
- 4. Compare local and remote versions number-by-number.
- 5. Display an internationalized message if an update is available.
- 6. Log all key actions and errors in English for debugging.
+ This script reads the plugin version from Info.lua and fetches the latest release
+ version from the GitHub releases API. It compares the major, minor, and revision 
+ numbers. If the GitHub release version is newer, it shows an internationalized 
+ notification with the latest version number.
 
  Dependencies:
- - Lightroom SDK: LrHttp, LOC
- - JSON decoding library (assumed available as `json`)
+ - Lightroom SDK modules: LrHttp, LrTasks, LrDialogs, LrApplication
+ - Access to Info.lua in the same directory or via proper require path
+ - Internet connection to access GitHub API
+
+ Workflow Steps:
+ 1. Load the current plugin version from Info.lua.
+ 2. Make an HTTP GET request to GitHub API for the latest release data.
+ 3. Parse the JSON response and extract the 'tag_name' field.
+ 4. Parse both current and latest versions into numeric major, minor, revision.
+ 5. Compare versions in order: major, minor, revision.
+ 6. If GitHub version is newer, display a message with the new version number.
+ 7. Log all main steps and any errors encountered.
+
 =====================================================================================
 --]]
 
 -- Lightroom SDK modules
-local LrHttp = import "LrHttp"
-local LOC = import "LrDialogs".message -- assuming LOC is available globally in Lightroom SDK
-local json = require("json")  -- or your JSON decoder
+local LrHttp    = import "LrHttp"
+local LrTasks   = import "LrTasks"
+local LrDialogs = import "LrDialogs"
+local logger    = require("Logger")  -- Assumed custom logger module for logging
 
--- Logger utility for debugging (print to console)
-local function log(message)
-    -- You can replace this with a proper logger if available
-    print("[check_plugin_update] " .. message)
+-- Load Info.lua to get current plugin version
+local info = require("Info")
+
+-- Helper function: parse version string "0.1.4" -> major=0, minor=1, revision=4
+local function parseVersion(versionString)
+    local major, minor, revision = versionString:match("^(%d+)%.(%d+)%.(%d+)")
+    if major and minor and revision then
+        return tonumber(major), tonumber(minor), tonumber(revision)
+    else
+        return nil, nil, nil
+    end
 end
 
---[[
- Step 1: Load Info.lua file as a Lua module to get local version table
- Parameters:
-   path (string) - path to Info.lua file
- Returns:
-   table or nil, string error message
---]]
-local function loadInfoLua(path)
-    log("Loading Info.lua from: " .. tostring(path))
-    local chunk, err = loadfile(path)
-    if not chunk then
-        log("Failed to load Info.lua: " .. tostring(err))
-        return nil, "Failed to load Info.lua: " .. tostring(err)
-    end
-    local info = chunk()
-    log("Info.lua loaded successfully.")
-    return info
-end
-
---[[
- Step 4: Compare local version table and GitHub version string
- Parameters:
-   localVersionTable (table) - with fields major, minor, revision
-   githubVersionStr (string) - version string like "0.1.5"
- Returns:
-   boolean - true if GitHub version is newer
---]]
-local function isGitHubVersionNewer(localVersionTable, githubVersionStr)
-    local maj, min, rev = githubVersionStr:match("(%d+)%.(%d+)%.(%d+)")
-    maj = tonumber(maj)
-    min = tonumber(min)
-    rev = tonumber(rev)
-    if not (maj and min and rev) then
-        log("GitHub version string parsing failed: " .. tostring(githubVersionStr))
-        return false
-    end
-
-    local lmaj = localVersionTable.major or 0
-    local lmin = localVersionTable.minor or 0
-    local lrev = localVersionTable.revision or 0
-
-    log(string.format("Comparing versions: local %d.%d.%d vs GitHub %d.%d.%d", lmaj, lmin, lrev, maj, min, rev))
-
-    if maj > lmaj then return true end
-    if maj < lmaj then return false end
-
-    if min > lmin then return true end
-    if min < lmin then return false end
-
-    if rev > lrev then return true end
-
+-- Helper function: compare versions
+-- returns true if v2 > v1
+local function isNewerVersion(v1, v2)
+    -- v1 and v2 are tables {major, minor, revision}
+    if v2[1] > v1[1] then return true end
+    if v2[1] < v1[1] then return false end
+    if v2[2] > v1[2] then return true end
+    if v2[2] < v1[2] then return false end
+    if v2[3] > v1[3] then return true end
     return false
 end
 
---[[
- Step 2: Fetch latest release version from GitHub API
- Returns:
-   string (version like "0.1.5") or nil if failed
---]]
-local function getLatestVersionFromGitHub()
+-- Main function to check plugin version
+local function checkVersion()
+
+    -- Step 1: Get current plugin version from Info.lua
+    logger.log("Reading current plugin version from Info.lua")
+    local currentVersionTable = info.VERSION or {}
+    local currentVersionStr = string.format("%d.%d.%d",
+        currentVersionTable.major or 0,
+        currentVersionTable.minor or 0,
+        currentVersionTable.revision or 0)
+    local currentVersion = {currentVersionTable.major or 0, currentVersionTable.minor or 0, currentVersionTable.revision or 0}
+
+    logger.log("Current plugin version: " .. currentVersionStr)
+
+    -- Step 2: HTTP GET latest release info from GitHub API
     local url = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
-    log("Fetching latest GitHub release info...")
-    local response, hdrs = LrHttp.get(url)
-    if not response then
-        log("Failed to get response from GitHub API.")
-        return nil
-    end
-    local success, parsed = pcall(json.decode, response)
-    if not success or not parsed then
-        log("Failed to parse GitHub API JSON response.")
-        return nil
-    end
-    local tag = parsed.tag_name or ""
-    log("Latest GitHub version tag: " .. tostring(tag))
-    return tag:gsub("^v", "") -- remove leading 'v' if present
-end
+    logger.log("Fetching latest release info from GitHub API: " .. url)
 
---[[
- Step 5 & 6: Main check function
- Parameters:
-   pathToInfoLua (string) - path to Info.lua
- Displays localized message if a new version is available.
---]]
-local function checkForPluginUpdate(pathToInfoLua)
-    local info, err = loadInfoLua(pathToInfoLua)
-    if not info then
-        log("Error loading Info.lua: " .. tostring(err))
+    local success, response, headers = pcall(LrHttp.get, url)
+
+    if not success or not response then
+        logger.log("Failed to fetch GitHub release info: " .. tostring(response))
         return
     end
 
-    local localVersion = info.VERSION
-    if not localVersion then
-        log("Local version info missing in Info.lua")
+    -- Step 3: Parse JSON response
+    local json = require("json")  -- JSON decoder assumed available
+    local ok, releaseInfo = pcall(json.decode, response)
+    if not ok or not releaseInfo or not releaseInfo.tag_name then
+        logger.log("Failed to parse GitHub JSON response or missing tag_name.")
         return
     end
 
-    local latestVersion = getLatestVersionFromGitHub()
-    if not latestVersion then
-        log("Could not retrieve latest version from GitHub")
+    local latestVersionStr = releaseInfo.tag_name
+    logger.log("Latest version string from GitHub: " .. tostring(latestVersionStr))
+
+    -- Step 4: Parse latest version string (may start with 'v', remove it)
+    if latestVersionStr:sub(1,1) == "v" or latestVersionStr:sub(1,1) == "V" then
+        latestVersionStr = latestVersionStr:sub(2)
+    end
+
+    local major, minor, revision = parseVersion(latestVersionStr)
+    if not major then
+        logger.log("Failed to parse latest version number from tag: " .. tostring(latestVersionStr))
         return
     end
 
-    if isGitHubVersionNewer(localVersion, latestVersion) then
-        -- Localized message to user
-        local title = LOC("$$$/iNat/Update/Title=Plugin Update")
-        local message = LOC("$$$/iNat/Update/NewVersionAvailable=New version available")
-        LrDialogs.message(title, message)
-        log("New version available: " .. latestVersion)
+    local latestVersion = {major, minor, revision}
+
+    -- Step 5: Compare current and latest versions
+    if isNewerVersion(currentVersion, latestVersion) then
+        -- Step 6: Show message to user about new version availability
+        logger.log(string.format("New version detected: %s (current: %s)", latestVersionStr, currentVersionStr))
+
+        -- Internationalized message with version number
+        LrDialogs.message(
+            LOC("$$$/iNat/VersionCheck/Title=Update available"),
+            LOC("$$$/iNat/VersionCheck/Message=New version available: ^1", latestVersionStr),
+            "info"
+        )
     else
-        log("Plugin is up to date.")
+        logger.log("Plugin is up to date. Current version: " .. currentVersionStr)
     end
 end
 
--- Replace with actual path to your Info.lua file
-local pathToInfoLua = "/path/to/your/plugin/Info.lua"
-checkForPluginUpdate(pathToInfoLua)
+-- Step 7: Run the version check asynchronously
+LrTasks.startAsyncTask(function()
+    checkVersion()
+end)
+
+-- Export function for external use if needed
+return {
+    checkVersion = checkVersion
+}
