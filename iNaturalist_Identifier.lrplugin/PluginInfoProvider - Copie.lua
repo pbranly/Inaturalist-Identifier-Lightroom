@@ -1,3 +1,51 @@
+--[[
+=====================================================================================
+PlugInInfoProvider.lua (Modified with Token Status Check)
+-------------------------------------------------------------------------------------
+Functional Description
+-------------------------------------------------------------------------------------
+This module defines the Lightroom plugin preferences dialog for the iNaturalist plugin.
+It has been modified so that token configuration via TokenUpdater.lua is only offered 
+when the stored token is missing or expired. If the token is valid, a message is shown 
+informing the user that the token is up-to-date.
+
+Main features:
+1. Provide a button to check the token status.
+2. If the token is valid → show a message "Token up-to-date".
+3. If the token is missing or expired → show a confirmation dialog 
+   "Token must be renewed. Do you want to update it now?" with OK/Cancel buttons.
+4. Launch TokenUpdater.lua only if the user confirms.
+5. Provide a checkbox to enable/disable logging to log.txt.
+6. Keep all user-facing messages internationalized via LOC().
+7. Keep all log messages in English for consistency in log.txt.
+
+-------------------------------------------------------------------------------------
+Numbered Steps
+-------------------------------------------------------------------------------------
+1. Import Lightroom SDK modules for preferences and UI creation.
+2. Import TokenUpdater.lua for token configuration.
+3. Import VerificationToken.lua for token validation.
+4. Retrieve plugin preferences.
+5. Create the logging enable/disable checkbox.
+6. Build and return the dialog layout:
+    6.1. Display a title and instruction about token configuration.
+    6.2. Display a button to check token status and optionally launch TokenUpdater.lua.
+    6.3. Display the logging checkbox row.
+    6.4. Display a Save button to persist logging preferences.
+
+-------------------------------------------------------------------------------------
+Called Scripts
+-------------------------------------------------------------------------------------
+- TokenUpdater.lua        → Presents a modal dialog to update the token.
+- VerificationToken.lua   → Validates the stored token.
+
+-------------------------------------------------------------------------------------
+Calling Script
+-------------------------------------------------------------------------------------
+- Invoked automatically by Lightroom when displaying plugin preferences via Info.lua.
+=====================================================================================
+]]
+
 -- [Step 1] Lightroom module imports
 local LrPrefs   = import "LrPrefs"
 local LrView    = import "LrView"
@@ -8,9 +56,6 @@ local tokenUpdater = require("TokenUpdater")
 
 -- [Step 3] Import token validation module
 local tokenChecker = require("VerificationToken")
-
--- ✅ Import GitHub version module
-local versionGitHub = require("VersionGitHub")
 
 -- [Step 6] Preferences dialog definition
 return {
@@ -26,25 +71,6 @@ return {
             unchecked_value = false,
         }
 
-        -- ✅ Récupération de la version GitHub
-        local latestTag, releaseUrl = versionGitHub.getLatestTag()
-        local versionText = latestTag and ("Latest GitHub version: " .. latestTag) or "Unable to retrieve GitHub version"
-
-        -- Fonction pour afficher la version GitHub dans une boîte de dialogue
-        local function version_github()
-            if latestTag then
-                LrDialogs.message(
-                    LOC("$$$/iNat/GitHubVersionTitle=GitHub Version"),
-                    LOC("$$$/iNat/GitHubVersionBody=Latest GitHub version: ") .. latestTag
-                )
-            else
-                LrDialogs.message(
-                    LOC("$$$/iNat/GitHubVersionTitle=GitHub Version"),
-                    LOC("$$$/iNat/GitHubVersionError=Unable to retrieve GitHub version.")
-                )
-            end
-        end
-
         -- [Step 6] Return dialog layout
         return {
             {
@@ -56,18 +82,13 @@ return {
                     width = 400,
                 },
 
-                -- ✅ Affichage automatique de la version GitHub
-                viewFactory:static_text {
-                    title = LOC("$$$/iNaturalist/GitHubVersionLabel=" .. versionText),
-                    width = 400,
-                },
-
                 -- [6.2] Button to check token status
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/ConfigureToken=Configure token"),
                     action = function()
                         local logger = require("Logger")
 
+                        -- Case 1: Token exists and is valid
                         if prefs.token and prefs.token ~= "" and tokenChecker.isTokenValid() then
                             logger.logMessage("Token is up-to-date.")
                             LrDialogs.message(
@@ -77,6 +98,7 @@ return {
                             return
                         end
 
+                        -- Case 2: Token missing or expired
                         logger.logMessage("Token must be renewed.")
                         local choice = LrDialogs.confirm(
                             LOC("$$$/iNat/TokenDialog/MustRenewTitle=Token status"),
@@ -92,12 +114,6 @@ return {
                             logger.logMessage("User cancelled token update.")
                         end
                     end,
-                },
-
-                -- ✅ Bouton pour afficher la version GitHub
-                viewFactory:push_button {
-                    title = LOC("$$$/iNaturalist/GitHubVersionButton=Version GitHub"),
-                    action = version_github,
                 },
 
                 -- [6.3] Logging checkbox row
