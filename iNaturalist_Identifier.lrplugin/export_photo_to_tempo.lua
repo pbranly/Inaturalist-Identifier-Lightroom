@@ -75,7 +75,7 @@ end
 local export_photo_to_tempo = {}
 
 -- Export currently selected photo to "tempo.jpg" in plugin folder
-function export_to_tempo.exportToTempo(photo)
+function export_photo_to_tempo.exportToTempo(photo)
     if not photo then
         return nil, "No photo selected."
     end
