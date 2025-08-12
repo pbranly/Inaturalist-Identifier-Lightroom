@@ -1,134 +1,111 @@
 --[[
 =====================================================================================
- Script       : check_plugin_version.lua
- Purpose      : Compare current plugin version (from Info.lua) with latest release 
-                version on GitHub and notify user if a newer version is available.
+ Script       : check_plugin_update.lua
+ Purpose      : Compare local plugin version with latest GitHub release version
+ Author       : Philippe
 
  Functional Overview:
- This script reads the plugin version from Info.lua and fetches the latest release
- version from the GitHub releases API. It compares the major, minor, and revision 
- numbers. If the GitHub release version is newer, it shows an internationalized 
- notification with the latest version number.
-
- Dependencies:
- - Lightroom SDK modules: LrHttp, LrTasks, LrDialogs, LrApplication
- - Access to Info.lua in the same directory or via proper require path
- - Internet connection to access GitHub API
+ This script reads the plugin version from Info.lua and compares
+ only major, minor, and revision numbers with the latest GitHub
+ release of the plugin. If a newer version is found, it logs the
+ event and shows an internationalized message inviting the user
+ to download the new version with a direct link to the .zip archive.
 
  Workflow Steps:
  1. Load the current plugin version from Info.lua.
- 2. Make an HTTP GET request to GitHub API for the latest release data.
- 3. Parse the JSON response and extract the 'tag_name' field.
- 4. Parse both current and latest versions into numeric major, minor, revision.
- 5. Compare versions in order: major, minor, revision.
- 6. If GitHub version is newer, display a message with the new version number.
- 7. Log all main steps and any errors encountered.
+ 2. Fetch the latest release information from GitHub API.
+ 3. Parse the version from the latest release tag.
+ 4. Compare major, minor, revision numbers with local version.
+ 5. If the latest is newer, log and show an invitation message
+    with the download link of the zip.
+ 6. Otherwise, log that no new version is available.
 
+ Dependencies:
+ - Lightroom SDK modules: LrHttp, LrTasks, LrDialogs
+ - JSON decode module (json)
+ - Info.lua available and returns VERSION table
 =====================================================================================
 --]]
 
--- Lightroom SDK modules
-local LrHttp    = import "LrHttp"
-local LrTasks   = import "LrTasks"
+local LrHttp = import "LrHttp"
+local LrTasks = import "LrTasks"
 local LrDialogs = import "LrDialogs"
-local logger    = require("Logger")  -- Assumed custom logger module for logging
+local json = require("json")
+local LOC = LOC
+local logger = require("Logger")
 
--- Load Info.lua to get current plugin version
-local info = require("Info")
+-- Step 1: Load local plugin version from Info.lua
+local info = import("Info")
+local localVersion = info.VERSION or { major=0, minor=0, revision=0 }
 
--- Helper function: parse version string "0.1.4" -> major=0, minor=1, revision=4
-local function parseVersion(versionString)
-    local major, minor, revision = versionString:match("^(%d+)%.(%d+)%.(%d+)")
-    if major and minor and revision then
-        return tonumber(major), tonumber(minor), tonumber(revision)
-    else
-        return nil, nil, nil
-    end
+-- Function to parse version string "x.y.z" into table {major, minor, revision}
+local function parseVersionString(versionString)
+    local major, minor, revision = versionString:match("(%d+)%.(%d+)%.(%d+)")
+    return {
+        major = tonumber(major) or 0,
+        minor = tonumber(minor) or 0,
+        revision = tonumber(revision) or 0,
+    }
 end
 
--- Helper function: compare versions
--- returns true if v2 > v1
-local function isNewerVersion(v1, v2)
-    -- v1 and v2 are tables {major, minor, revision}
-    if v2[1] > v1[1] then return true end
-    if v2[1] < v1[1] then return false end
-    if v2[2] > v1[2] then return true end
-    if v2[2] < v1[2] then return false end
-    if v2[3] > v1[3] then return true end
+-- Function to compare versions: returns true if v2 > v1
+local function isVersionNewer(v1, v2)
+    if v2.major > v1.major then return true end
+    if v2.major < v1.major then return false end
+    if v2.minor > v1.minor then return true end
+    if v2.minor < v1.minor then return false end
+    if v2.revision > v1.revision then return true end
     return false
 end
 
--- Main function to check plugin version
-local function checkVersion()
+-- Step 2-6: Check latest GitHub release and compare
+local function checkForUpdate()
+    LrTasks.startAsyncTask(function()
+        logger.log("Checking latest plugin version on GitHub...")
 
-    -- Step 1: Get current plugin version from Info.lua
-    logger.log("Reading current plugin version from Info.lua")
-    local currentVersionTable = info.VERSION or {}
-    local currentVersionStr = string.format("%d.%d.%d",
-        currentVersionTable.major or 0,
-        currentVersionTable.minor or 0,
-        currentVersionTable.revision or 0)
-    local currentVersion = {currentVersionTable.major or 0, currentVersionTable.minor or 0, currentVersionTable.revision or 0}
+        local url = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
+        local result, headers = LrHttp.get(url)
 
-    logger.log("Current plugin version: " .. currentVersionStr)
+        if not result then
+            logger.log("Failed to fetch latest release info from GitHub.")
+            return
+        end
 
-    -- Step 2: HTTP GET latest release info from GitHub API
-    local url = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
-    logger.log("Fetching latest release info from GitHub API: " .. url)
+        local success, parsed = pcall(json.decode, result)
+        if not success or not parsed then
+            logger.log("Failed to parse GitHub release JSON: " .. tostring(result))
+            return
+        end
 
-    local success, response, headers = pcall(LrHttp.get, url)
+        local tagName = parsed.tag_name or ""
+        local downloadUrl = parsed.zipball_url or ""
 
-    if not success or not response then
-        logger.log("Failed to fetch GitHub release info: " .. tostring(response))
-        return
-    end
+        logger.log("Latest GitHub release tag: " .. tagName)
 
-    -- Step 3: Parse JSON response
-    local json = require("json")  -- JSON decoder assumed available
-    local ok, releaseInfo = pcall(json.decode, response)
-    if not ok or not releaseInfo or not releaseInfo.tag_name then
-        logger.log("Failed to parse GitHub JSON response or missing tag_name.")
-        return
-    end
+        local latestVersion = parseVersionString(tagName)
 
-    local latestVersionStr = releaseInfo.tag_name
-    logger.log("Latest version string from GitHub: " .. tostring(latestVersionStr))
+        if isVersionNewer(localVersion, latestVersion) then
+            logger.log(string.format(
+                "New version detected: local %d.%d.%d, latest %d.%d.%d",
+                localVersion.major, localVersion.minor, localVersion.revision,
+                latestVersion.major, latestVersion.minor, latestVersion.revision
+            ))
 
-    -- Step 4: Parse latest version string (may start with 'v', remove it)
-    if latestVersionStr:sub(1,1) == "v" or latestVersionStr:sub(1,1) == "V" then
-        latestVersionStr = latestVersionStr:sub(2)
-    end
+            -- Step 5: Show message inviting user to download new version
+            local messageTitle = LOC("$$$/iNat/Update/NewVersionAvailable=New plugin version available!")
+            local messageBody = LOC(
+                "$$$/iNat/Update/DownloadPrompt=Version %1% is available.\nDownload it here:\n%2%",
+                tagName,
+                downloadUrl
+            )
 
-    local major, minor, revision = parseVersion(latestVersionStr)
-    if not major then
-        logger.log("Failed to parse latest version number from tag: " .. tostring(latestVersionStr))
-        return
-    end
-
-    local latestVersion = {major, minor, revision}
-
-    -- Step 5: Compare current and latest versions
-    if isNewerVersion(currentVersion, latestVersion) then
-        -- Step 6: Show message to user about new version availability
-        logger.log(string.format("New version detected: %s (current: %s)", latestVersionStr, currentVersionStr))
-
-        -- Internationalized message with version number
-        LrDialogs.message(
-            LOC("$$$/iNat/VersionCheck/Title=Update available"),
-            LOC("$$$/iNat/VersionCheck/Message=New version available: ^1", latestVersionStr),
-            "info"
-        )
-    else
-        logger.log("Plugin is up to date. Current version: " .. currentVersionStr)
-    end
+            LrDialogs.message(messageTitle, messageBody, "info")
+        else
+            logger.log("No new version available. Current version is up-to-date.")
+        end
+    end)
 end
 
--- Step 7: Run the version check asynchronously
-LrTasks.startAsyncTask(function()
-    checkVersion()
-end)
-
--- Export function for external use if needed
 return {
-    checkVersion = checkVersion
+    checkForUpdate = checkForUpdate
 }
