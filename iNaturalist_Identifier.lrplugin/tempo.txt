@@ -1,0 +1,7 @@
+Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin
+
+**** Error 1
+
+Impossible de créer des sections d'informations pour le module externe.
+We can only wait from within a task
+
