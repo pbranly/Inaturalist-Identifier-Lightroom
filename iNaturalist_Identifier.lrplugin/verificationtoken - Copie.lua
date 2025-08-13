@@ -70,31 +70,13 @@ local function isTokenValid()
 
     logger.logMessage("🌐 Sending HTTP request to: " .. url)
 
-    -- [4.5] Execute request in protected call
-    local responseBody, metadata
-    local success, err = pcall(function()
-        responseBody, metadata = LrHttp.get(url, headers)
-    end)
-
-    if not success then
-        logger.logMessage("💥 LrHttp.get() failed: " .. tostring(err))
-        return false, LOC("$$$/iNat/Log/TokenError=LrHttp.get() failed: " .. tostring(err))
-    end
-
-    logger.logMessage("📡 LrHttp.get() returned:")
-    logger.logMessage("    responseBody = " .. tostring(responseBody))
-    logger.logMessage("    metadata     = " .. tostring(metadata))
-
-    if type(metadata) == "table" then
-        for k, v in pairs(metadata) do
-            logger.logMessage("    metadata[" .. tostring(k) .. "] = " .. tostring(v))
-        end
-    end
-
+    -- [4.5] Execute request
+    local responseBody, metadata = LrHttp.get(url, headers)
     local statusCode = metadata and metadata.status or 0
+
+    -- [4.6] Log HTTP code and body
     logger.logMessage("➡️ HTTP response code from iNaturalist: " .. tostring(statusCode))
 
-    -- [4.6] Log response body
     if responseBody and responseBody ~= "" then
         logger.logMessage("📦 Raw response body: " .. responseBody)
     else
@@ -103,22 +85,13 @@ local function isTokenValid()
 
     -- [4.7] Decode JSON and log user info if available
     local decoded
-    local jsonSuccess, jsonErr = pcall(function()
+    pcall(function()
         decoded = json.decode(responseBody)
     end)
 
-    if not jsonSuccess then
-        logger.logMessage("⚠️ JSON decoding failed: " .. tostring(jsonErr))
-    elseif decoded then
-        logger.logMessage("✅ JSON decoded successfully.")
-        if decoded.results and decoded.results[1] then
-            local user = decoded.results[1]
-            logger.logMessage("👤 Authenticated user: " .. (user.login or "unknown"))
-        else
-            logger.logMessage("⚠️ JSON structure does not contain expected 'results[1]' field.")
-        end
-    else
-        logger.logMessage("⚠️ JSON decoding returned nil.")
+    if decoded and decoded.results and decoded.results[1] then
+        local user = decoded.results[1]
+        logger.logMessage("👤 Authenticated user: " .. (user.login or "unknown"))
     end
 
     -- [4.8] Analyze status code

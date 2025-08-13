@@ -13,7 +13,7 @@ It retrieves the latest release tag from GitHub and compares it with the local p
 2. Fetch latest GitHub release tag using LrHttp
 3. Parse tag into version structure
 4. Compare remote and local versions
-5. Format and return version info as string
+5. Return version info as string
 ]]
 
 -- [Step 1] Load required modules
@@ -116,19 +116,12 @@ function M.isSameAsLocal(tag)
     return result
 end
 
--- [Step 9] Return local version as raw string
+-- [Step 9] Return local version as string
 function M.getLocalVersionString()
     local v = PluginVersion
     local versionString = string.format("%d.%d.%d.%d", v.major, v.minor, v.revision, v.build)
     logger.logMessage("[GitHub] Local version string: " .. versionString)
     return versionString
-end
-
--- [Step 10] Return formatted display string for UI
-function M.getLocalVersionFormatted()
-    local formatted = "Current plugin version: " .. M.getLocalVersionString()
-    logger.logMessage("[GitHub] Formatted local version: " .. formatted)
-    return formatted
 end
 
 return M

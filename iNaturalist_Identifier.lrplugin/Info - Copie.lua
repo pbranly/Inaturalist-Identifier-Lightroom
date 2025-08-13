@@ -70,5 +70,11 @@ return {
     -- [Step 7] Plugin type
     LrPluginType = "export",
 
-
+    -- [Step 8] Plugin version number
+    VERSION = {
+        major = 0,
+        minor = 1,
+        revision = 4,
+        build = 1,
+    },
 }

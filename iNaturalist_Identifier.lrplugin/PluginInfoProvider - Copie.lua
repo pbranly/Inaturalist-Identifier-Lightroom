@@ -45,6 +45,7 @@ local PluginInfoProvider = {}
 function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
     local prefs = LrPrefs.prefsForPlugin()
 
+    -- UI checkbox for enabling logging
     local logCheck = viewFactory:checkbox {
         title = LOC("$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),
         value = prefs.logEnabled or false,
@@ -52,6 +53,7 @@ function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
         unchecked_value = false,
     }
 
+    -- Create binding context for dynamic UI updates
     local bind
     LrFunctionContext.callWithContext("GitHubVersionContext", function(context)
         bind = LrBinding.makePropertyTable(context)
@@ -63,11 +65,9 @@ function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
             local logger = require("Logger")
             logger.logMessage("Checking latest GitHub version...")
 
-            bind.localVersion = versionGitHub.getLocalVersionFormatted()
-
             local tag, url = versionGitHub.getLatestTag()
             if tag then
-                bind.githubVersion = "Latest GitHub version: " .. tag
+                bind.githubVersion = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. tag
                 logger.logMessage("GitHub version retrieved: " .. tag)
 
                 if versionGitHub.isNewerThanLocal(tag) then
@@ -86,7 +86,7 @@ function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
                     )
                 end
             else
-                bind.githubVersion = "Unable to retrieve GitHub version"
+                bind.githubVersion = LOC("$$$/iNaturalist/GitHubVersionError=Unable to retrieve GitHub version")
                 logger.logMessage("Failed to retrieve GitHub version.")
                 LrDialogs.message(
                     LOC("$$$/iNat/GitHubErrorTitle=GitHub Error"),
@@ -105,45 +105,24 @@ function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
         {
             title = LOC("$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),
 
-            -- [🔢 + 🌐] Display plugin version and GitHub version side by side
-            viewFactory:row {
-                spacing = viewFactory:control_spacing(),
-                viewFactory:static_text {
-                    title = LrView.bind("localVersion"),
-                    width = 200,
-                    bind_to_object = bind,
-                },
-                viewFactory:static_text {
-                    title = LrView.bind("githubVersion"),
-                    width = 200,
-                    bind_to_object = bind,
-                },
-            },
-
-            -- [🔁] GitHub version refresh button
-            viewFactory:push_button {
-                title = LOC("$$$/iNaturalist/GitHubVersionButton=Check GitHub version"),
-                width = 180,
-                action = updateGitHubVersion,
-            },
-
-            -- [🔐] Token validity explanation
             viewFactory:static_text {
-                title = LOC("$$$/iNaturalist/TokenNote=The token used to authenticate with iNaturalist has a limited validity period."),
+                title = LOC("$$$/iNaturalist/TokenNote=Click the button below to check and configure your iNaturalist token."),
                 width = 400,
             },
 
-            -- [🔘] Configure token button (corrected)
+            viewFactory:static_text {
+                title = LrView.bind("githubVersion"),
+                width = 400,
+                bind_to_object = bind,
+            },
+
             viewFactory:push_button {
                 title = LOC("$$$/iNaturalist/ConfigureToken=Configure token"),
-                width = 180,
                 action = function()
                     local logger = require("Logger")
                     logger.logMessage("Token configuration requested.")
 
-                    local isValid, msg = tokenChecker.isTokenValid()
-
-                    if prefs.token and prefs.token ~= "" and isValid then
+                    if prefs.token and prefs.token ~= "" and tokenChecker.isTokenValid() then
                         logger.logMessage("Token is valid and up to date.")
                         LrDialogs.message(
                             LOC("$$$/iNat/TokenDialog/UpToDateTitle=Token status"),
@@ -170,13 +149,16 @@ function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
                 end,
             },
 
-            -- [📝] Logging preference
+            viewFactory:push_button {
+                title = LOC("$$$/iNaturalist/GitHubVersionButton=Check GitHub version"),
+                action = updateGitHubVersion,
+            },
+
             viewFactory:row {
                 spacing = viewFactory:control_spacing(),
                 logCheck,
             },
 
-            -- [💾] Save button
             viewFactory:push_button {
                 title = LOC("$$$/iNaturalist/SaveButton=Save"),
                 action = function()
