@@ -22,6 +22,7 @@ Numbered Steps
     4.2. Retrieves the token from preferences.
     4.3. Checks if the token is missing or empty.
     4.4. Builds the HTTP request to query the iNaturalist API.
+    4.4.1 Logs the full "https" command equivalent (with masked token by default).
     4.5. Executes the request and retrieves the HTTP code and body.
     4.6. Logs the HTTP response code and body.
     4.7. Decodes the JSON response and logs user info.
@@ -41,6 +42,41 @@ local json   = require("json")
 
 -- [Step 2] Load plugin preferences
 local prefs = LrPrefs.prefsForPlugin()
+
+-- Helper: mask or show token in logs
+local function formatTokenForLog(tok, showFull)
+    if not tok or tok == "" then return "<empty>" end
+    if showFull then return tok end
+    local len = #tok
+    if len <= 12 then
+        return tok:sub(1, math.min(4, len)) .. "…"
+    end
+    return tok:sub(1, 8) .. "…" .. tok:sub(len - 6, len)
+end
+
+-- Helper: build a human-readable "https" command line for logs
+local function buildHttpsCommand(url, headers, showFullToken)
+    -- Represent headers as HTTPie-style arguments: Header:"Value"
+    local parts = { "https", "GET", url }
+    if type(headers) == "table" then
+        for _, h in ipairs(headers) do
+            local field = tostring(h.field or "")
+            local value = tostring(h.value or "")
+            if field:lower() == "authorization" then
+                -- Try to mask only the token part after "Bearer "
+                local bearer, token = value:match("^(%s*Bearer%s+)(.+)$")
+                if bearer and token then
+                    value = bearer .. formatTokenForLog(token, showFullToken)
+                else
+                    -- Fallback: mask entire value
+                    value = formatTokenForLog(value, showFullToken)
+                end
+            end
+            table.insert(parts, string.format('%s:"%s"', field, value))
+        end
+    end
+    return table.concat(parts, " ")
+end
 
 -- [Step 3] Log module load
 logger.logMessage("===== Loaded VerificationToken.lua module =====")
@@ -68,30 +104,20 @@ local function isTokenValid()
         { field = "Authorization", value = "Bearer " .. token }
     }
 
+    -- [4.4.1] Log the full "https" command (mask token by default).
+    -- Set prefs.logFullToken=true to log the full token (use with caution).
+    Set prefs.logFullToken=true
+    local showFullToken = (prefs and prefs.logFullToken == true)
+    local httpsCmd = buildHttpsCommand(url, headers, showFullToken)
+    logger.logMessage("🧪 HTTPS command (for reference): " .. httpsCmd)
+
     logger.logMessage("🌐 Sending HTTP request to: " .. url)
 
-    -- [4.5] Execute request in protected call
-    local responseBody, metadata
-    local success, err = pcall(function()
-        responseBody, metadata = LrHttp.get(url, headers)
-    end)
+    -- [4.5] Execute request
+    local responseBody, metadata = LrHttp.get(url, headers)
 
-    if not success then
-        logger.logMessage("💥 LrHttp.get() failed: " .. tostring(err))
-        return false, LOC("$$$/iNat/Log/TokenError=LrHttp.get() failed: " .. tostring(err))
-    end
-
-    logger.logMessage("📡 LrHttp.get() returned:")
-    logger.logMessage("    responseBody = " .. tostring(responseBody))
-    logger.logMessage("    metadata     = " .. tostring(metadata))
-
-    if type(metadata) == "table" then
-        for k, v in pairs(metadata) do
-            logger.logMessage("    metadata[" .. tostring(k) .. "] = " .. tostring(v))
-        end
-    end
-
-    local statusCode = metadata and metadata.status or 0
+    -- Handle metadata/status
+    local statusCode = (metadata and tonumber(metadata.status)) or 0
     logger.logMessage("➡️ HTTP response code from iNaturalist: " .. tostring(statusCode))
 
     -- [4.6] Log response body
@@ -103,22 +129,20 @@ local function isTokenValid()
 
     -- [4.7] Decode JSON and log user info if available
     local decoded
-    local jsonSuccess, jsonErr = pcall(function()
-        decoded = json.decode(responseBody)
-    end)
-
-    if not jsonSuccess then
-        logger.logMessage("⚠️ JSON decoding failed: " .. tostring(jsonErr))
-    elseif decoded then
-        logger.logMessage("✅ JSON decoded successfully.")
-        if decoded.results and decoded.results[1] then
-            local user = decoded.results[1]
-            logger.logMessage("👤 Authenticated user: " .. (user.login or "unknown"))
+    if responseBody and responseBody ~= "" then
+        local ok, res = pcall(function() return json.decode(responseBody) end)
+        if ok and res then
+            decoded = res
+            logger.logMessage("✅ JSON decoded successfully.")
+            if decoded.results and decoded.results[1] then
+                local user = decoded.results[1]
+                logger.logMessage("👤 Authenticated user: " .. (user.login or "unknown"))
+            else
+                logger.logMessage("⚠️ JSON structure does not contain expected 'results[1]'.")
+            end
         else
-            logger.logMessage("⚠️ JSON structure does not contain expected 'results[1]' field.")
+            logger.logMessage("⚠️ JSON decoding failed.")
         end
-    else
-        logger.logMessage("⚠️ JSON decoding returned nil.")
     end
 
     -- [4.8] Analyze status code
