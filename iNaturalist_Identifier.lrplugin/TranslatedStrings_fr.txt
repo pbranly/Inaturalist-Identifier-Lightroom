@@ -77,7 +77,7 @@
 
 ## Interface des préférences (FR)
 "$$$/iNaturalist/ConnectionSettings=Paramètres de connexion iNaturalist"
-"$$$/iNaturalist/TokenNote=La durée de validité du token est de 24h ; au-delà, vous devez le régénérer à l'adresse suivante :"
+"$$$/iNaturalist/TokenNote=Mise à jour du Token ici :"
 "$$$/iNaturalist/OpenTokenPage=Ouvrir la page de génération de token"
 "$$$/iNaturalist/TokenLabel=Token :"
 "$$$/iNaturalist/EnableLogging=Activer la journalisation dans log.txt"

@@ -75,7 +75,7 @@
 
 ## Preferences UI Strings (EN)
 "$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"
-"$$$/iNaturalist/TokenNote=The token is valid for 24 hours; after that, you must regenerate it at the following address:"
+"$$$/iNaturalist/TokenNote=Check and configure your iNaturalist token here :"
 "$$$/iNaturalist/OpenTokenPage=Open token generation page"
 "$$$/iNaturalist/TokenLabel=Token:"
 "$$$/iNaturalist/EnableLogging=Enable logging to log.txt"
