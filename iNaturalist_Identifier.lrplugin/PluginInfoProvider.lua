@@ -6,7 +6,7 @@ It includes token management, GitHub version checking, and logging preferences.
 
 📦 Required Lua modules:
 - PluginVersion.lua         → Defines the local plugin version
-- VersionGitHub.lua         → Retrieves and compares the latest GitHub release
+- Get_Version_Github.lua    → Retrieves and compares the latest GitHub release
 - TokenUpdater.lua          → Handles token renewal logic
 - VerificationToken.lua     → Validates the current token
 - Logger.lua                → Logs messages to log.txt
@@ -16,7 +16,7 @@ It includes token management, GitHub version checking, and logging preferences.
 2. Load token updater and validator
 3. Load GitHub version checker
 4. Define the preferences UI
-5. Handle GitHub version comparison
+5. Handle GitHub version comparison (in async task)
 6. Handle token validation and renewal
 7. Handle logging preference
 ]]
@@ -27,6 +27,7 @@ local LrView            = import "LrView"
 local LrDialogs         = import "LrDialogs"
 local LrBinding         = import "LrBinding"
 local LrFunctionContext = import "LrFunctionContext"
+local LrTasks           = import "LrTasks"
 
 -- [Step 2] Load token updater module
 local tokenUpdater = require("TokenUpdater")
@@ -35,7 +36,7 @@ local tokenUpdater = require("TokenUpdater")
 local tokenChecker = require("VerificationToken")
 
 -- [Step 4] Load GitHub version checker
-local versionGitHub = require("VersionGitHub")
+local versionGitHub = require("Get_Version_Github")
 
 -- [Step 5] Define PluginInfoProvider module
 local PluginInfoProvider = {}
@@ -58,40 +59,42 @@ function PluginInfoProvider.sectionsForTopOfDialog(viewFactory)
         bind = LrBinding.makePropertyTable(context)
     end)
 
-    -- [Step 7] GitHub version check and comparison
+    -- [Step 7] GitHub version check and comparison (must run in async task)
     local function updateGitHubVersion()
-        local logger = require("Logger")
-        logger.logMessage("Checking latest GitHub version...")
+        LrTasks.startAsyncTask(function()
+            local logger = require("Logger")
+            logger.logMessage("Checking latest GitHub version...")
 
-        local tag, url = versionGitHub.getLatestTag()
-        if tag then
-            bind.githubVersion = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. tag
-            logger.logMessage("GitHub version retrieved: " .. tag)
+            local tag, url = versionGitHub.getLatestTag()
+            if tag then
+                bind.githubVersion = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. tag
+                logger.logMessage("GitHub version retrieved: " .. tag)
 
-            if versionGitHub.isNewerThanLocal(tag) then
-                logger.logMessage("A newer version is available on GitHub.")
-                LrDialogs.message(
-                    LOC("$$$/iNat/GitHubUpdateTitle=Update Available"),
-                    LOC("$$$/iNat/GitHubUpdateBody=A newer version (" .. tag .. ") is available on GitHub."),
-                    LOC("$$$/iNat/GitHubUpdateButton=OK")
-                )
+                if versionGitHub.isNewerThanLocal(tag) then
+                    logger.logMessage("A newer version is available on GitHub.")
+                    LrDialogs.message(
+                        LOC("$$$/iNat/GitHubUpdateTitle=Update Available"),
+                        LOC("$$$/iNat/GitHubUpdateBody=A newer version (" .. tag .. ") is available on GitHub."),
+                        LOC("$$$/iNat/GitHubUpdateButton=OK")
+                    )
+                else
+                    logger.logMessage("Local version is up to date.")
+                    LrDialogs.message(
+                        LOC("$$$/iNat/GitHubUpdateTitle=Up to Date"),
+                        LOC("$$$/iNat/GitHubUpdateBody=Your plugin is up to date (" .. versionGitHub.getLocalVersionString() .. ")."),
+                        LOC("$$$/iNat/GitHubUpdateButton=OK")
+                    )
+                end
             else
-                logger.logMessage("Local version is up to date.")
+                bind.githubVersion = LOC("$$$/iNaturalist/GitHubVersionError=Unable to retrieve GitHub version")
+                logger.logMessage("Failed to retrieve GitHub version.")
                 LrDialogs.message(
-                    LOC("$$$/iNat/GitHubUpdateTitle=Up to Date"),
-                    LOC("$$$/iNat/GitHubUpdateBody=Your plugin is up to date (" .. versionGitHub.getLocalVersionString() .. ")."),
-                    LOC("$$$/iNat/GitHubUpdateButton=OK")
+                    LOC("$$$/iNat/GitHubErrorTitle=GitHub Error"),
+                    LOC("$$$/iNat/GitHubErrorBody=Could not retrieve the latest version from GitHub."),
+                    LOC("$$$/iNat/GitHubErrorButton=OK")
                 )
             end
-        else
-            bind.githubVersion = LOC("$$$/iNaturalist/GitHubVersionError=Unable to retrieve GitHub version")
-            logger.logMessage("Failed to retrieve GitHub version.")
-            LrDialogs.message(
-                LOC("$$$/iNat/GitHubErrorTitle=GitHub Error"),
-                LOC("$$$/iNat/GitHubErrorBody=Could not retrieve the latest version from GitHub."),
-                LOC("$$$/iNat/GitHubErrorButton=OK")
-            )
-        end
+        end)
     end
 
     -- Initial GitHub version check on dialog load

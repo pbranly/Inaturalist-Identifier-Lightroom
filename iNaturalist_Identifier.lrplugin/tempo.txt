@@ -3,5 +3,5 @@ Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Light
 **** Error 1
 
 Une erreur s'est produite lors de la tentative d'exécution d'un script du module externe.
-Could not find namespace: LrPluginInfo
+error loading toolkit script `Get_Version_Github' (Could not load script Get_Version_Github.lua: doesn't seem to be in the toolkit.)
 

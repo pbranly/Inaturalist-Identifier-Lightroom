@@ -1,5 +1,5 @@
 --[[
-VersionGitHub.lua
+Get_Version_GitHub.lua
 
 This module handles version management for the iNaturalist Lightroom plugin.
 It retrieves the latest release tag from GitHub and compares it with the local plugin version.
@@ -9,8 +9,8 @@ It retrieves the latest release tag from GitHub and compares it with the local p
 - Logger.lua        → Logs detailed messages to log.txt
 
 📋 Steps:
-1. Load local version
-2. Fetch latest GitHub release tag
+1. Load local version and HTTP module
+2. Fetch latest GitHub release tag using LrHttp
 3. Parse tag into version structure
 4. Compare remote and local versions
 5. Return version info as string
@@ -19,35 +19,30 @@ It retrieves the latest release tag from GitHub and compares it with the local p
 -- [Step 1] Load required modules
 local PluginVersion = require("PluginVersion")
 local logger        = require("Logger")
+local LrHttp        = import("LrHttp")
 
 -- [Step 2] Define module
 local M = {}
 
--- [Step 3] Fetch latest GitHub release tag using curl
+-- [Step 3] Fetch latest GitHub release tag using LrHttp
 function M.getLatestTag()
     logger.logMessage("[GitHub] Initiating request to GitHub API for latest release...")
 
-    local handle = io.popen("curl -s https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
-    if not handle then
-        logger.logMessage("[GitHub] Failed to open curl process.")
+    local url = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
+    local response = LrHttp.get(url)
+
+    if not response or response == "" then
+        logger.logMessage("[GitHub] Empty or failed response from GitHub API.")
         return nil, nil
     end
 
-    local result = handle:read("*a")
-    handle:close()
+    local tag = response:match('"tag_name"%s*:%s*"([^"]+)"')
+    local html_url = response:match('"html_url"%s*:%s*"([^"]+)"')
 
-    if not result or result == "" then
-        logger.logMessage("[GitHub] Empty response from GitHub API.")
-        return nil, nil
-    end
-
-    local tag = result:match('"tag_name"%s*:%s*"([^"]+)"')
-    local url = result:match('"html_url"%s*:%s*"([^"]+)"')
-
-    if tag and url then
+    if tag and html_url then
         logger.logMessage("[GitHub] Retrieved tag: " .. tag)
-        logger.logMessage("[GitHub] Release URL: " .. url)
-        return tag, url
+        logger.logMessage("[GitHub] Release URL: " .. html_url)
+        return tag, html_url
     else
         logger.logMessage("[GitHub] Failed to parse tag_name or html_url from response.")
         return nil, nil
