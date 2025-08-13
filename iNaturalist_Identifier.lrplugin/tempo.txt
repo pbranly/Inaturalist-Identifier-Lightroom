@@ -3,5 +3,5 @@ Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Light
 **** Error 1
 
 Impossible de créer des sections d'informations pour le module externe.
-We can only wait from within a task
+PluginInfoProvider.lua:80: attempt to call field 'getLatestTagAsync' (a nil value)
 

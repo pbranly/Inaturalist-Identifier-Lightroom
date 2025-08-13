@@ -1,20 +1,23 @@
--- Get_Version_Github.lua
+-- Get_Version_GitHub.lua
 --[[
 ============================================================
 Functional Description:
 ------------------------------------------------------------
 This module handles version management for the iNaturalist Lightroom plugin.
-It retrieves the latest release tag from GitHub (using curl) and compares it with the local plugin version.
+It retrieves the latest release tag from GitHub and compares it with the local plugin version.
 
 Modules/Dependencies:
 ------------------------------------------------------------
 - PluginVersion.lua
 - Logger.lua
+- Lightroom SDK modules: LrHttp, LrTasks
 ============================================================
 --]]
 
 local PluginVersion = require("PluginVersion")
 local logger        = require("Logger")
+local LrHttp        = import("LrHttp")
+local LrTasks       = import("LrTasks")
 
 local M = {}
 
@@ -64,28 +67,42 @@ function M.getLocalVersionFormatted()
     return "Current plugin version: " .. M.getLocalVersionString()
 end
 
--- Synchronous fetch of latest GitHub release using curl
-function M.getLatestTag()
+-- Separate function for HTTP request to GitHub
+local function fetchGitHubRelease(url, headers, callback)
+    local response, metadata
+    local function safeGet()
+        response, metadata = LrHttp.get(url, headers)
+    end
+
+    local ok, err = pcall(safeGet)
+    if not ok then
+        logger.logMessage("[GitHub] LrHttp.get() failed: " .. tostring(err))
+        callback(nil, nil)
+        return
+    end
+
+    if not response or response == "" then
+        logger.logMessage("[GitHub] Empty response body.")
+        callback(nil, nil)
+        return
+    end
+
+    local tag = response:match('"tag_name"%s*:%s*"([^"]+)"')
+    local html_url = response:match('"html_url"%s*:%s*"([^"]+)"')
+
+    callback(tag, html_url)
+end
+
+-- Public async function to get latest GitHub tag
+function M.getLatestTagAsync(callback)
     local url = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
-    local handle = io.popen('curl -s "' .. url .. '"')
-    local result = handle:read("*a")
-    handle:close()
+    local headers = { { field = "User-Agent", value = "iNat-Lightroom-Plugin" } }
 
-    if not result or result == "" then
-        logger.logMessage("[GitHub] Unable to fetch latest release via curl")
-        return nil, nil
-    end
+    logger.logMessage("[GitHub] Initiating async request to GitHub API...")
 
-    local tag = result:match('"tag_name"%s*:%s*"([^"]+)"')
-    local html_url = result:match('"html_url"%s*:%s*"([^"]+)"')
-
-    if tag and html_url then
-        logger.logMessage("[GitHub] Latest release fetched: " .. tag)
-        return tag, html_url
-    else
-        logger.logMessage("[GitHub] Failed to parse GitHub release JSON")
-        return nil, nil
-    end
+    LrTasks.startAsyncTask(function()
+        fetchGitHubRelease(url, headers, callback)
+    end)
 end
 
 return M
