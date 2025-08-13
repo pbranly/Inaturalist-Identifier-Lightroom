@@ -7,8 +7,10 @@ iNaturalist authentication token stored in the plugin preferences.
 
 Main features:
 1. Read the token from Lightroom preferences.
-2. Perform an HTTP request (using LrHttp) to the iNaturalist API.
-3. Analyze the HTTP response code and body to determine token status.
+2. Perform an HTTP request (using curl) to the iNaturalist API to 
+   verify the token's validity.
+3. Analyze the HTTP response code to determine if the token is valid, 
+   expired, or if an error occurred.
 4. Log each step and result to aid debugging.
 5. Return a boolean and a message describing the token status.
 
@@ -21,148 +23,92 @@ Numbered Steps
     4.1. Logs the start of validation.
     4.2. Retrieves the token from preferences.
     4.3. Checks if the token is missing or empty.
-    4.4. Builds the HTTP request to query the iNaturalist API.
-    4.4.1 Logs the full "https" command equivalent (with masked token by default).
-    4.5. Executes the request and retrieves the HTTP code and body.
-    4.6. Logs the HTTP response code and body.
-    4.7. Decodes the JSON response and logs user info.
-    4.8. Returns true if code is 200, otherwise false with an error message.
+    4.4. Builds the curl command to query the iNaturalist API.
+    4.5. Executes the command and retrieves the HTTP code.
+    4.6. Logs the HTTP response code.
+    4.7. Returns true if code is 200, otherwise false with an error message.
 5. Export the function for external use.
+
+------------------------------------------------------------
+Called Scripts
+- Logger.lua (for logging events)
+
+------------------------------------------------------------
+Calling Scripts
+- AnimalIdentifier.lua (to validate the token before identification)
 ============================================================
 ]]
 
 -- [Step 1] Lightroom module imports
-local LrPrefs   = import "LrPrefs"
-local LrHttp    = import "LrHttp"
-local LrDialogs = import "LrDialogs"
+local LrPrefs     = import "LrPrefs"
+local LrPathUtils = import "LrPathUtils"
+local LrFileUtils = import "LrFileUtils"
+local LrDialogs   = import "LrDialogs"
 
--- [Step 1] Custom logging and JSON modules
+-- [Step 1] Custom logging module
 local logger = require("Logger")
-local json   = require("json")
 
 -- [Step 2] Load plugin preferences
 local prefs = LrPrefs.prefsForPlugin()
 
--- Helper: mask or show token in logs
-local function formatTokenForLog(tok, showFull)
-    if not tok or tok == "" then return "<empty>" end
-    if showFull then return tok end
-    local len = #tok
-    if len <= 12 then
-        return tok:sub(1, math.min(4, len)) .. "…"
-    end
-    return tok:sub(1, 8) .. "…" .. tok:sub(len - 6, len)
-end
-
--- Helper: build a human-readable "https" command line for logs
-local function buildHttpsCommand(url, headers, showFullToken)
-    -- Represent headers as HTTPie-style arguments: Header:"Value"
-    local parts = { "https", "GET", url }
-    if type(headers) == "table" then
-        for _, h in ipairs(headers) do
-            local field = tostring(h.field or "")
-            local value = tostring(h.value or "")
-            if field:lower() == "authorization" then
-                -- Try to mask only the token part after "Bearer "
-                local bearer, token = value:match("^(%s*Bearer%s+)(.+)$")
-                if bearer and token then
-                    value = bearer .. formatTokenForLog(token, showFullToken)
-                else
-                    -- Fallback: mask entire value
-                    value = formatTokenForLog(value, showFullToken)
-                end
-            end
-            table.insert(parts, string.format('%s:"%s"', field, value))
-        end
-    end
-    return table.concat(parts, " ")
-end
-
 -- [Step 3] Log module load
-logger.logMessage("===== Loaded VerificationToken.lua module =====")
+logger.logMessage(LOC("$$$/iNat/Log/VerificationModuleLoaded===== Loaded VerificationToken.lua module ====="))
 
 -- [Step 4] Validate the iNaturalist token using the API
 local function isTokenValid()
     -- [4.1] Log start of validation
-    logger.logMessage("=== Start of isTokenValid() ===")
+    logger.logMessage(LOC("$$$/iNat/Log/TokenCheckStart=== Start of isTokenValid() ==="))
 
     -- [4.2] Retrieve token
     local token = prefs.token
 
     -- [4.3] Check for missing or empty token
     if not token or token == "" then
-        local msg = "⛔ No token found in Lightroom preferences."
+        local msg = LOC("$$$/iNat/Log/TokenMissing=⛔ No token found in Lightroom preferences.")
         logger.logMessage(msg)
-        return false, LOC("$$$/iNat/Log/TokenMissing=" .. msg)
+        return false, msg
     end
 
-    logger.logMessage("🔑 Token detected (length: " .. tostring(#token) .. " characters)")
+    -- Log token length (info only)
+    logger.logMessage(LOC("$$$/iNat/Log/TokenDetected=🔑 Token detected (length: ") .. tostring(#token) .. LOC("$$$/iNat/Log/Chars= characters)"))
 
-    -- [4.4] Build HTTP request
+    -- [4.4] Build curl command to verify token validity
     local url = "https://api.inaturalist.org/v1/users/me"
-    local headers = {
-        { field = "Authorization", value = "Bearer " .. token }
-    }
+    local command = string.format(
+        'curl -s -o /dev/null -w "%%{http_code}" -H "Authorization: Bearer %s" "%s"',
+        token,
+        url
+    )
 
-    -- [4.4.1] Log the full "https" command (mask token by default).
-    -- Set prefs.logFullToken=true to log the full token (use with caution).
-    Set prefs.logFullToken=true
-    local showFullToken = (prefs and prefs.logFullToken == true)
-    local httpsCmd = buildHttpsCommand(url, headers, showFullToken)
-    logger.logMessage("🧪 HTTPS command (for reference): " .. httpsCmd)
+    -- Log curl command
+    logger.logMessage(LOC("$$$/iNat/Log/CurlCommand=📎 Executing curl command: ") .. command)
 
-    logger.logMessage("🌐 Sending HTTP request to: " .. url)
+    -- [4.5] Execute the command and read HTTP response code
+    local handle = io.popen(command)
+    local httpCode = handle:read("*l")
+    handle:close()
 
-    -- [4.5] Execute request
-    local responseBody, metadata = LrHttp.get(url, headers)
+    -- [4.6] Log HTTP code
+    logger.logMessage(LOC("$$$/iNat/Log/HttpCode=➡️ HTTP response code from iNaturalist: ") .. tostring(httpCode))
 
-    -- Handle metadata/status
-    local statusCode = (metadata and tonumber(metadata.status)) or 0
-    logger.logMessage("➡️ HTTP response code from iNaturalist: " .. tostring(statusCode))
-
-    -- [4.6] Log response body
-    if responseBody and responseBody ~= "" then
-        logger.logMessage("📦 Raw response body: " .. responseBody)
-    else
-        logger.logMessage("⚠️ No response body received.")
-    end
-
-    -- [4.7] Decode JSON and log user info if available
-    local decoded
-    if responseBody and responseBody ~= "" then
-        local ok, res = pcall(function() return json.decode(responseBody) end)
-        if ok and res then
-            decoded = res
-            logger.logMessage("✅ JSON decoded successfully.")
-            if decoded.results and decoded.results[1] then
-                local user = decoded.results[1]
-                logger.logMessage("👤 Authenticated user: " .. (user.login or "unknown"))
-            else
-                logger.logMessage("⚠️ JSON structure does not contain expected 'results[1]'.")
-            end
-        else
-            logger.logMessage("⚠️ JSON decoding failed.")
-        end
-    end
-
-    -- [4.8] Analyze status code
     local msg
-    if statusCode == 200 then
-        msg = "✅ Success: token is valid."
+    -- [4.7] Analyze HTTP code and return result accordingly
+    if httpCode == "200" then
+        msg = LOC("$$$/iNat/Log/TokenValid=✅ Success: token is valid.")
         logger.logMessage(msg)
-        return true, LOC("$$$/iNat/Log/TokenValid=" .. msg)
-    elseif statusCode == 401 then
-        msg = "❌ Failure: token is invalid or expired (401 Unauthorized)."
-    elseif statusCode == 500 then
-        msg = "💥 iNaturalist server error (500)."
-    elseif statusCode == 0 then
-        msg = "⚠️ No HTTP code received. Check internet connection or firewall."
+        return true, msg
+    elseif httpCode == "401" then
+        msg = LOC("$$$/iNat/Log/TokenInvalid=❌ Failure: token is invalid or expired (401 Unauthorized).")
+    elseif httpCode == "500" then
+        msg = LOC("$$$/iNat/Log/ServerError=💥 iNaturalist server error (500).")
+    elseif httpCode == "000" or not httpCode then
+        msg = LOC("$$$/iNat/Log/NoHttpCode=⚠️ No HTTP code received. Check internet connection or curl installation.")
     else
-        msg = "⚠️ Unexpected response (code " .. tostring(statusCode) .. ")."
+        msg = LOC("$$$/iNat/Log/UnexpectedCode=⚠️ Unexpected response (code ") .. tostring(httpCode) .. ")."
     end
 
     logger.logMessage(msg)
-    return false, LOC("$$$/iNat/Log/TokenError=" .. msg)
+    return false, msg
 end
 
 -- [Step 5] Export function
