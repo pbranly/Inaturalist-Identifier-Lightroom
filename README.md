@@ -51,9 +51,7 @@ Le plugin *iNaturalist Identifier* s’intègre à Adobe Lightroom Classic pour 
 
 1. Download or clone the repository:  
    *Téléchargez ou clonez le dépôt :*
-   ```bash
-   git clone https://github.com/pbranly/iNaturalistBirdIdentifier.git
-   ```
+   https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest
 2. Open Lightroom Classic.  
    *Ouvrez Lightroom Classic.*
 3. Go to **File > Plugin Manager**.  
