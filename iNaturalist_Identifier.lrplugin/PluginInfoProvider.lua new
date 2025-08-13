@@ -1,25 +1,9 @@
 --[[
 ============================================================
-Functional Description
+PluginInfoProvider.lua
 ------------------------------------------------------------
-This Lightroom plugin preferences script manages the user 
-interface for iNaturalist integration. It allows users to:
-
-1. Configure and validate their iNaturalist API token.
-2. Check and refresh the latest GitHub version (synchronously) and update status.
-3. Enable or disable logging to "log.txt" for debugging.
-4. Display a visual indicator if the local plugin is up-to-date.
-============================================================
-Modules Used:
-------------------------------------------------------------
-1. LrPrefs            : Lightroom preferences API
-2. LrView             : Lightroom UI components
-3. LrDialogs          : Lightroom dialogs
-4. TokenUpdater       : Script to update iNaturalist token
-5. VerificationToken  : Token validation logic
-6. Get_Version_Github : Retrieves latest GitHub release synchronously
-7. Get_Current_Version: Retrieves current plugin version
-8. Logger             : Handles logging to log.txt
+Interface des préférences Lightroom pour iNaturalist.
+Utilise Get_Version_GitHub.lua pour afficher le statut de version.
 ============================================================
 --]]
 
@@ -29,9 +13,8 @@ local LrDialogs = import "LrDialogs"
 
 local tokenUpdater   = require("TokenUpdater")
 local tokenChecker   = require("VerificationToken")
-local versionGitHub  = require("Get_Version_Github")
+local versionGitHub  = require("Get_Version_GitHub")
 local logger         = require("Logger")
-local currentVersion = require("Get_Current_Version").getCurrentVersion()
 
 return {
     sectionsForTopOfDialog = function(viewFactory)
@@ -45,70 +28,39 @@ return {
             unchecked_value = false,
         }
 
-        -- Initial GitHub version
-        local githubTag = versionGitHub.getLatestTag() or "Unable to retrieve GitHub version"
+        -- Initial status from GitHub
+        local statusInfo = versionGitHub.getVersionStatus()
 
-        -- Status indicator
-        local statusIcon, statusText
-        if githubTag ~= "Unable to retrieve GitHub version" then
-            if versionGitHub.isNewerThanLocal(githubTag) then
-                statusIcon = "⚠️"
-                statusText = LOC("$$$/iNaturalist/VersionStatus/Outdated=Plugin outdated")
-            elseif versionGitHub.isSameAsLocal(githubTag) then
-                statusIcon = "✅"
-                statusText = LOC("$$$/iNaturalist/VersionStatus/UpToDate=Plugin up-to-date")
-            else
-                statusIcon = "ℹ️"
-                statusText = LOC("$$$/iNaturalist/VersionStatus/Newer=Plugin newer than GitHub")
-            end
-        else
-            statusIcon = "❓"
-            statusText = LOC("$$$/iNaturalist/VersionStatus/Unknown=GitHub version unknown")
-        end
-
-        -- Static text for versions
         local githubVersionStatic = viewFactory:static_text {
-            title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. githubTag,
+            title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. statusInfo.githubTag,
             width = 200,
         }
 
         local versionRow = viewFactory:row {
             spacing = viewFactory:control_spacing(),
             viewFactory:static_text {
-                title = LOC("$$$/iNaturalist/CurrentVersionLabel=Plugin current version: ") .. currentVersion,
+                title = LOC("$$$/iNaturalist/CurrentVersionLabel=Plugin current version: ") .. statusInfo.currentVersion,
                 width = 200,
             },
             githubVersionStatic,
             viewFactory:static_text {
-                title = statusIcon .. " " .. statusText,
+                title = statusInfo.statusIcon .. " " .. statusInfo.statusText,
                 width = 150,
             }
         }
 
-        -- Function to refresh GitHub version and recalc status
+        -- Refresh GitHub version
         local function refreshGitHubVersion()
-            local tag = versionGitHub.getLatestTag()
-            if tag then
-                githubVersionStatic.title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. tag
+            local info = versionGitHub.getVersionStatus()
+            githubVersionStatic.title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. info.githubTag
+            versionRow[3].title = info.statusIcon .. " " .. info.statusText
 
-                -- Recalculate status
-                if versionGitHub.isNewerThanLocal(tag) then
-                    statusIcon = "⚠️"
-                    statusText = LOC("$$$/iNaturalist/VersionStatus/Outdated=Plugin outdated")
-                elseif versionGitHub.isSameAsLocal(tag) then
-                    statusIcon = "✅"
-                    statusText = LOC("$$$/iNaturalist/VersionStatus/UpToDate=Plugin up-to-date")
-                else
-                    statusIcon = "ℹ️"
-                    statusText = LOC("$$$/iNaturalist/VersionStatus/Newer=Plugin newer than GitHub")
-                end
-                versionRow[3].title = statusIcon .. " " .. statusText
-
+            if info.githubTag and info.githubTag ~= "Unable to retrieve GitHub version" then
                 LrDialogs.message(
                     LOC("$$$/iNat/GitHubVersionTitle=GitHub Version"),
-                    LOC("$$$/iNat/GitHubVersionBody=Latest GitHub version: ") .. tag
+                    LOC("$$$/iNat/GitHubVersionBody=Latest GitHub version: ") .. info.githubTag
                 )
-                logger.logMessage("User refreshed GitHub version: " .. tag)
+                logger.logMessage("User refreshed GitHub version: " .. info.githubTag)
             else
                 LrDialogs.message(
                     LOC("$$$/iNat/GitHubVersionTitle=GitHub Version"),
@@ -122,28 +74,24 @@ return {
             {
                 title = LOC("$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),
 
-                -- Token instruction
+                -- Info token
                 viewFactory:static_text {
                     title = LOC("$$$/iNaturalist/TokenNote=Click the button below to check and configure your iNaturalist token."),
                     width = 400,
                 },
 
-                -- Versions row
                 versionRow,
 
-                -- Button to refresh GitHub version
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/GitHubVersionButton=Version GitHub"),
                     action = refreshGitHubVersion,
                 },
 
-                -- Spacer
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     viewFactory:static_text { title = " " }
                 },
 
-                -- Button to check/configure token
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/ConfigureToken=Configure token"),
                     action = function()
@@ -173,13 +121,11 @@ return {
                     end,
                 },
 
-                -- Logging checkbox
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     logCheck,
                 },
 
-                -- Save button
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/SaveButton=Save"),
                     action = function()
