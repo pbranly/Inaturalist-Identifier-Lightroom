@@ -1,9 +1,31 @@
 --[[
 ============================================================
-PluginInfoProvider.lua
+Functional Description
 ------------------------------------------------------------
-Interface des préférences Lightroom pour iNaturalist.
-Utilise Get_Version_GitHub.lua pour afficher le statut de version.
+This Lightroom plugin Preferences script manages the user
+interface for the iNaturalist integration.
+
+It now relies on Get_Version_GitHub.lua for:
+- Retrieving the latest GitHub release tag.
+- Calculating version status.
+- Providing the correct icon + message for display.
+
+This structure ensures that:
+- UI code remains clean and focused on presentation.
+- Version logic is centralized for easy maintenance.
+- The "Refresh GitHub version" button updates both the displayed
+  version number and the status indicator.
+
+============================================================
+Modules Used:
+------------------------------------------------------------
+1. LrPrefs            : Manages Lightroom plugin preferences.
+2. LrView             : Provides UI component constructors.
+3. LrDialogs          : Displays dialogs to the user.
+4. TokenUpdater       : Script to update the iNaturalist token.
+5. VerificationToken  : Checks if the token is valid.
+6. Get_Version_GitHub : Retrieves GitHub version + status info.
+7. Logger             : Writes messages to log.txt.
 ============================================================
 --]]
 
@@ -20,7 +42,7 @@ return {
     sectionsForTopOfDialog = function(viewFactory)
         local prefs = LrPrefs.prefsForPlugin()
 
-        -- Logging checkbox
+        -- Logging preference checkbox
         local logCheck = viewFactory:checkbox {
             title = LOC("$$$/iNaturalist/EnableLogging=Enable logging to log.txt"),
             value = prefs.logEnabled or false,
@@ -28,9 +50,10 @@ return {
             unchecked_value = false,
         }
 
-        -- Initial status from GitHub
+        -- Retrieve initial GitHub status info
         local statusInfo = versionGitHub.getVersionStatus()
 
+        -- UI elements for version display
         local githubVersionStatic = viewFactory:static_text {
             title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. statusInfo.githubTag,
             width = 200,
@@ -49,7 +72,7 @@ return {
             }
         }
 
-        -- Refresh GitHub version
+        -- Action to refresh GitHub version info
         local function refreshGitHubVersion()
             local info = versionGitHub.getVersionStatus()
             githubVersionStatic.title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. info.githubTag
@@ -74,24 +97,28 @@ return {
             {
                 title = LOC("$$$/iNaturalist/ConnectionSettings=iNaturalist connection settings"),
 
-                -- Info token
+                -- Token configuration note
                 viewFactory:static_text {
                     title = LOC("$$$/iNaturalist/TokenNote=Click the button below to check and configure your iNaturalist token."),
                     width = 400,
                 },
 
+                -- Version display row
                 versionRow,
 
+                -- Refresh button
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/GitHubVersionButton=Version GitHub"),
                     action = refreshGitHubVersion,
                 },
 
+                -- Spacer
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     viewFactory:static_text { title = " " }
                 },
 
+                -- Token configuration button
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/ConfigureToken=Configure token"),
                     action = function()
@@ -121,11 +148,13 @@ return {
                     end,
                 },
 
+                -- Logging checkbox
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
                     logCheck,
                 },
 
+                -- Save button
                 viewFactory:push_button {
                     title = LOC("$$$/iNaturalist/SaveButton=Save"),
                     action = function()
