@@ -6,7 +6,7 @@ This Lightroom plugin preferences script manages the user
 interface for iNaturalist integration. It allows users to:
 
 1. Configure and validate their iNaturalist API token.
-2. Check and refresh the latest GitHub version (synchronously) and update status.
+2. Check and refresh the latest GitHub version (synchronously).
 3. Enable or disable logging to "log.txt" for debugging.
 4. Display a visual indicator if the local plugin is up-to-date.
 ============================================================
@@ -85,13 +85,13 @@ return {
             }
         }
 
-        -- Function to refresh GitHub version and recalc status
+        -- Function for GitHub version dialog and refresh
         local function refreshGitHubVersion()
             local tag = versionGitHub.getLatestTag()
             if tag then
                 githubVersionStatic.title = LOC("$$$/iNaturalist/GitHubVersionLabel=Latest GitHub version: ") .. tag
 
-                -- Recalculate status
+                -- Update status icon
                 if versionGitHub.isNewerThanLocal(tag) then
                     statusIcon = "⚠️"
                     statusText = LOC("$$$/iNaturalist/VersionStatus/Outdated=Plugin outdated")
@@ -105,7 +105,7 @@ return {
                 versionRow[3].title = statusIcon .. " " .. statusText
 
                 LrDialogs.message(
-                    LOC("$$$/iNat/GitHubVersionTitle=GitHub Version"),
+                    LOC("$$$/iNat/GitHubVersionTitle=Force GitHub Version"),
                     LOC("$$$/iNat/GitHubVersionBody=Latest GitHub version: ") .. tag
                 )
                 logger.logMessage("User refreshed GitHub version: " .. tag)
