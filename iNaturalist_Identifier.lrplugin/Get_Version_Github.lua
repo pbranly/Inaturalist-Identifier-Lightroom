@@ -81,20 +81,45 @@ end
 function M.getLatestTagAsync(callback)
     logger.logMessage("[Step 6] Starting async fetch of latest GitHub tag.")
     LrTasks.startAsyncTask(function()
-        logger.logMessage("[GitHub] Sending request to: " .. GITHUB_API_URL)
+        logger.logMessage("[GitHub] Sending HTTP GET request...")
+        logger.logMessage("[GitHub] URL: " .. GITHUB_API_URL)
+
         local headers = { { field = "User-Agent", value = "iNat-Lightroom-Plugin" } }
-        local body = LrHttp.get(GITHUB_API_URL, headers)
-        local tag = nil
+        for _, h in ipairs(headers) do
+            logger.logMessage(string.format("[GitHub] Header: %s = %s", h.field, h.value))
+        end
+
+        -- Récupération avec status et headers_out
+        local body, status, headers_out = LrHttp.get(GITHUB_API_URL, headers)
+
+        logger.logMessage("[GitHub] HTTP status: " .. tostring(status))
+
+        if headers_out then
+            logger.logMessage("[GitHub] Response headers:")
+            for _, h in ipairs(headers_out) do
+                logger.logMessage(string.format("   %s = %s", tostring(h.field), tostring(h.value)))
+            end
+        else
+            logger.logMessage("[GitHub] No response headers received.")
+        end
+
         if body then
-            -- Robust parsing to handle multi-line JSON
-            tag = body:match('"tag_name"%s*:%s*"?([%d%.]+)"?')
-            logger.logMessage("[GitHub] Latest tag retrieved: " .. tostring(tag))
+            logger.logMessage("[GitHub] Raw response body:\n" .. tostring(body))
         else
             logger.logMessage("[GitHub] No response body received.")
         end
+
+        local tag = nil
+        if body then
+            -- Parsing robuste
+            tag = body:match('"tag_name"%s*:%s*"?([%d%.]+)"?')
+            logger.logMessage("[GitHub] Latest tag parsed: " .. tostring(tag))
+        end
+
         callback(tag)
     end)
 end
+
 
 -- Step 7: Compare GitHub version with local version
 function M.getVersionStatusAsync(callback)
