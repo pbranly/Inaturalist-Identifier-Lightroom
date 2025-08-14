@@ -1,85 +1,77 @@
---[[
-============================================================
-Get_Version_GitHub.lua
-------------------------------------------------------------
-Récupère la dernière version disponible sur GitHub et calcule
-le statut par rapport à la version locale du plugin.
-============================================================
---]]
-
-local LrHttp = import "LrHttp"
+-- Get_Version_Github.lua
+local LrHttp  = import "LrHttp"
 local LrTasks = import "LrTasks"
-local logger = require("Logger")
+local logger  = require("Logger")
 local currentVersion = require("Get_Current_Version").getCurrentVersion()
 
 local M = {}
-
--- URL de l'API GitHub
 local GITHUB_API_URL = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
 
--- Récupération du dernier tag depuis GitHub
-function M.getLatestTag()
-    logger.logMessage("[GitHub] Initiating request to GitHub API for latest release...")
+-- Parse version string "vX.Y.Z" or "X.Y.Z"
+local function parseVersion(ver)
+    if not ver then return {0,0,0} end
+    ver = ver:gsub("^v","")
+    local maj,min,rev = ver:match("^(%d+)%.(%d+)%.(%d+)")
+    return { tonumber(maj) or 0, tonumber(min) or 0, tonumber(rev) or 0 }
+end
 
-    local headers = {
-        { field = "User-Agent", value = "iNat-Lightroom-Plugin" }
-    }
-
-    local result, hdrs = LrHttp.get(GITHUB_API_URL, headers)
-
-    if not result or result == "" then
-        logger.logMessage("[GitHub] Empty or failed response from GitHub API.")
-        return nil
+local function isNewer(v1,v2)
+    for i=1,3 do
+        if v1[i]>v2[i] then return true end
+        if v1[i]<v2[i] then return false end
     end
-
-    local tag = result:match('"tag_name"%s*:%s*"([^"]+)"')
-
-    if tag then
-        logger.logMessage("[GitHub] Latest tag retrieved: " .. tag)
-        return tag
-    else
-        logger.logMessage("[GitHub] Failed to parse tag_name from API response.")
-        return nil
-    end
+    return false
 end
 
--- Comparaison version
-function M.isNewerThanLocal(tag)
-    return tag > currentVersion
+local function isSame(v1,v2)
+    return v1[1]==v2[1] and v1[2]==v2[2] and v1[3]==v2[3]
 end
 
-function M.isSameAsLocal(tag)
-    return tag == currentVersion
-end
-
--- Renvoie toutes les infos de statut
-function M.getVersionStatus()
-    local tag = M.getLatestTag()
-    local statusIcon, statusText
-
-    if not tag then
-        tag = "Unable to retrieve GitHub version"
-        statusIcon = "❓"
-        statusText = LOC("$$$/iNaturalist/VersionStatus/Unknown=GitHub version unknown")
-    else
-        if M.isNewerThanLocal(tag) then
-            statusIcon = "⚠️"
-            statusText = LOC("$$$/iNaturalist/VersionStatus/Outdated=Plugin outdated")
-        elseif M.isSameAsLocal(tag) then
-            statusIcon = "✅"
-            statusText = LOC("$$$/iNaturalist/VersionStatus/UpToDate=Plugin up-to-date")
-        else
-            statusIcon = "ℹ️"
-            statusText = LOC("$$$/iNaturalist/VersionStatus/Newer=Plugin newer than GitHub")
+-- Async fetch of GitHub latest tag
+function M.getLatestTagAsync(callback)
+    LrTasks.startAsyncTask(function()
+        logger.logMessage("[GitHub] Fetching latest release from GitHub...")
+        local headers = { { field = "User-Agent", value = "iNat-Lightroom-Plugin" } }
+        local body = LrHttp.get(GITHUB_API_URL, headers)
+        local tag = nil
+        if body then
+            tag = body:match('"tag_name"%s*:%s*"([^"]+)"')
         end
-    end
+        callback(tag)
+    end)
+end
 
-    return {
-        githubTag = tag,
-        currentVersion = currentVersion,
-        statusIcon = statusIcon,
-        statusText = statusText
-    }
+-- Build status object
+function M.getVersionStatusAsync(callback)
+    M.getLatestTagAsync(function(tag)
+        local statusIcon, statusText
+        local localParsed = parseVersion(currentVersion)
+
+        if not tag then
+            tag = "Unable to retrieve GitHub version"
+            statusIcon = "❓"
+            statusText = "GitHub version unknown"
+        else
+            local ghParsed = parseVersion(tag)
+            if isNewer(ghParsed, localParsed) then
+                statusIcon = "⚠️"
+                statusText = "Plugin outdated"
+            elseif isSame(ghParsed, localParsed) then
+                statusIcon = "✅"
+                statusText = "Plugin up-to-date"
+            else
+                statusIcon = "ℹ️"
+                statusText = "Plugin newer than GitHub"
+            end
+        end
+
+        callback({
+            githubTag = tag,
+            currentVersion = currentVersion,
+            statusIcon = statusIcon,
+            statusText = statusText
+        })
+    end)
 end
 
 return M

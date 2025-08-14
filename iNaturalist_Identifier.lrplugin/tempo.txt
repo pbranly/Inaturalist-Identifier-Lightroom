@@ -2,6 +2,6 @@ Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Light
 
 **** Error 1
 
-Impossible de créer des sections d'informations pour le module externe.
-PluginInfoProvider.lua:80: attempt to call field 'getLatestTagAsync' (a nil value)
+Une erreur s'est produite lors de la tentative d'exécution d'un script du module externe.
+Get_Current_Version.lua:22: chunk has too many syntax levels)
 
