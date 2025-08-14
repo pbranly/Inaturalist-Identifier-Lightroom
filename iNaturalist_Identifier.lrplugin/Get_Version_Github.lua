@@ -17,60 +17,42 @@ The comparison logic determines whether:
 - The local plugin version is newer than the GitHub release.
 - The GitHub version could not be retrieved.
 
-=====================================================================
-Modules and Scripts Used
----------------------------------------------------------------------
+Modules and Scripts Used:
 - Lightroom SDK:
     * LrHttp   → HTTP GET requests to GitHub API.
     * LrTasks  → Asynchronous task execution.
-
+    * LrLocalization → for LOC()
 - Internal Modules:
     * Logger.lua               → Logging operations.
     * Get_Current_Version.lua  → Provides the installed plugin version.
 
-=====================================================================
-Scripts That Use This Script
----------------------------------------------------------------------
+Scripts That Use This Script:
 - Plugin Manager UI dialog (for displaying GitHub vs local version).
 - Any auto-update or version-checking feature.
 
-=====================================================================
-Execution Steps
----------------------------------------------------------------------
-Step 1: Import required modules and logger.
-Step 2: Define GitHub API endpoint URL.
-Step 3: Create a version parsing function.
-Step 4: Create a version comparison function (isNewer).
-Step 5: Create a version equality function (isSame).
-Step 6: Define getLatestTagAsync() to fetch latest GitHub version.
-Step 7: Define getVersionStatusAsync() to compare and return status.
-Step 8: Return public API table.
-
-=====================================================================
-Step-by-Step Detailed Descriptions
----------------------------------------------------------------------
-1. Load Lightroom SDK modules for HTTP and async tasks, plus logging.
-2. Store the GitHub API endpoint for latest release retrieval.
-3. Create a parser to convert version strings like "vX.Y.Z" or "X.Y.Z" into numeric arrays.
-4. Compare two versions to check if v1 is newer than v2.
-5. Compare two versions to check if they are exactly the same.
-6. Fetch the latest release tag from GitHub asynchronously.
-7. Compare GitHub version with local version, return a status object 
-   with icon and descriptive text (internationalized).
-8. Provide these functions to other scripts.
-
+Execution Steps:
+1. Import required modules and logger.
+2. Define GitHub API endpoint URL.
+3. Create a version parsing function.
+4. Create a version comparison function (isNewer).
+5. Create a version equality function (isSame).
+6. Define getLatestTagAsync() to fetch latest GitHub version.
+7. Define getVersionStatusAsync() to compare and return status.
+8. Return public API table.
 =====================================================================
 ]]
 
-local LrHttp  = import "LrHttp"   -- Step 1
+local LrHttp  = import "LrHttp"
 local LrTasks = import "LrTasks"
 local logger  = require("Logger")
 local currentVersion = require("Get_Current_Version").getCurrentVersion()
 
-local LOC = function(msg) return msg end -- Lightroom localization placeholder
+-- Robust LOC: use Lightroom LOC if available, else fallback stripping key
+local LrLocalization = import 'LrLocalization'
+local LOC = (LrLocalization and LrLocalization.LOC) or function(s) return s:gsub("%$%$%$/.-=", "") end
 
 local M = {}
-local GITHUB_API_URL = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest" -- Step 2
+local GITHUB_API_URL = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
 
 -- Step 3: Parse version string "vX.Y.Z" or "X.Y.Z"
 local function parseVersion(ver)
@@ -140,6 +122,16 @@ function M.getVersionStatusAsync(callback)
             end
         end
 
+        -- Log line displaying current vs latest GitHub version
+        logger.logMessage(string.format(
+            "[GitHub] %s %s — %s %s",
+            LOC("$$$/iNat/PluginCurrentVersion=Plugin current version"),
+            currentVersion,
+            LOC("$$$/iNat/LatestGithubVersion=Latest GitHub version"),
+            tag
+        ))
+
+        -- Log line for status
         logger.logMessage(string.format("[GitHub] Status: %s - %s", statusIcon, statusText))
 
         callback({
