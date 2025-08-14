@@ -18,6 +18,6 @@ This file is read by:
 return {
     major = 0,
     minor = 1,
-    revision = 6,
+    revision = 9,
     build = 0
 }
