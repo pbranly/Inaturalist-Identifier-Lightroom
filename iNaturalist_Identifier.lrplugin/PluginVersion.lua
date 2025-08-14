@@ -16,8 +16,8 @@ This file is read by:
 ]]
 
 return {
-    major = 0,
-    minor = 1,
-    revision = 8,
+    major = 1,
+    minor = 0,
+    revision = 0,
     build = 0
 }
