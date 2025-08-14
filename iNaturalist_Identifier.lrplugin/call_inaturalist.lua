@@ -125,7 +125,9 @@ local function identifyAsync(imagePath, token, callback)
 
         -- Step 9: Format species names and confidence percentages
         logger.logMessage("[Step 9] Formatting results for output.")
-        local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+--        local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+        local output = { "🕊️ Recognized species:" }
+
         table.insert(output, "")  -- Add spacing line
 
         for _, result in ipairs(results) do
@@ -138,6 +140,8 @@ local function identifyAsync(imagePath, token, callback)
             table.insert(output, line)
             logger.logMessage("[Step 9] Recognized: " .. line)
         end
+		-- Log full formatted result
+        logger.logMessage("[Step 9] Full formatted output:\n" .. table.concat(output, "\n"))
 
         -- Step 10: Return final formatted result string
         logger.logMessage("[Step 10] Returning formatted species recognition results.")

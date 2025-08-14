@@ -29,12 +29,20 @@ Modules and Scripts Used:
 Scripts That Use This Script:
 - Plugin Manager UI dialog
 - Auto-update / version-checking features
+
+Execution Steps:
+1. Import modules
+2. Define GitHub URL
+3. Parse version strings
+4. Compare versions (isNewer / isSame)
+5. Fetch latest tag async
+6. Compare with local version and return status
 =====================================================================
 ]]
 
-local LrHttp        = import "LrHttp"
-local LrTasks       = import "LrTasks"
-local logger        = require("Logger")
+local LrHttp  = import "LrHttp"
+local LrTasks = import "LrTasks"
+local logger  = require("Logger")
 local currentVersion = require("Get_Current_Version").getCurrentVersion()
 
 -- Robust LOC
@@ -69,20 +77,22 @@ local function isSame(v1,v2)
     return v1[1]==v2[1] and v1[2]==v2[2] and v1[3]==v2[3]
 end
 
--- Step 6: Async fetch of GitHub latest tag with detailed logging
+-- Step 6: Async fetch of GitHub latest tag
 function M.getLatestTagAsync(callback)
     logger.logMessage("[Step 6] Starting async fetch of latest GitHub tag.")
     LrTasks.startAsyncTask(function()
+        logger.logMessage("[GitHub] Sending HTTP GET request...")
         logger.logMessage("[GitHub] URL: " .. GITHUB_API_URL)
 
-        local headers_in = { { field = "User-Agent", value = "iNat-Lightroom-Plugin" } }
-        for _, h in ipairs(headers_in) do
-            logger.logMessage(string.format("[GitHub] Request header: %s = %s", h.field, h.value))
+        local headers = { { field = "User-Agent", value = "iNat-Lightroom-Plugin" } }
+        for _, h in ipairs(headers) do
+            logger.logMessage(string.format("[GitHub] Header: %s = %s", h.field, h.value))
         end
 
-        local body, headers_out, status_code = LrHttp.get(GITHUB_API_URL, headers_in)
+        -- Récupération avec status et headers_out
+        local body, status, headers_out = LrHttp.get(GITHUB_API_URL, headers)
 
-        logger.logMessage("[GitHub] HTTP status code: " .. tostring(status_code))
+        logger.logMessage("[GitHub] HTTP status: " .. tostring(status))
 
         if headers_out then
             logger.logMessage("[GitHub] Response headers:")
@@ -93,21 +103,23 @@ function M.getLatestTagAsync(callback)
             logger.logMessage("[GitHub] No response headers received.")
         end
 
-        local tag = nil
         if body then
-            logger.logMessage("[GitHub] Raw body received:")
-            logger.logMessage(body)
-
-            -- Try to parse JSON tag_name
-            tag = body:match('"tag_name"%s*:%s*"v?([%d%.]+)"')
-            logger.logMessage("[GitHub] Parsed tag_name: " .. tostring(tag))
+            logger.logMessage("[GitHub] Raw response body:\n" .. tostring(body))
         else
             logger.logMessage("[GitHub] No response body received.")
+        end
+
+        local tag = nil
+        if body then
+            -- Parsing robuste
+            tag = body:match('"tag_name"%s*:%s*"?([%d%.]+)"?')
+            logger.logMessage("[GitHub] Latest tag parsed: " .. tostring(tag))
         end
 
         callback(tag)
     end)
 end
+
 
 -- Step 7: Compare GitHub version with local version
 function M.getVersionStatusAsync(callback)
@@ -134,6 +146,7 @@ function M.getVersionStatusAsync(callback)
             end
         end
 
+        -- Detailed log: current vs GitHub
         logger.logMessage(string.format(
             "[GitHub] %s %s — %s %s",
             LOC("$$$/iNat/PluginCurrentVersion=Plugin current version"),
