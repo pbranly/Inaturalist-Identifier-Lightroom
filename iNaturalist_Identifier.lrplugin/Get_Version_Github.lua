@@ -11,34 +11,32 @@ It provides two main functions:
 2. getVersionStatusAsync(callback) - Compares the latest GitHub 
    version with the current plugin version and returns a status object.
 
-The comparison logic determines whether:
-- The plugin is outdated.
-- The plugin is up-to-date.
-- The local plugin version is newer than the GitHub release.
-- The GitHub version could not be retrieved.
+Comparison logic:
+- Plugin outdated
+- Plugin up-to-date
+- Local plugin newer than GitHub
+- GitHub version unknown
 
 Modules and Scripts Used:
 - Lightroom SDK:
-    * LrHttp   → HTTP GET requests to GitHub API.
-    * LrTasks  → Asynchronous task execution.
+    * LrHttp   → HTTP GET requests
+    * LrTasks  → Async task execution
     * LrLocalization → for LOC()
 - Internal Modules:
-    * Logger.lua               → Logging operations.
-    * Get_Current_Version.lua  → Provides the installed plugin version.
+    * Logger.lua
+    * Get_Current_Version.lua
 
 Scripts That Use This Script:
-- Plugin Manager UI dialog (for displaying GitHub vs local version).
-- Any auto-update or version-checking feature.
+- Plugin Manager UI dialog
+- Auto-update / version-checking features
 
 Execution Steps:
-1. Import required modules and logger.
-2. Define GitHub API endpoint URL.
-3. Create a version parsing function.
-4. Create a version comparison function (isNewer).
-5. Create a version equality function (isSame).
-6. Define getLatestTagAsync() to fetch latest GitHub version.
-7. Define getVersionStatusAsync() to compare and return status.
-8. Return public API table.
+1. Import modules
+2. Define GitHub URL
+3. Parse version strings
+4. Compare versions (isNewer / isSame)
+5. Fetch latest tag async
+6. Compare with local version and return status
 =====================================================================
 ]]
 
@@ -47,7 +45,7 @@ local LrTasks = import "LrTasks"
 local logger  = require("Logger")
 local currentVersion = require("Get_Current_Version").getCurrentVersion()
 
--- Robust LOC: use Lightroom LOC if available, else fallback stripping key
+-- Robust LOC
 local LrLocalization = import 'LrLocalization'
 local LOC = (LrLocalization and LrLocalization.LOC) or function(s) return s:gsub("%$%$%$/.-=", "") end
 
@@ -63,7 +61,7 @@ local function parseVersion(ver)
     return { tonumber(maj) or 0, tonumber(min) or 0, tonumber(rev) or 0 }
 end
 
--- Step 4: Check if v1 is newer than v2
+-- Step 4: Compare if v1 is newer than v2
 local function isNewer(v1,v2)
     logger.logMessage(string.format("[Step 4] Comparing if %s is newer than %s", table.concat(v1,"."), table.concat(v2,".")))
     for i=1,3 do
@@ -88,7 +86,8 @@ function M.getLatestTagAsync(callback)
         local body = LrHttp.get(GITHUB_API_URL, headers)
         local tag = nil
         if body then
-            tag = body:match('"tag_name"%s*:%s*"([^"]+)"')
+            -- Robust parsing to handle multi-line JSON
+            tag = body:match('"tag_name"%s*:%s*"?([%d%.]+)"?')
             logger.logMessage("[GitHub] Latest tag retrieved: " .. tostring(tag))
         else
             logger.logMessage("[GitHub] No response body received.")
@@ -122,7 +121,7 @@ function M.getVersionStatusAsync(callback)
             end
         end
 
-        -- Log line displaying current vs latest GitHub version
+        -- Detailed log: current vs GitHub
         logger.logMessage(string.format(
             "[GitHub] %s %s — %s %s",
             LOC("$$$/iNat/PluginCurrentVersion=Plugin current version"),
@@ -130,8 +129,6 @@ function M.getVersionStatusAsync(callback)
             LOC("$$$/iNat/LatestGithubVersion=Latest GitHub version"),
             tag
         ))
-
-        -- Log line for status
         logger.logMessage(string.format("[GitHub] Status: %s - %s", statusIcon, statusText))
 
         callback({
