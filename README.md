@@ -50,8 +50,7 @@ Le plugin *iNaturalist Identifier* s’intègre à Adobe Lightroom Classic pour 
 *Installation*
 
 1. Download or clone the repository:  
-   *Téléchargez ou clonez le dépôt :*
-   https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest
+   [📥 Télécharger la dernière version](https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest)
 2. Open Lightroom Classic.  
    *Ouvrez Lightroom Classic.*
 3. Go to **File > Plugin Manager**.  
@@ -157,5 +156,6 @@ If this plugin is useful to you, consider supporting its development:
   *Offrez-moi un café*
 - Donate via PayPal: [paypal.me/philippebranly](https://www.paypal.me/philippebranly)  
   *Ou faites un don via PayPal*  
+
 
 
