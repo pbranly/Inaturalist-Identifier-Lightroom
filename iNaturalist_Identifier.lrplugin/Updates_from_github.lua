@@ -65,7 +65,7 @@ local Updates = {
 function Updates.version()
     local v = Info.VERSION
     local formatted = string.format("%s.%s.%s", v.major, v.minor, v.revision)
-    logger:trace("[Version] Plugin actuel : " .. formatted)
+    logger:trace("[Step 1] Current plugin version: " .. formatted)
     return formatted
 end
 
@@ -76,21 +76,28 @@ local function getLatestVersion()
         { field = "X-GitHub-Api-Version", value = "2022-11-28" },
     }
 
-    logger:trace("[GitHub] Requête vers : " .. url)
+    logger:trace("[Step 2] Sending HTTP GET to GitHub: " .. url)
+    for _, h in ipairs(headers) do
+        logger:trace("[Step 2] Header: " .. h.field .. ": " .. h.value)
+    end
+
     local data, respHeaders = LrHttp.get(url, headers)
 
+    logger:trace("[Step 2] Response status: " .. tostring(respHeaders.status))
+    logger:trace("[Step 2] Response body: " .. tostring(data))
+
     if respHeaders.error or respHeaders.status ~= 200 then
-        logger:error("[GitHub] Erreur HTTP : " .. tostring(respHeaders.error or respHeaders.status))
-        return nil
+        logger:error("[Step 2] GitHub API error or unexpected status code.")
+        return
     end
 
     local success, release = pcall(json.decode, data)
-    if not success or not release then
-        logger:error("[GitHub] Échec du décodage JSON.")
-        return nil
+    if not success then
+        logger:error("[Step 2] Failed to decode GitHub JSON response.")
+        return
     end
 
-    logger:trace("[GitHub] Dernière version : " .. release.tag_name)
+    logger:trace("[Step 2] Found latest release tag: " .. release.tag_name)
     return release
 end
 
@@ -105,70 +112,64 @@ end
 
 local function download(release, filename)
     local url = release.assets[1].browser_download_url
-    logger:trace("[Téléchargement] URL : " .. url)
+    logger:trace("[Step 5] Downloading asset from: " .. url)
+
     local data, headers = LrHttp.get(url)
+    logger:trace("[Step 5] Response status: " .. tostring(headers.status))
+    logger:trace("[Step 5] Response error: " .. tostring(headers.error or "none"))
 
     if headers.error then
-        logger:error("[Téléchargement] Erreur : " .. tostring(headers.error))
+        logger:error("[Step 5] Download failed.")
         return false
+    end
+
+    if LrFileUtils.exists(filename) and not LrFileUtils.isWritable(filename) then
+        error("Cannot write to download file")
     end
 
     local f = io.open(filename, "wb")
-    if not f then
-        logger:error("[Téléchargement] Impossible d'écrire dans : " .. filename)
-        return false
-    end
-
     f:write(data)
     f:close()
-    logger:trace("[Téléchargement] Archive enregistrée : " .. filename)
-    return true
+    logger:trace("[Step 5] File saved to: " .. filename)
 end
 
 local function extract(filename, workdir)
     local cmd = "tar -C " .. shellquote(workdir) .. " -xf " .. shellquote(filename)
-    logger:trace("[Extraction] Commande : " .. cmd)
+    logger:trace("[Step 6] Extracting archive with command: " .. cmd)
     local ret = LrTasks.execute(cmd)
     if ret ~= 0 then
-        logger:error("[Extraction] Échec avec code : " .. tostring(ret))
-        error("Extraction échouée")
+        logger:error("[Step 6] Extraction failed.")
+        error("Could not extract downloaded release file")
     end
 end
 
 local function install(workdir, pluginPath)
-    logger:trace("[Installation] Recherche du nouveau dossier plugin...")
+    logger:trace("[Step 7] Installing plugin update.")
     local newPluginPath = nil
     for path in LrFileUtils.directoryEntries(workdir) do
         if path:find("%.lrplugin$") then
             newPluginPath = path
-            break
         end
     end
-
-    if not newPluginPath then
-        logger:error("[Installation] Aucun dossier .lrplugin trouvé.")
-        error("Installation échouée")
-    end
-
-    local backup = LrFileUtils.chooseUniqueFileName(pluginPath .. "_backup")
-    LrFileUtils.move(pluginPath, backup)
+    local scratch = LrFileUtils.chooseUniqueFileName(newPluginPath)
+    LrFileUtils.move(pluginPath, scratch)
     LrFileUtils.move(newPluginPath, pluginPath)
-    logger:trace("[Installation] Nouveau plugin installé.")
+    logger:trace("[Step 7] Plugin replaced successfully.")
 end
 
 local function downloadAndInstall(ctx, release)
+    logger:trace("[Step 4] Preparing temporary directory for install.")
     local workdir = LrFileUtils.chooseUniqueFileName(_PLUGIN.path)
     ctx:addCleanupHandler(function()
         LrFileUtils.delete(workdir)
-        logger:trace("[Cleanup] Dossier temporaire supprimé.")
     end)
-
-    if not LrFileUtils.createDirectory(workdir) then
-        error("Impossible de créer le dossier temporaire")
+    local r = LrFileUtils.createDirectory(workdir)
+    if not r then
+        error("Cannot create temporary directory")
     end
-
     local zip = LrPathUtils.child(workdir, "download.zip")
-    if not download(release, zip) then return end
+
+    download(release, zip)
     extract(zip, workdir)
     install(workdir, _PLUGIN.path)
 end
@@ -179,7 +180,7 @@ local function showUpdateDialog(release, force)
         prefs.lastUpdateOffered = release.tag_name
     end
 
-    local info = LOC("$$$/iNat/UpdateAvailable=Une mise à jour est disponible.")
+    local info = LOC("$$$/iNat/UpdateAvailable=An update is available for the iNaturalist Publish Plugin. Would you like to download it now?")
     if release.body and #release.body > 0 then
         info = info .. "\n\n" .. release.body
     end
@@ -187,14 +188,16 @@ local function showUpdateDialog(release, force)
     local actionPrefKey = force and nil or Updates.actionPrefKey
 
     local toDo = LrDialogs.promptForActionWithDoNotShow({
-        message = LOC("$$$/iNat/UpdateTitle=Mise à jour disponible"),
+        message = LOC("$$$/iNat/UpdateTitle=iNaturalist Publish Plugin update available"),
         info = info,
         actionPrefKey = actionPrefKey,
         verbBtns = {
-            { label = LOC("$$$/iNat/Download=Télécharger"), verb = "download" },
-            { label = LOC("$$$/iNat/Ignore=Ignorer"), verb = "ignore" },
+            { label = LOC("$$$/iNat/Download=Download"), verb = "download" },
+            { label = LOC("$$$/iNat/Ignore=Ignore"), verb = "ignore" },
         },
     })
+
+    logger:trace("[Step 3] User response: " .. toDo)
 
     if toDo == "download" then
         if #release.assets ~= 1 then
@@ -204,7 +207,7 @@ local function showUpdateDialog(release, force)
 
         if LrTasks.execute("tar --help") == 0 then
             LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
-            LrDialogs.message(LOC("$$$/iNat/UpdateInstalled=Mise à jour installée"), LOC("$$$/iNat/Restart=Veuillez redémarrer Lightroom"), "info")
+            LrDialogs.message(LOC("$$$/iNat/UpdateInstalled=Update installed"), LOC("$$$/iNat/Restart=Please restart Lightroom"), "info")
         else
             LrHttp.openUrlInBrowser(release.assets[1].browser_download_url)
         end
@@ -213,20 +216,29 @@ end
 
 function Updates.check(force)
     local current = Updates.version()
+    logger:debug("[Step 1] Current version: " .. current)
+
     if not force and not prefs.checkForUpdates then
+        logger:trace("[Step 1] Update check skipped due to preferences.")
         return
     end
 
     local release = getLatestVersion()
-    if not release then return end
+    if not release then
+        logger:error("[Step 2] Failed to retrieve latest release.")
+        return
+    end
 
     local latest = release.tag_name:gsub("^v", "")
     local normalizedCurrent = current:gsub("^v", "")
 
     if normalizedCurrent ~= latest then
+        logger:trace("[Step 3] Offering update from " .. normalizedCurrent .. " to " .. latest)
         showUpdateDialog(release, force)
+        return
     end
 
+    logger:trace("[Step 3] Plugin is up to date.")
     return current
 end
 
@@ -235,24 +247,12 @@ function Updates.forceUpdate()
         local v = Updates.check(true)
         if v then
             LrDialogs.message(
-                LOC("$$$/iNat/NoUpdate=Aucune mise à jour disponible"),
-                LOC("$$$/iNat/CurrentVersion=Version actuelle : " .. v),
+                LOC("$$$/iNat/NoUpdate=No updates available"),
+                LOC("$$$/iNat/NoUpdate=No updates available"),
+                LOC("$$$/iNat/CurrentVersion=You are already using the latest version (" .. v .. ")"),
                 "info"
             )
         end
-    end)
-end
-
-function Updates.getGitHubVersionInfoAsync(callback)
-    LrTasks.startAsyncTask(function()
-        local release = getLatestVersion()
-        local current = Updates.version():gsub("^v", "")
-        local latest = release and release.tag_name:gsub("^v", "") or "unknown"
-
-        callback({
-            current = current,
-            latest = latest
-        })
     end)
 end
 
