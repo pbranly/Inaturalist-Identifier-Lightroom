@@ -12,7 +12,7 @@ local json = require("dkjson")
 
 local Updates = {
 	baseUrl = "https://api.github.com/",
-	repo = "rcloran/lr-inaturalist-publish",
+	repo = "pbranly/Inaturalist-Identifier-Lightroom",
 	actionPrefKey = "doNotShowUpdatePrompt",
 }
 
