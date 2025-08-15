@@ -1,194 +1,119 @@
-local logger = import("LrLogger")("lr-inaturalist-publish")
-local prefs = import("LrPrefs").prefsForPlugin()
-local LrDialogs = import("LrDialogs")
-local LrFileUtils = import("LrFileUtils")
-local LrFunctionContext = import("LrFunctionContext")
-local LrPathUtils = import("LrPathUtils")
-local LrHttp = import("LrHttp")
-local LrTasks = import("LrTasks")
+--[[============================================================================
+Updates_from_github.lua
+-------------------------------------------------------------------------------
+Functional Description:
+This module manages version checking and update logic for the iNaturalist Publish Plugin
+used in Adobe Lightroom. It connects to GitHub to retrieve the latest release version,
+compares it with the current plugin version, and returns both values asynchronously.
 
-local Info = require("Info")
-local json = require("dkjson")
+Features:
+1. Retrieve current plugin version from Info.lua
+2. Query GitHub API for latest release version
+3. Compare current and latest versions
+4. Return version info to calling script
+5. Log all steps and HTTP traffic using Logger.lua
+6. Display messages using internationalized LOC strings
 
+Modules and Scripts Used:
+- LrLogger         : For detailed logging
+- LrPrefs          : Access plugin preferences
+- LrHttp           : Perform HTTP requests
+- LrTasks          : Run asynchronous tasks
+- dkjson           : Decode JSON responses
+- Info.lua         : Contains plugin version metadata
+
+Scripts That Use This Module:
+- PluginInfoProvider.lua : Displays version info and triggers update logic
+
+Execution Steps:
+1. Start GitHub version check asynchronously
+2. Retrieve current plugin version from Info.lua
+3. Build GitHub API request URL and headers
+4. Send HTTP GET request to GitHub
+5. Log request and response details
+6. Decode JSON response from GitHub
+7. Extract latest version tag
+8. Return current and latest version to callback
+
+============================================================================]]
+
+-- Import required modules
+local logger = import("LrLogger")("lr-inaturalist-publish") -- Logger instance
+local prefs = import("LrPrefs").prefsForPlugin()            -- Plugin preferences
+local LrHttp = import("LrHttp")                             -- HTTP module
+local LrTasks = import("LrTasks")                           -- Async task runner
+
+local Info = require("Info")                                -- Plugin version metadata
+local json = require("json")                              -- JSON decoder
+
+-- Define module table
 local Updates = {
-	baseUrl = "https://api.github.com/",
-	repo = "pbranly/Inaturalist-Identifier-Lightroom",
-	actionPrefKey = "doNotShowUpdatePrompt",
+    baseUrl = "https://api.github.com/",                    -- GitHub API base URL
+    repo = "pbranly/Inaturalist-Identifier-Lightroom",      -- GitHub repository
+    actionPrefKey = "doNotShowUpdatePrompt",                -- Key for suppressing update dialog
 }
 
-local function getLatestVersion()
-	local url = Updates.baseUrl .. "repos/" .. Updates.repo .. "/releases/latest"
-	local headers = {
-		{ field = "User-Agent", value = Updates.repo .. "/" .. Updates.version() },
-		{ field = "X-GitHub-Api-Version", value = "2022-11-28" },
-	}
-	local data, respHeaders = LrHttp.get(url, headers)
-
-	if respHeaders.error or respHeaders.status ~= 200 then
-		return
-	end
-
-	local success, release = pcall(json.decode, data)
-	if not success then
-		return
-	end
-
-	logger:tracef("Found latest release: %s", release.tag_name)
-	return release
-end
-
-local function shellquote(s)
-	-- Quote a file name so it's ready to concat into a command
-	if MAC_ENV then
-		s = s:gsub("'", "'\\''")
-		return "'" .. s .. "'"
-	else -- WIN_ENV
-		-- Double quotes are not allowed in file names, so take the easy path
-		return '"' .. s .. '"'
-	end
-end
-
-local function download(release, filename)
-	local data, headers = LrHttp.get(release.assets[1].browser_download_url)
-	if headers.error then
-		return false
-	end
-
-	if LrFileUtils.exists(filename) and not LrFileUtils.isWritable(filename) then
-		error("Cannot write to download file")
-	end
-
-	local f = io.open(filename, "wb")
-	f:write(data)
-	f:close()
-end
-
-local function extract(filename, workdir)
-	local cmd = "tar -C " .. shellquote(workdir) .. " -xf " .. shellquote(filename)
-	logger:trace(cmd)
-	local ret = LrTasks.execute(cmd)
-	if ret ~= 0 then
-		error("Could not extract downloaded release file")
-	end
-end
-
-local function install(workdir, pluginPath)
-	local newPluginPath = nil
-	for path in LrFileUtils.directoryEntries(workdir) do
-		if path:find("%.lrplugin$") then
-			newPluginPath = path
-		end
-	end
-	local scratch = LrFileUtils.chooseUniqueFileName(newPluginPath)
-	LrFileUtils.move(pluginPath, scratch)
-	LrFileUtils.move(newPluginPath, pluginPath)
-	-- Don't need to delete scratch, since workdir cleanup will
-end
-
-local function downloadAndInstall(ctx, release)
-	-- Work in sibling to the plugin folder so that moves are just renames
-	local workdir = LrFileUtils.chooseUniqueFileName(_PLUGIN.path)
-	ctx:addCleanupHandler(function()
-		LrFileUtils.delete(workdir)
-	end)
-	local r = LrFileUtils.createDirectory(workdir)
-	if not r then
-		error("Cannot create temporary directory")
-	end
-	local zip = LrPathUtils.child(workdir, "download.zip")
-
-	download(release, zip)
-	extract(zip, workdir)
-	install(workdir, _PLUGIN.path)
-end
-
-local function showUpdateDialog(release, force)
-	if release.tag_name ~= prefs.lastUpdateOffered then
-		LrDialogs.resetDoNotShowFlag(Updates.actionPrefKey)
-		prefs.lastUpdateOffered = release.tag_name
-	end
-
-	local info = "An update is available for the iNaturalist Publish Plugin. Would you like to download it now?"
-	if release.body and #release.body > 0 then
-		info = info .. "\n\n" .. release.body
-	end
-
-	local actionPrefKey = Updates.actionPrefKey
-	if force then
-		actionPrefKey = nil
-	end
-
-	local toDo = LrDialogs.promptForActionWithDoNotShow({
-		message = "iNaturalist Publish Plugin update available",
-		info = info,
-		actionPrefKey = actionPrefKey,
-		verbBtns = {
-			{ label = "Download", verb = "download" },
-			{ label = "Ignore", verb = "ignore" },
-		},
-	})
-	if toDo == "download" then
-		if #release.assets ~= 1 then
-			-- Unexpected. Open a browser window to the release page.
-			LrHttp.openUrlInBrowser(release.html_url)
-			return
-		end
-
-		if LrTasks.execute("tar --help") == 0 then
-			LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
-			LrDialogs.message("iNaturalist Publish Plugin update installed", "Please restart Lightroom", "info")
-		else
-			-- We need the user to download and extract the zip file
-			LrHttp.openUrlInBrowser(release.assets[1].browser_download_url)
-		end
-	else
-		logger:tracef("Update dialog response: %s", toDo)
-	end
-end
-
+-- Step 2: Retrieve current plugin version from Info.lua
 function Updates.version()
-	local v = Info.VERSION
-	return string.format("%s.%s.%s", v.major, v.minor, v.revision)
+    local v = Info.VERSION
+    local formatted = string.format("%s.%s.%s", v.major, v.minor, v.revision)
+    logger:trace("[Step 2] Current plugin version retrieved: " .. formatted)
+    return formatted
 end
 
-function Updates.check(force)
-	-- Returns the current version as a string if no update is available, or
-	-- nil if an update dialog was shown.
+-- Step 1: Start GitHub version check asynchronously
+function Updates.getGitHubVersionInfoAsync(callback)
+    LrTasks.startAsyncTask(function()
+        logger:trace("[Step 1] Starting GitHub version check")
 
-	-- Always log the current version
-	local current = "v" .. Updates.version()
-	logger:debugf("Running %s", Info.VERSION.display or current)
+        -- Step 2: Get current version
+        local currentVersion = "v" .. Updates.version()
 
-	if not force and not prefs.checkForUpdates then
-		return
-	end
+        -- Step 3: Build GitHub API request
+        local url = Updates.baseUrl .. "repos/" .. Updates.repo .. "/releases/latest"
+        local headers = {
+            { field = "User-Agent", value = Updates.repo .. "/" .. Updates.version() },
+            { field = "X-GitHub-Api-Version", value = "2022-11-28" },
+        }
 
-	local latest = getLatestVersion()
-	if not latest then
-		return
-	end
+        logger:trace("[Step 3] Sending HTTP GET to GitHub: " .. url)
+        for _, h in ipairs(headers) do
+            logger:trace("[Step 3] Header: " .. h.field .. ": " .. h.value)
+        end
 
-	if current ~= latest.tag_name then
-		logger:tracef("Offering update from %s to %s", current, latest.tag_name)
-		showUpdateDialog(latest, force)
-		return
-	end
+        -- Step 4: Send HTTP request
+        local body, responseHeaders = LrHttp.get(url, headers)
 
-	return current
+        -- Step 5: Log response details
+        logger:trace("[Step 5] GitHub response status: " .. tostring(responseHeaders.status))
+        logger:trace("[Step 5] GitHub response error: " .. tostring(responseHeaders.error or "none"))
+        logger:trace("[Step 5] GitHub response body: " .. tostring(body))
+
+        -- Step 6: Handle errors
+        if responseHeaders.error or responseHeaders.status ~= 200 then
+            logger:error("[Step 6] GitHub API error or unexpected status code.")
+            callback({ current = currentVersion, latest = "Error fetching version" })
+            return
+        end
+
+        -- Step 7: Decode JSON response
+        local success, release = pcall(json.decode, body)
+        if not success or not release.tag_name then
+            logger:error("[Step 7] Failed to decode GitHub JSON response.")
+            callback({ current = currentVersion, latest = "Invalid response" })
+            return
+        end
+
+        -- Step 8: Extract latest version tag
+        logger:trace("[Step 8] Latest GitHub version retrieved: " .. release.tag_name)
+
+        -- Step 9: Return version info to callback
+        callback({
+            current = currentVersion,
+            latest = release.tag_name
+        })
+    end)
 end
 
-function Updates.forceUpdate()
-	LrTasks.startAsyncTask(function()
-		local v = Updates.check(true)
-
-		if v then
-			LrDialogs.message(
-				"No updates available",
-				string.format("You have the most recent version of the iNaturalist Publish Plugin, %s", v),
-				"info"
-			)
-		end
-	end)
-end
-
+-- Return module
 return Updates
