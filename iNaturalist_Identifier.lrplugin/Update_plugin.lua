@@ -12,7 +12,7 @@ local json = require("json")
 
 local Updates = {
     baseUrl = "https://api.github.com/",
-    repo = "pbranly/Inaturalist-Identifier-Lightroom",
+    repo = "rcloran/lr-inaturalist-publish",
     actionPrefKey = "doNotShowUpdatePrompt",
 }
 
@@ -34,6 +34,16 @@ local function getLatestVersion()
     end
 
     logger.logMessage("Found latest release: " .. release.tag_name)
+
+    -- Ne garder que l’asset contenant "inaturalist" dans son nom
+    local zipAsset = nil
+    for _, asset in ipairs(release.assets or {}) do
+        if asset.name:lower():find("inaturalist") and asset.name:lower():find("%.zip$") then
+            zipAsset = asset
+            break
+        end
+    end
+    release.assetToDownload = zipAsset
     return release
 end
 
@@ -47,7 +57,11 @@ local function shellquote(s)
 end
 
 local function download(release, filename)
-    local data, headers = LrHttp.get(release.assets[1].browser_download_url)
+    if not release.assetToDownload then
+        error("No suitable zip asset found for download")
+    end
+
+    local data, headers = LrHttp.get(release.assetToDownload.browser_download_url)
     if headers.error then
         return false
     end
@@ -124,7 +138,7 @@ local function showUpdateDialog(release, force)
         },
     })
     if toDo == "download" then
-        if #release.assets ~= 1 then
+        if not release.assetToDownload then
             LrHttp.openUrlInBrowser(release.html_url)
             return
         end
@@ -133,7 +147,7 @@ local function showUpdateDialog(release, force)
             LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
             LrDialogs.message("iNaturalist Publish Plugin update installed", "Please restart Lightroom", "info")
         else
-            LrHttp.openUrlInBrowser(release.assets[1].browser_download_url)
+            LrHttp.openUrlInBrowser(release.assetToDownload.browser_download_url)
         end
     else
         logger.logMessage("Update dialog response: " .. tostring(toDo))
