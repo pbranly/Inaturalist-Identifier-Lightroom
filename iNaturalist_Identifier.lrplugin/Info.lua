@@ -72,7 +72,7 @@ return {
 
     -- [Step 8] Plugin version number
     VERSION = {
-        major = 1,
+        major = 0,
         minor = 0,
         revision = 1,
         build = 0,
