@@ -1,3 +1,14 @@
+--[[============================================================================
+PluginInfoProvider.lua
+-------------------------------------------------------------------------------
+Functional Description:
+This script defines the user interface section for configuring the iNaturalist Publish Plugin
+in Adobe Lightroom. It displays the current plugin version, checks for updates from GitHub,
+allows downloading and installing the latest version, and manages the iNaturalist API token
+and logging preferences.
+
+============================================================================]]
+
 local LrView    = import "LrView"
 local LrPrefs   = import "LrPrefs"
 local LrDialogs = import "LrDialogs"
@@ -34,58 +45,37 @@ return {
         local downloadButton = viewFactory:push_button {
             title = LOC("$$$/iNat/DownloadGitHub=Download and install latest GitHub version"),
             action = function()
-                LrTasks.startAsyncTask(function()
-                    logger.logMessage("[GitHub] Download button clicked.")
-                    local release = githubUpdater.getLatestRelease()
-                    if not release then
-                        LrDialogs.message(LOC("$$$/iNat/UpdateError=Unable to retrieve release information."), nil, "critical")
-                        return
-                    end
+                githubUpdater.getGitHubVersionInfoAsync(function(info)
+                    logger.logMessage("[GitHub] Download button clicked. Current=" .. info.current .. ", Latest=" .. info.latest)
 
-                    local current = githubUpdater.version():gsub("^v", "")
-                    local latest = release.tag_name:gsub("^v", "")
-                    logger.logMessage("[GitHub] Comparing versions: current=" .. current .. ", latest=" .. latest)
+                    local normalizedCurrent = info.current:gsub("^v", "")
+                    local normalizedLatest = info.latest:gsub("^v", "")
 
-                    if current == latest then
+                    if normalizedCurrent == normalizedLatest then
                         LrDialogs.message(LOC("$$$/iNat/VersionUpToDate=Version is up to date"))
-                        return
-                    end
-
-                    local choice = LrDialogs.confirm(
-                        LOC("$$$/iNat/NewVersion=New version available"),
-                        LOC("$$$/iNat/DownloadPrompt=Do you want to download and install the new version?"),
-                        LOC("$$$/iNat/OK=OK"),
-                        LOC("$$$/iNat/Cancel=Cancel")
-                    )
-                    if choice ~= "ok" then
-                        logger.logMessage("[GitHub] User cancelled update.")
-                        return
-                    end
-
-                    -- Find .tar.gz asset
-                    local assetUrl = nil
-                    for _, asset in ipairs(release.assets or {}) do
-                        if asset.name:match("%.tar%.gz$") then
-                            assetUrl = asset.browser_download_url
-                            break
+                        logger.logMessage("[GitHub] Plugin is already up to date.")
+                    else
+                        local choice = LrDialogs.confirm(
+                            LOC("$$$/iNat/NewVersion=New version available"),
+                            LOC("$$$/iNat/DownloadPrompt=Do you want to download and install the new version?"),
+                            LOC("$$$/iNat/OK=OK"),
+                            LOC("$$$/iNat/Cancel=Cancel")
+                        )
+                        logger.logMessage("[GitHub] User choice on update prompt: " .. choice)
+                        if choice == "ok" then
+                            LrTasks.startAsyncTask(function()
+                                logger.logMessage("[GitHub] Launching automatic update...")
+                                githubUpdater.downloadAndInstall({
+                                    tag_name = info.latest,
+                                    assets = {
+                                        {
+                                            browser_download_url = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/download/" .. info.latest .. "/Inaturalist-Identifier.lrplugin.tar.gz"
+                                        }
+                                    }
+                                })
+                            end)
                         end
                     end
-
-                    if not assetUrl then
-                        logger:error("[GitHub] No .tar.gz asset found in release.")
-                        LrDialogs.message(
-                            LOC("$$$/iNat/NoArchive=No installable archive found in the release."),
-                            LOC("$$$/iNat/ManualDownload=Please download and install manually."),
-                            "critical"
-                        )
-                        return
-                    end
-
-                    logger.logMessage("[GitHub] Launching automatic update from: " .. assetUrl)
-                    githubUpdater.downloadAndInstall({
-                        tag_name = release.tag_name,
-                        assets = { { browser_download_url = assetUrl } }
-                    })
                 end)
             end
         }
