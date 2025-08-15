@@ -27,7 +27,7 @@ Modules Used:
 - LrHttp
 - LrTasks
 - Info.lua
-- dkjson
+- json
 
 Scripts That Use This Module:
 - PluginInfoProvider.lua
@@ -54,7 +54,7 @@ local LrHttp = import("LrHttp")
 local LrTasks = import("LrTasks")
 
 local Info = require("Info")
-local json = require("dkjson")
+local json = require("json")
 
 local Updates = {
     baseUrl = "https://api.github.com/",
