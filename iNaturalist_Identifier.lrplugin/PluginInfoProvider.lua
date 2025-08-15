@@ -38,7 +38,7 @@ local logger         = require("Logger")
 local versionGitHub  = require("Get_Version_Github")
 local currentVersion = require("Get_Current_Version").getCurrentVersion
 
-local LOC = function(s) return s:gsub("%$%$%$/.-=", "") end
+--local LOC = function(s) return s:gsub("%$%$%$/.-=", "") end
 
 return {
     sectionsForTopOfDialog = function(viewFactory)
