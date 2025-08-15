@@ -35,15 +35,11 @@ local function getLatestVersion()
 
     logger.logMessage("Found latest release: " .. release.tag_name)
 
-    -- Ne garder que l’asset contenant "inaturalist" dans son nom
-    local zipAsset = nil
-    for _, asset in ipairs(release.assets or {}) do
-        if asset.name:lower():find("inaturalist") and asset.name:lower():find("%.zip$") then
-            zipAsset = asset
-            break
-        end
-    end
-    release.assetToDownload = zipAsset
+    -- Télécharger le "Source code (zip)"
+    release.assetToDownload = {
+        browser_download_url = release.zipball_url,
+        name = release.tag_name .. "-source.zip"
+    }
     return release
 end
 
@@ -58,7 +54,7 @@ end
 
 local function download(release, filename)
     if not release.assetToDownload then
-        error("No suitable zip asset found for download")
+        error("No zip source available for download")
     end
 
     local data, headers = LrHttp.get(release.assetToDownload.browser_download_url)
