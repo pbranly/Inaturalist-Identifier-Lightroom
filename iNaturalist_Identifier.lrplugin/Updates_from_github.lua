@@ -125,6 +125,22 @@ local function download(release, filename)
     return true
 end
 
+local function archiveContainsLRPlugin(archivePath)
+    local cmd = "tar -tf " .. shellquote(archivePath)
+    logger:trace("[Validation] Commande : " .. cmd)
+    local handle = io.popen(cmd)
+    local output = handle:read("*a")
+    handle:close()
+
+    if output:match("%.lrplugin/") then
+        logger:trace("[Validation] Dossier .lrplugin détecté dans l'archive.")
+        return true
+    else
+        logger:error("[Validation] Aucun dossier .lrplugin trouvé dans l'archive.")
+        return false
+    end
+end
+
 local function extract(filename, workdir)
     local cmd = "tar -C " .. shellquote(workdir) .. " -xf " .. shellquote(filename)
     logger:trace("[Extraction] Commande : " .. cmd)
@@ -167,9 +183,19 @@ local function downloadAndInstall(ctx, release)
         error("Impossible de créer le dossier temporaire")
     end
 
-    local zip = LrPathUtils.child(workdir, "download.zip")
-    if not download(release, zip) then return end
-    extract(zip, workdir)
+    local archive = LrPathUtils.child(workdir, "download.tar.gz")
+    if not download(release, archive) then return end
+
+    if not archiveContainsLRPlugin(archive) then
+        LrDialogs.message(
+            LOC("$$$/iNat/InvalidArchiveTitle=Archive invalide"),
+            LOC("$$$/iNat/InvalidArchiveBody=Aucun dossier .lrplugin trouvé dans l'archive téléchargée."),
+            "critical"
+        )
+        return
+    end
+
+    extract(archive, workdir)
     install(workdir, _PLUGIN.path)
 end
 
@@ -204,7 +230,11 @@ local function showUpdateDialog(release, force)
 
         if LrTasks.execute("tar --help") == 0 then
             LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
-            LrDialogs.message(LOC("$$$/iNat/UpdateInstalled=Mise à jour installée"), LOC("$$$/iNat/Restart=Veuillez redémarrer Lightroom"), "info")
+            LrDialogs.message(
+                LOC("$$$/iNat/UpdateInstalled=Mise à jour installée"),
+                LOC("$$$/iNat/Restart=Veuillez redémarrer Lightroom"),
+                "info"
+            )
         else
             LrHttp.openUrlInBrowser(release.assets[1].browser_download_url)
         end
@@ -256,4 +286,4 @@ function Updates.getGitHubVersionInfoAsync(callback)
     end)
 end
 
-return Updates               
+return Updates
