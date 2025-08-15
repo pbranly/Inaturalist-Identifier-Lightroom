@@ -33,16 +33,11 @@ local LrHttp      = import "LrHttp"
 local LrTasks     = import "LrTasks"
 local json = require("json")  -- ou selon le nom de ton fichier JSON
 
-
 -- Localization
 local LOC = LOC
 
 -- Logger utility (customizable)
 local logger = require("Logger")
-function logger.log(msg)
-    -- Replace with your logging mechanism if needed
-    -- Example: print("[call_inaturalist] " .. msg)
-end
 
 -- Main identification function (asynchronous)
 -- Parameters:
@@ -53,16 +48,17 @@ local function identifyAsync(imagePath, token, callback)
     LrTasks.startAsyncTask(function()
 
         -- Step 1: Read image from disk
-        logger.log("Reading image from path: " .. tostring(imagePath))
+        logger.logMessage("[Step 1] Reading image from path: " .. tostring(imagePath))
         local imageData = LrFileUtils.readFile(imagePath)
         if not imageData then
-            logger.log("Failed to read image: " .. tostring(imagePath))
+            logger.logMessage("[Step 1] Failed to read image: " .. tostring(imagePath))
             callback(nil, LOC("$$$/iNat/Error/ImageRead=Unable to read image: ") .. imagePath)
             return
         end
+        logger.logMessage("[Step 1] Image read successfully (" .. #imageData .. " bytes)")
 
         -- Step 2: Construct multipart/form-data body
-        logger.log("Constructing multipart/form-data body for image upload.")
+        logger.logMessage("[Step 2] Constructing multipart/form-data body for image upload.")
         local boundary = "----LightroomBoundary" .. tostring(math.random(1000000))
         local body = table.concat({
             "--" .. boundary,
@@ -73,6 +69,7 @@ local function identifyAsync(imagePath, token, callback)
             "--" .. boundary .. "--",
             ""
         }, "\r\n")
+        logger.logMessage("[Step 2] Multipart/form-data body constructed, boundary: " .. boundary)
 
         -- Step 3: Build HTTP headers
         local headers = {
@@ -81,38 +78,41 @@ local function identifyAsync(imagePath, token, callback)
             { field = "Content-Type", value = "multipart/form-data; boundary=" .. boundary },
             { field = "Accept", value = "application/json" }
         }
-        logger.log("HTTP headers prepared with Authorization and Content-Type.")
+        logger.logMessage("[Step 3] HTTP headers prepared with Authorization and Content-Type.")
 
         -- Step 4: Send POST request to iNaturalist API
-        logger.log("Sending POST request to iNaturalist API endpoint.")
+        logger.logMessage("[Step 4] Sending POST request to iNaturalist API endpoint.")
         local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
 
         -- Step 5: Handle network or API errors
         if not result then
-            logger.log("API call failed: no response received.")
+            logger.logMessage("[Step 5] API call failed: no response received.")
             callback(nil, LOC("$$$/iNat/Error/NoAPIResponse=API error: No response"))
             return
         end
+        logger.logMessage("[Step 5] API call succeeded, response received (" .. tostring(#result) .. " bytes)")
 
         -- Step 6: Parse JSON response
-        logger.log("Decoding JSON response from API.")
+        logger.logMessage("[Step 6] Decoding JSON response from API.")
         local success, parsed = pcall(json.decode, result)
         if not success or not parsed then
-            logger.log("Failed to decode JSON response: " .. tostring(result))
+            logger.logMessage("[Step 6] Failed to decode JSON response: " .. tostring(result))
             callback(nil, LOC("$$$/iNat/Error/InvalidJSON=API error: Failed to decode JSON response: ") .. tostring(result))
             return
         end
+        logger.logMessage("[Step 6] JSON decoded successfully.")
 
         -- Step 7: Extract species prediction results
         local results = parsed.results or {}
         if #results == 0 then
-            logger.log("No species recognized in API response.")
+            logger.logMessage("[Step 7] No species recognized in API response.")
             callback(LOC("$$$/iNat/Result/None=🕊️ No species recognized."))
             return
         end
+        logger.logMessage("[Step 7] Number of species recognized: " .. #results)
 
         -- Step 8: Normalize confidence scores
-        logger.log("Normalizing confidence scores for recognized species.")
+        logger.logMessage("[Step 8] Normalizing confidence scores for recognized species.")
         local max_score = 0
         for _, r in ipairs(results) do
             local s = tonumber(r.combined_score) or 0
@@ -120,12 +120,14 @@ local function identifyAsync(imagePath, token, callback)
         end
         if max_score == 0 then
             max_score = 1  -- Prevent division by zero
-            logger.log("Max score was zero, adjusted to 1 to avoid division by zero.")
+            logger.logMessage("[Step 8] Max score was zero, adjusted to 1 to avoid division by zero.")
         end
 
         -- Step 9: Format species names and confidence percentages
-        logger.log("Formatting results for output.")
-        local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+        logger.logMessage("[Step 9] Formatting results for output.")
+--        local output = { LOC("$$$/iNat/Result/Header=🕊️ Recognized species:") }
+        local output = { "🕊️ Recognized species:" }
+
         table.insert(output, "")  -- Add spacing line
 
         for _, result in ipairs(results) do
@@ -134,11 +136,15 @@ local function identifyAsync(imagePath, token, callback)
             local name_latin = taxon.name or LOC("$$$/iNat/Result/UnknownName=Unknown")
             local raw_score = tonumber(result.combined_score) or 0
             local normalized = math.floor((raw_score / max_score) * 1000 + 0.5) / 10  -- Round to 1 decimal
-            table.insert(output, string.format("- %s (%s) : %.1f%%", name_fr, name_latin, normalized))
+            local line = string.format("- %s (%s) : %.1f%%", name_fr, name_latin, normalized)
+            table.insert(output, line)
+            logger.logMessage("[Step 9] Recognized: " .. line)
         end
+		-- Log full formatted result
+        logger.logMessage("[Step 9] Full formatted output:\n" .. table.concat(output, "\n"))
 
         -- Step 10: Return final formatted result string
-        logger.log("Returning formatted species recognition results.")
+        logger.logMessage("[Step 10] Returning formatted species recognition results.")
         callback(table.concat(output, "\n"))
     end)
 end

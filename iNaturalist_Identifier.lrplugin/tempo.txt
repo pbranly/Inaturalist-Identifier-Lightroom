@@ -2,6 +2,6 @@ Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Light
 
 **** Error 1
 
-Une erreur s'est produite lors de la tentative de chargement de ce module externe.
-Info.lua:65: attempt to call global 'require' (a nil value)
+Une erreur s'est produite lors de la tentative d'exécution d'un script du module externe.
+Could not find namespace: LrPlatform
 
