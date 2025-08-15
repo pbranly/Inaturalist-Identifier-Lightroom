@@ -286,4 +286,9 @@ function Updates.getGitHubVersionInfoAsync(callback)
     end)
 end
 
+Updates.downloadAndInstall = function(release)
+    LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
+end
+
+
 return Updates
