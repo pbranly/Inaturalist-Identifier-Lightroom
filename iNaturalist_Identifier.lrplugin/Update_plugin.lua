@@ -1,56 +1,56 @@
---[[---------------------------------------------------------------------------
-    iNaturalist Publish Plugin - Automatic Updater
-    ------------------------------------------------
-    Functional Description:
-    This script checks the latest release of the "iNaturalist Publish Plugin"
-    from GitHub, downloads the "Source code (zip)" file, extracts it according
-    to the operating system, and installs it by replacing the current plugin
-    folder. It displays internationalized messages in English and logs all
-    steps in detail using logger.lua.
+--[[
+===============================================================================
+iNaturalist Publish Plugin - Update Module
+===============================================================================
 
-    Modules and scripts used:
-    -------------------------
-    - logger.lua  : Logging utility for detailed debug/info messages
-    - json.lua    : JSON decoding of GitHub API responses
-    - Info.lua    : Plugin metadata (version, name, etc.)
-    - LrPrefs     : Lightroom Preferences API
-    - LrDialogs   : Lightroom Dialogs API
-    - LrFileUtils : Lightroom File utilities
-    - LrFunctionContext : Lightroom context handling
-    - LrPathUtils : Lightroom Path utilities
-    - LrHttp      : Lightroom HTTP utilities
-    - LrTasks     : Lightroom Task scheduling
+FUNCTIONAL DESCRIPTION:
+This script checks the latest release of the "iNaturalist Publish Plugin" from
+GitHub, downloads the "Source code (zip)" asset, extracts it to a temporary
+system directory, and installs it by replacing the current plugin directory.
 
-    Scripts using this script:
-    --------------------------
-    - This script is typically invoked from the plugin's main menu or
-      automatically during startup checks.
+It logs each step in detail using logger.lua, including HTTP requests and
+responses, command executions, and file operations.
 
-    Process steps:
-    --------------
-    1. Detect the current plugin version.
-    2. Fetch the latest release metadata from GitHub.
-    3. Identify the "Source code (zip)" asset download URL.
-    4. Prompt the user for update installation.
-    5. Create a temporary working directory.
-    6. Download the ZIP file.
-    7. Extract ZIP using OS-specific method.
-    8. Replace the existing plugin folder with the new one.
-    9. Notify the user to restart Lightroom.
+===============================================================================
+MODULES USED:
+- logger.lua         : Custom logging utility for detailed logs
+- LrPrefs            : Lightroom SDK preferences API
+- LrDialogs          : Lightroom SDK dialog boxes
+- LrFileUtils        : Lightroom SDK file operations
+- LrFunctionContext  : Lightroom SDK execution context handling
+- LrPathUtils        : Lightroom SDK path handling
+- LrHttp             : Lightroom SDK HTTP requests
+- LrTasks            : Lightroom SDK background tasks
+- Info.lua           : Plugin metadata (version, etc.)
+- json.lua           : JSON encoding/decoding
 
-    Step-by-step description:
-    -------------------------
-    1. **Version detection**: Reads the local plugin version from Info.lua.
-    2. **GitHub API request**: Sends GET request to `releases/latest`.
-    3. **Asset selection**: Chooses the asset with "Source code (zip)" in its name.
-    4. **User prompt**: Asks user if they want to download & install.
-    5. **Temporary directory**: Creates unique directory for download/extraction.
-    6. **Download ZIP**: Saves file locally, verifying write permissions.
-    7. **Extraction**: On Unix/Mac → `tar -xf`; On Windows → PowerShell `Expand-Archive`.
-    8. **Installation**: Moves the extracted plugin into the current plugin location.
-    9. **Completion**: Displays info dialog about successful installation.
+===============================================================================
+SCRIPTS USING THIS MODULE:
+- main.lua           : Main entry point of the Lightroom plugin
+- menu.lua           : Menu integration for checking and forcing updates
 
------------------------------------------------------------------------------]]
+===============================================================================
+WORKFLOW STEPS:
+1. Retrieve latest release info from GitHub API.
+2. Locate the "Source code (zip)" asset in the release.
+3. Create a unique temporary directory in the system temp folder.
+4. Download the asset into this directory.
+5. Extract the zip file (tar on Unix/macOS, PowerShell on Windows).
+6. Replace the current plugin folder with the extracted one.
+7. Notify the user and log all details.
+
+===============================================================================
+STEP DESCRIPTIONS:
+1. getLatestVersion() → Sends HTTP GET to GitHub API and parses JSON.
+2. findSourceZip()    → Searches release assets for the correct "Source code (zip)".
+3. getTempDir()       → Detects OS and returns system temp directory path.
+4. download()         → Downloads the zip file and writes it to disk.
+5. extract()          → Uses tar or PowerShell to extract the archive.
+6. install()          → Moves extracted plugin into place, backing up old one.
+7. showUpdateDialog() → Displays update dialog with actions for user.
+
+===============================================================================
+]]
 
 local logger = require("logger")
 local prefs = import("LrPrefs").prefsForPlugin()
@@ -70,7 +70,7 @@ local Updates = {
     actionPrefKey = "doNotShowUpdatePrompt",
 }
 
--- Detect OS type
+-- Detect OS platform
 local function detectPlatform()
     local sep = package.config:sub(1,1)
     if sep == "\\" then
@@ -80,9 +80,61 @@ local function detectPlatform()
     end
 end
 
--- Quote shell arguments
+-- Return system temp directory
+local function getTempDir()
+    local platform = detectPlatform()
+    if platform == "windows" then
+        return os.getenv("TEMP") or "C:\\Temp"
+    else
+        return "/tmp"
+    end
+end
+
+-- Step 1: Get latest release info
+local function getLatestVersion()
+    local url = Updates.baseUrl .. "repos/" .. Updates.repo .. "/releases/latest"
+    local headers = {
+        { field = "User-Agent", value = Updates.repo .. "/" .. Updates.version() },
+        { field = "X-GitHub-Api-Version", value = "2022-11-28" },
+    }
+    logger.logMessage("HTTP GET: " .. url)
+    local data, respHeaders = LrHttp.get(url, headers)
+
+    if respHeaders.error or respHeaders.status ~= 200 then
+        logger.logMessage("Error fetching release info: " .. (respHeaders.error or ("HTTP " .. tostring(respHeaders.status))))
+        return
+    end
+
+    logger.logMessage("GitHub API response: " .. (data or "nil"))
+    local success, release = pcall(json.decode, data)
+    if not success then
+        logger.logMessage("Error decoding JSON release data")
+        return
+    end
+
+    logger.logMessage("Found latest release: " .. (release.tag_name or "unknown"))
+    return release
+end
+
+-- Step 2: Find "Source code (zip)" asset
+local function findSourceZip(release)
+    for _, asset in ipairs(release.assets or {}) do
+        if asset.name and asset.name:lower():find("source code") and asset.name:lower():find("zip") then
+            logger.logMessage("Found source zip: " .. asset.browser_download_url)
+            return asset.browser_download_url
+        end
+    end
+    -- Fallback: Sometimes GitHub's "Source code (zip)" is not listed in assets but in release
+    if release.zipball_url then
+        logger.logMessage("Using zipball_url: " .. release.zipball_url)
+        return release.zipball_url
+    end
+    logger.logMessage("Source zip not found in release assets")
+end
+
+-- Shell quote helper
 local function shellquote(s)
-    if MAC_ENV then
+    if detectPlatform() == "unix" then
         s = s:gsub("'", "'\\''")
         return "'" .. s .. "'"
     else
@@ -90,46 +142,18 @@ local function shellquote(s)
     end
 end
 
--- Step 2: Fetch latest release
-local function getLatestVersion()
-    local url = Updates.baseUrl .. "repos/" .. Updates.repo .. "/releases/latest"
-    local headers = {
-        { field = "User-Agent", value = Updates.repo .. "/" .. Updates.version() },
-        { field = "X-GitHub-Api-Version", value = "2022-11-28" },
-    }
-    logger.logMessage("Step 2: Sending GET request to: " .. url)
-    local data, respHeaders = LrHttp.get(url, headers)
-    logger.logMessage("HTTP Response status: " .. tostring(respHeaders.status))
-    logger.logMessage("HTTP Response headers: " .. json.encode(respHeaders))
-    logger.logMessage("HTTP Response body: " .. tostring(data))
-
-    if respHeaders.error or respHeaders.status ~= 200 then
-        logger.logMessage("Error fetching latest release: " .. tostring(respHeaders.error))
-        return
-    end
-
-    local success, release = pcall(json.decode, data)
-    if not success then
-        logger.logMessage("Error decoding JSON response.")
-        return
-    end
-
-    logger.logMessage("Found latest release: " .. release.tag_name)
-    return release
-end
-
--- Step 6: Download the ZIP
+-- Step 4: Download file
 local function download(url, filename)
-    logger.logMessage("Downloading from URL: " .. url)
+    logger.logMessage("Downloading from: " .. url)
     local data, headers = LrHttp.get(url)
-    logger.logMessage("HTTP download status: " .. tostring(headers.status))
+    logger.logMessage("HTTP Response status: " .. tostring(headers.status))
     if headers.error then
-        logger.logMessage("Download error: " .. tostring(headers.error))
+        logger.logMessage("Download error: " .. headers.error)
         return false
     end
 
     if LrFileUtils.exists(filename) and not LrFileUtils.isWritable(filename) then
-        error("Cannot write to download file")
+        error("Cannot write to download file: " .. filename)
     end
 
     local f = io.open(filename, "wb")
@@ -138,22 +162,18 @@ local function download(url, filename)
     logger.logMessage("File downloaded to: " .. filename)
 end
 
--- Step 7: Extract ZIP
+-- Step 5: Extract zip
 local function extract(filename, workdir)
     local platform = detectPlatform()
     logger.logMessage("Detected platform: " .. platform)
-
     local cmd
     if platform == "unix" then
         cmd = "tar -C " .. shellquote(workdir) .. " -xf " .. shellquote(filename)
-    elseif platform == "windows" then
+    else
         cmd = 'powershell -Command "Expand-Archive -Force ' ..
               '"' .. filename .. '" ' ..
               '"' .. workdir .. '"'
-    else
-        error("Unsupported platform for extraction")
     end
-
     logger.logMessage("Executing extraction command: " .. cmd)
     local ret = LrTasks.execute(cmd)
     if ret ~= 0 then
@@ -162,7 +182,7 @@ local function extract(filename, workdir)
     logger.logMessage("Extraction completed in folder: " .. workdir)
 end
 
--- Step 8: Install new plugin
+-- Step 6: Install plugin
 local function install(workdir, pluginPath)
     local newPluginPath = nil
     for path in LrFileUtils.directoryEntries(workdir) do
@@ -170,71 +190,64 @@ local function install(workdir, pluginPath)
             newPluginPath = path
         end
     end
-    local scratch = LrFileUtils.chooseUniqueFileName(newPluginPath)
+    local scratch = LrFileUtils.chooseUniqueFileName(pluginPath)
+    logger.logMessage("Backing up old plugin to: " .. scratch)
     LrFileUtils.move(pluginPath, scratch)
+    logger.logMessage("Installing new plugin from: " .. (newPluginPath or "nil"))
     LrFileUtils.move(newPluginPath, pluginPath)
-    logger.logMessage("Installed new plugin from: " .. newPluginPath)
 end
 
--- Step 5 + 6 + 7 + 8 combined
+-- Step 3,4,5,6 combined
 local function downloadAndInstall(ctx, release)
-    local workdir = LrFileUtils.chooseUniqueFileName(_PLUGIN.path)
+    local tempDir = getTempDir()
+    local workdir = LrPathUtils.child(tempDir, LrFileUtils.chooseUniqueFileName("iNatUpdateWorkdir"))
     ctx:addCleanupHandler(function()
         LrFileUtils.delete(workdir)
     end)
     local r = LrFileUtils.createDirectory(workdir)
     if not r then
-        error("Cannot create temporary directory")
+        error("Cannot create temporary directory: " .. workdir)
     end
+    logger.logMessage("Using temporary directory: " .. workdir)
+
     local zip = LrPathUtils.child(workdir, "download.zip")
-
-    -- Find the "Source code (zip)" asset
-    local assetUrl
-    for _, asset in ipairs(release.assets or {}) do
-        if asset.name and asset.name:lower():find("source code") and asset.name:lower():find("zip") then
-            assetUrl = asset.browser_download_url
-            break
-        end
-    end
-    if not assetUrl then
-        logger.logMessage("Could not find 'Source code (zip)' asset in release.")
-        error("Asset not found")
+    local url = findSourceZip(release)
+    if not url then
+        LrDialogs.message(LOC("$$$/iNat/Update/NoSource=Source code zip not found"), "", "error")
+        return
     end
 
-    download(assetUrl, zip)
+    download(url, zip)
     extract(zip, workdir)
     install(workdir, _PLUGIN.path)
 end
 
--- Step 4: Prompt user
+-- Step 7: Dialog
 local function showUpdateDialog(release, force)
     if release.tag_name ~= prefs.lastUpdateOffered then
         LrDialogs.resetDoNotShowFlag(Updates.actionPrefKey)
         prefs.lastUpdateOffered = release.tag_name
     end
 
-    local info = LOC("$$$/iNat/UpdateAvailable=An update is available for the iNaturalist Publish Plugin. Would you like to download it now?")
+    local info = LOC("$$$/iNat/Update/Available=An update is available for the iNaturalist Publish Plugin. Download now?")
     if release.body and #release.body > 0 then
         info = info .. "\n\n" .. release.body
     end
 
-    local actionPrefKey = Updates.actionPrefKey
-    if force then
-        actionPrefKey = nil
-    end
-
+    local actionPrefKey = force and nil or Updates.actionPrefKey
     local toDo = LrDialogs.promptForActionWithDoNotShow({
-        message = LOC("$$$/iNat/UpdateTitle=iNaturalist Publish Plugin update available"),
+        message = LOC("$$$/iNat/Update/Title=iNaturalist Publish Plugin update available"),
         info = info,
         actionPrefKey = actionPrefKey,
         verbBtns = {
-            { label = LOC("$$$/iNat/Download=Download"), verb = "download" },
-            { label = LOC("$$$/iNat/Ignore=Ignore"), verb = "ignore" },
+            { label = LOC("$$$/iNat/Update/Download=Download"), verb = "download" },
+            { label = LOC("$$$/iNat/Update/Ignore=Ignore"), verb = "ignore" },
         },
     })
+
     if toDo == "download" then
         LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
-        LrDialogs.message(LOC("$$$/iNat/UpdateInstalled=iNaturalist Publish Plugin update installed"), LOC("$$$/iNat/RestartLightroom=Please restart Lightroom"), "info")
+        LrDialogs.message(LOC("$$$/iNat/Update/Installed=Update installed"), LOC("$$$/iNat/Update/Restart=Please restart Lightroom"), "info")
     else
         logger.logMessage("Update dialog response: " .. tostring(toDo))
     end
@@ -247,7 +260,7 @@ end
 
 function Updates.check(force)
     local current = "v" .. Updates.version()
-    logger.logMessage("Step 1: Running " .. (Info.VERSION.display or current))
+    logger.logMessage("Running version: " .. (Info.VERSION.display or current))
 
     if not force and not prefs.checkForUpdates then
         return
@@ -272,8 +285,8 @@ function Updates.forceUpdate()
         local v = Updates.check(true)
         if v then
             LrDialogs.message(
-                LOC("$$$/iNat/NoUpdates=No updates available"),
-                string.format(LOC("$$$/iNat/MostRecent=You have the most recent version of the iNaturalist Publish Plugin, %s"), v),
+                LOC("$$$/iNat/Update/NoUpdates=No updates available"),
+                string.format(LOC("$$$/iNat/Update/MostRecent=You have the most recent version (%s)"), v),
                 "info"
             )
         end
