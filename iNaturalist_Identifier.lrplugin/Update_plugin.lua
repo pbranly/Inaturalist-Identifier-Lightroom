@@ -191,6 +191,21 @@ function Updates.version()
 end
 
 --------------------------------------------------------------------------------
+-- Public access functions
+--------------------------------------------------------------------------------
+function Updates.getCurrentVersion()
+    return Updates.version()
+end
+
+function Updates.getLatestGitHubVersion()
+    local latest = getLatestVersion()
+    if latest then
+        return latest.tag_name
+    end
+    return nil
+end
+
+--------------------------------------------------------------------------------
 -- Check for update
 --------------------------------------------------------------------------------
 function Updates.check(force)
