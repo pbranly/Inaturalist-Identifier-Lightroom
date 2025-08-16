@@ -8,16 +8,19 @@
 
 ## 📌 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Plugin Structure](#plugin-structure)
-- [Dependencies](#dependencies)
-- [Development](#development)
-- [License](#license)
-- [Support the Project](#support-the-project)
+## 📌 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Plugin Structure](#-plugin-structure)
+- [Dependencies](#-dependencies)
+- [Development](#-development)
+- [License](#-license)
+- [Support the Project](#-support-the-project)
+
 
 ---
 
