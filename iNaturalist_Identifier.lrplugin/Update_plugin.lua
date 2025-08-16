@@ -1,28 +1,31 @@
 --------------------------------------------------------------------------------
--- iNaturalist Identifier Lightroom Plugin - Updater Script
+-- iNaturalist Identifier Plugin Updater
+-- Functional description (English):
+-- This script checks the latest release of the plugin on GitHub, downloads the
+-- corresponding source code zip archive, extracts it into a temporary directory,
+-- keeps only the "iNaturalist_Identifier.lrplugin" folder, backs up the current
+-- installed plugin into "iNaturalist_Identifier.lrpluginbackup", and installs the
+-- newly downloaded version into the plugin folder used by Lightroom.
 --
--- Functional Description (in English):
--- This script checks for the latest release of the plugin from the GitHub
--- repository "pbranly/Inaturalist-Identifier-Lightroom". It downloads the
--- corresponding "Source code (zip)" archive for the tag marked as "latest".
--- The script then extracts only the "iNaturalist_Identifier.lrplugin" folder
--- into a temporary directory. Before installation, the current plugin is
--- backed up to "iNaturalist_Identifier.lrpluginbackup". Finally, the new
--- plugin version is copied into the working directory and replaces the old one.
+-- Steps:
+-- 1. Query the GitHub API to find the latest release tag for the repository.
+-- 2. Construct the direct download URL for the source code zip file.
+-- 3. Download the zip archive into a temporary directory.
+-- 4. Extract the zip archive into the temporary directory.
+-- 5. Keep only "iNaturalist_Identifier.lrplugin" in that directory.
+-- 6. Backup the currently installed plugin to "iNaturalist_Identifier.lrpluginbackup".
+-- 7. Replace the installed plugin with the new one from the temporary directory.
+-- 8. Log each action with detailed English messages via logger.lua.
 --
--- Detailed steps:
--- 1. Define repository and preferences
--- 2. Fetch metadata of the latest release from GitHub API
--- 3. Build the correct download URL for the tagged source archive
--- 4. Download the zip file into a system temporary directory
--- 5. Extract the archive into the temporary directory
--- 6. Locate the "iNaturalist_Identifier.lrplugin" folder
--- 7. Backup the current plugin into "iNaturalist_Identifier.lrpluginbackup"
--- 8. Copy the new plugin folder into the Lightroom plugins directory
--- 9. Clean temporary files and notify user
+-- Modules and scripts used:
+--  - logger.lua : Custom logging module.
+--  - Info.lua   : Provides plugin version information.
+--  - json.lua   : JSON parsing.
+--  - LrPrefs, LrDialogs, LrFileUtils, LrFunctionContext, LrPathUtils,
+--    LrHttp, LrTasks : Lightroom SDK modules.
 --------------------------------------------------------------------------------
 
-local logger = require("logger")  -- use logger.lua
+local logger = require("logger")  -- custom logger.lua
 local prefs = import("LrPrefs").prefsForPlugin()
 local LrDialogs = import("LrDialogs")
 local LrFileUtils = import("LrFileUtils")
@@ -39,24 +42,12 @@ local json = require("json")
 --------------------------------------------------------------------------------
 local Updates = {
     baseUrl = "https://api.github.com/",
-    repo = "pbranly/Inaturalist-Identifier-Lightroom",   -- switched to your repo
+    repo = "pbranly/Inaturalist-Identifier-Lightroom",
     actionPrefKey = "doNotShowUpdatePrompt",
 }
 
 --------------------------------------------------------------------------------
--- Helper: Get temporary directory (cross-platform)
---------------------------------------------------------------------------------
-local function getTempDir()
-    local sep = package.config:sub(1,1)
-    if sep == "\\" then
-        return os.getenv("TEMP") or "C:\\Temp"
-    else
-        return "/tmp"
-    end
-end
-
---------------------------------------------------------------------------------
--- Step 2: Get latest release metadata from GitHub API
+-- Step 1: Get the latest release metadata from GitHub
 --------------------------------------------------------------------------------
 local function getLatestVersion()
     local url = Updates.baseUrl .. "repos/" .. Updates.repo .. "/releases/latest"
@@ -65,132 +56,146 @@ local function getLatestVersion()
         { field = "X-GitHub-Api-Version", value = "2022-11-28" },
     }
 
-    logger.logMessage("[Step 2] Sending request to GitHub API: " .. url)
+    logger.logMessage("[Step 1] Sending HTTP GET to: " .. url)
     local data, respHeaders = LrHttp.get(url, headers)
 
     if respHeaders.error or respHeaders.status ~= 200 then
-        logger.logMessage("[Step 2] ERROR: GitHub API request failed with status " ..
-            tostring(respHeaders.status) .. " error: " .. tostring(respHeaders.error))
+        logger.logMessage("[Step 1] ERROR: Failed to get latest release, status=" .. tostring(respHeaders.status))
         return
     end
 
-    logger.logMessage("[Step 2] GitHub API response: " .. data)
+    logger.logMessage("[Step 1] Response received: " .. data)
+
     local success, release = pcall(json.decode, data)
     if not success then
-        logger.logMessage("[Step 2] ERROR: Could not decode GitHub API response")
+        logger.logMessage("[Step 1] ERROR: JSON decode failed")
         return
     end
 
-    logger.logMessage("[Step 2] Found latest release tag: " .. release.tag_name)
+    logger.logMessage("[Step 1] Found latest release: " .. release.tag_name)
     return release
 end
 
 --------------------------------------------------------------------------------
--- Step 3: Build source zip URL from tag
+-- Step 2: Build the download URL for the source zip
 --------------------------------------------------------------------------------
 local function findSourceZipAsset(release)
     if not release or not release.tag_name then
-        logger.logMessage("[Step 3] ERROR: Release or tag_name missing")
+        logger.logMessage("[Step 2] ERROR: Release or tag_name missing")
         return nil
     end
-    local url = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/archive/refs/tags/" 
+    local url = "https://github.com/" .. Updates.repo .. "/archive/refs/tags/" 
                 .. release.tag_name .. ".zip"
-    logger.logMessage("[Step 3] Constructed source zip URL: " .. url)
+    logger.logMessage("[Step 2] Constructed source zip URL: " .. url)
     return url
 end
 
 --------------------------------------------------------------------------------
--- Step 4: Download the zip file
+-- Utilities
+--------------------------------------------------------------------------------
+local function shellquote(s)
+    if MAC_ENV then
+        s = s:gsub("'", "'\\''")
+        return "'" .. s .. "'"
+    else
+        return '"' .. s .. '"'
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Step 3: Download the zip file
 --------------------------------------------------------------------------------
 local function download(url, filename)
-    logger.logMessage("[Step 4] Downloading file: " .. url)
+    logger.logMessage("[Step 3] Downloading from: " .. url)
     local data, headers = LrHttp.get(url)
     if headers.error then
-        logger.logMessage("[Step 4] ERROR: Download failed - " .. tostring(headers.error))
+        logger.logMessage("[Step 3] ERROR during download")
         return false
     end
 
     local f = io.open(filename, "wb")
     f:write(data)
     f:close()
-    logger.logMessage("[Step 4] File downloaded to: " .. filename)
+    logger.logMessage("[Step 3] File written to: " .. filename)
     return true
 end
 
 --------------------------------------------------------------------------------
--- Step 5: Extract archive
+-- Step 4: Extract the zip file
 --------------------------------------------------------------------------------
 local function extract(filename, workdir)
     local cmd = "unzip -o " .. shellquote(filename) .. " -d " .. shellquote(workdir)
-    logger.logMessage("[Step 5] Executing extraction command: " .. cmd)
+    logger.logMessage("[Step 4] Executing: " .. cmd)
     local ret = LrTasks.execute(cmd)
     if ret ~= 0 then
-        error("[Step 5] Could not extract downloaded release file")
+        error("[Step 4] Could not extract downloaded release file")
+    end
+    logger.logMessage("[Step 4] Extraction completed")
+end
+
+--------------------------------------------------------------------------------
+-- Step 5: Keep only iNaturalist_Identifier.lrplugin directory
+--------------------------------------------------------------------------------
+local function cleanupWorkdir(workdir)
+    logger.logMessage("[Step 5] Cleaning workdir, keeping only iNaturalist_Identifier.lrplugin")
+
+    for entry in LrFileUtils.directoryEntries(workdir) do
+        if entry:find("iNaturalist_Identifier.lrplugin$") then
+            logger.logMessage("[Step 5] Keeping: " .. entry)
+        else
+            logger.logMessage("[Step 5] Removing: " .. entry)
+            LrFileUtils.delete(entry)
+        end
     end
 end
 
 --------------------------------------------------------------------------------
--- Step 6-7: Install plugin with backup
+-- Step 6 + 7: Backup and Install
 --------------------------------------------------------------------------------
 local function install(workdir, pluginPath)
-    local newPluginPath = nil
-    for path in LrFileUtils.directoryEntries(workdir) do
-        if path:find("iNaturalist_Identifier%.lrplugin$") then
-            newPluginPath = path
-        end
-    end
-    if not newPluginPath then
-        error("[Step 6] Expected plugin folder not found in extracted archive")
+    local newPluginPath = LrPathUtils.child(workdir, "iNaturalist_Identifier.lrplugin")
+    if not LrFileUtils.exists(newPluginPath) then
+        error("[Step 6] ERROR: iNaturalist_Identifier.lrplugin not found in extracted files")
     end
 
-    local backupPath = LrPathUtils.child(LrPathUtils.parent(pluginPath), "iNaturalist_Identifier.lrpluginbackup")
-
-    logger.logMessage("[Step 7] Creating backup of current plugin")
+    local backupPath = pluginPath .. "backup"
+    logger.logMessage("[Step 6] Backing up current plugin from " .. pluginPath .. " to " .. backupPath)
     if LrFileUtils.exists(pluginPath) then
         if LrFileUtils.exists(backupPath) then
-            logger.logMessage("[Step 7] Removing old backup: " .. backupPath)
             LrFileUtils.delete(backupPath)
         end
-        logger.logMessage("[Step 7] Copying current plugin to backup: " .. backupPath)
-        LrFileUtils.copy(pluginPath, backupPath)
-    else
-        logger.logMessage("[Step 7] No existing plugin found, skipping backup")
+        LrFileUtils.move(pluginPath, backupPath)
     end
 
-    if LrFileUtils.exists(pluginPath) then
-        logger.logMessage("[Step 7] Removing existing plugin directory: " .. pluginPath)
-        LrFileUtils.delete(pluginPath)
-    end
-
-    logger.logMessage("[Step 7] Copying new plugin from " .. newPluginPath .. " to " .. pluginPath)
-    LrFileUtils.copy(newPluginPath, pluginPath)
-    logger.logMessage("[Step 7] New plugin installed successfully")
+    logger.logMessage("[Step 7] Installing new plugin from " .. newPluginPath .. " to " .. pluginPath)
+    LrFileUtils.move(newPluginPath, pluginPath)
 end
 
 --------------------------------------------------------------------------------
--- Step 8: Full update workflow
+-- Main installation orchestration
 --------------------------------------------------------------------------------
 local function downloadAndInstall(ctx, release)
-    local tempDir = getTempDir()
-    local workdir = LrPathUtils.child(tempDir, LrFileUtils.chooseUniqueFileName("iNatUpdateWorkdir"))
+    local workdir = LrFileUtils.chooseUniqueFileName(_PLUGIN.path)
     ctx:addCleanupHandler(function()
         LrFileUtils.delete(workdir)
     end)
     local r = LrFileUtils.createDirectory(workdir)
     if not r then
-        error("Cannot create temporary directory: " .. workdir)
+        error("[Main] Cannot create temporary directory")
     end
-    logger.logMessage("[Step 8] Using temporary directory: " .. workdir)
-
     local zip = LrPathUtils.child(workdir, "download.zip")
+
     local url = findSourceZipAsset(release)
-    download(url, zip)
+    if not url then return end
+
+    if not download(url, zip) then return end
     extract(zip, workdir)
+    cleanupWorkdir(workdir)
     install(workdir, _PLUGIN.path)
 end
 
 --------------------------------------------------------------------------------
--- Update dialog
+-- Dialog for update proposal
 --------------------------------------------------------------------------------
 local function showUpdateDialog(release, force)
     if release.tag_name ~= prefs.lastUpdateOffered then
@@ -198,34 +203,39 @@ local function showUpdateDialog(release, force)
         prefs.lastUpdateOffered = release.tag_name
     end
 
-    local info = LOC("$$$/iNat/UpdateMessage=An update is available for the iNaturalist Identifier Plugin. Would you like to download it now?")
+    local info = "An update is available for the iNaturalist Identifier Plugin. Would you like to download it now?"
     if release.body and #release.body > 0 then
         info = info .. "\n\n" .. release.body
+    end
+
+    local actionPrefKey = Updates.actionPrefKey
+    if force then
+        actionPrefKey = nil
     end
 
     local toDo = LrDialogs.promptForActionWithDoNotShow({
         message = LOC("$$$/iNat/PluginName=iNaturalist Identifier Plugin update available"),
         info = info,
-        actionPrefKey = Updates.actionPrefKey,
+        actionPrefKey = actionPrefKey,
         verbBtns = {
             { label = LOC("$$$/iNat/Download=Download"), verb = "download" },
             { label = LOC("$$$/iNat/Ignore=Ignore"), verb = "ignore" },
         },
     })
     if toDo == "download" then
-        LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
-        LrDialogs.message(
-            LOC("$$$/iNat/UpdateInstalled=Plugin update installed"),
-            LOC("$$$/iNat/Restart=Please restart Lightroom"),
-            "info"
-        )
+        if LrTasks.execute("unzip -v") == 0 then
+            LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, release)
+            LrDialogs.message(LOC("$$$/iNat/Installed=Update installed"), LOC("$$$/iNat/Restart=Please restart Lightroom"), "info")
+        else
+            LrHttp.openUrlInBrowser(findSourceZipAsset(release))
+        end
     else
-        logger.logMessage("[Dialog] Update dialog response: " .. tostring(toDo))
+        logger.logMessage("[Dialog] User response: " .. tostring(toDo))
     end
 end
 
 --------------------------------------------------------------------------------
--- Public functions
+-- Version handling
 --------------------------------------------------------------------------------
 function Updates.version()
     local v = Info.VERSION
@@ -233,8 +243,8 @@ function Updates.version()
 end
 
 function Updates.check(force)
-    local current = "v" .. Updates.version()
-    logger.logMessage("Running " .. (Info.VERSION.display or current))
+    local current = Updates.version()
+    logger.logMessage("Running version " .. (Info.VERSION.display or current))
 
     if not force and not prefs.checkForUpdates then
         return
@@ -245,7 +255,11 @@ function Updates.check(force)
         return
     end
 
-    if current ~= latest.tag_name then
+    -- Normalize both: remove leading "v"
+    local currentNorm = current:gsub("^v", "")
+    local latestNorm = latest.tag_name and latest.tag_name:gsub("^v", "") or ""
+
+    if currentNorm ~= latestNorm then
         logger.logMessage("Offering update from " .. current .. " to " .. latest.tag_name)
         showUpdateDialog(latest, force)
         return
@@ -259,7 +273,7 @@ function Updates.forceUpdate()
         local v = Updates.check(true)
         if v then
             LrDialogs.message(
-                LOC("$$$/iNat/NoUpdates=No updates available"),
+                LOC("$$$/iNat/NoUpdate=No updates available"),
                 string.format("You have the most recent version of the iNaturalist Identifier Plugin, %s", v),
                 "info"
             )
