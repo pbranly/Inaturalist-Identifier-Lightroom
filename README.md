@@ -1,3 +1,6 @@
+[![🇫🇷 Français](https://img.shields.io/badge/langue-français-blue)](README.fr.md)
+
+
 # iNaturalist Identifier
 
 ![iNaturalist Identifier screenshot](logo.png)
