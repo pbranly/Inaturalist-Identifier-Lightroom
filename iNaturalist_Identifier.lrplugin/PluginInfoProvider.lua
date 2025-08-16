@@ -1,257 +1,234 @@
--- iNaturalist Lightroom Plugin Updater
--- Functional Description:
--- This script checks for the latest release of the iNaturalist Identifier
--- Lightroom plugin on GitHub, downloads the corresponding source ZIP,
--- renames the current plugin directory with its version number as a suffix,
--- extracts the new version into place, and cleans up the ZIP archive.
--- It provides detailed logging for each step using logger.lua and displays
--- messages to the user in English international format.
---
--- Modules used:
---   logger.lua
---   Info.lua
---   LrPrefs
---   LrDialogs
---   LrFileUtils
---   LrFunctionContext
---   LrPathUtils
---   LrHttp
---   LrTasks
---   json
---
--- Scripts that use this updater:
---   AnimalIdentifier.lua
---   Other plugin modules that need to check for updates
---
--- Steps:
---   1. Retrieve latest release metadata from GitHub
---   2. Construct the download URL for the release ZIP
---   3. Download the ZIP into the parent directory of the plugin
---   4. Rename the existing plugin directory with its version number
---   5. Extract the ZIP into the parent directory
---   6. Keep only the "iNaturalist_Identifier.lrplugin" directory from the archive
---   7. Delete the ZIP archive and temporary extraction folder
---   8. Display update messages to the user
+--[[
+====================================================================
+Functional Description
+--------------------------------------------------------------------
+This Lightroom plugin dialog section manages the user interface for 
+configuring iNaturalist integration, plugin updates, and logging.
 
-local logger = require("logger")
-local prefs = import("LrPrefs").prefsForPlugin()
-local LrDialogs = import("LrDialogs")
-local LrFileUtils = import("LrFileUtils")
-local LrFunctionContext = import("LrFunctionContext")
-local LrPathUtils = import("LrPathUtils")
-local LrHttp = import("LrHttp")
-local LrTasks = import("LrTasks")
-local Info = require("Info")
-local json = require("json")
+Features:
+1. View current plugin version and latest GitHub version.
+2. Download the latest GitHub version if outdated.
+3. Token field with multiline display and validity info.
+4. Refresh Token button below token.
+5. Enable/disable logging with save button.
+6. Enable/disable automatic update checks.
+7. Force update check immediately.
 
-local Updates = {
-    baseUrl = "https://api.github.com/",
-    repo = "pbranly/Inaturalist-Identifier-Lightroom",
-    actionPrefKey = "doNotShowUpdatePrompt",
+Modules and Scripts Used:
+- LrView, LrPrefs, LrDialogs, LrTasks, LrHttp (Lightroom SDK)
+- Logger.lua
+- Update_plugin.lua (provides getCurrentVersion(), getLatestGitHubVersion(), and forceUpdate())
+- TokenUpdater.lua
+
+Execution Steps:
+1. Initialize plugin preferences and UI fields.
+2. Display current plugin version and latest GitHub version.
+3. Fetch latest GitHub version asynchronously.
+4. Create button to download latest GitHub version.
+5. Create token field with multiline input.
+6. Add Refresh Token button.
+7. Add logging enable checkbox.
+8. Add automatic update check checkbox and "Check now" button.
+9. Create Save button for preferences.
+10. Return dialog UI layout.
+====================================================================
+--]]
+
+local LrView    = import "LrView"
+local LrPrefs   = import "LrPrefs"
+local LrDialogs = import "LrDialogs"
+local LrTasks   = import "LrTasks"
+local LrHttp    = import "LrHttp"
+
+local logger  = require("Logger")
+local Updates = require("Update_plugin")  -- Provides getCurrentVersion(), getLatestGitHubVersion(), and forceUpdate()
+
+local bind = LrView.bind
+
+return {
+    sectionsForTopOfDialog = function(viewFactory)
+        -- Step 1: Initialize plugin preferences
+        logger.logMessage("[Step 1] Initializing plugin preferences and UI fields.")
+        local prefs = LrPrefs.prefsForPlugin()
+        if prefs.checkForUpdates == nil then
+            prefs.checkForUpdates = true
+        end
+
+        -- Step 2: Display version fields
+        logger.logMessage("[Step 2] Creating version fields.")
+        local githubVersionField = viewFactory:static_text {
+            title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ..."),
+            width = 200
+        }
+        local localVersionField = viewFactory:static_text {
+            title = LOC("$$$/iNat/CurrentVersion=Plugin current version: ") .. Updates.getCurrentVersion(),
+            width = 200
+        }
+
+        -- Step 3: Fetch latest GitHub version asynchronously
+        LrTasks.startAsyncTask(function()
+            local latestTag = Updates.getLatestGitHubVersion() or "?"
+            githubVersionField.title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ") .. latestTag
+            logger.logMessage("[GitHub] Auto-fetched latest version: " .. tostring(latestTag))
+        end)
+
+        -- Step 4: Download latest GitHub version button
+        logger.logMessage("[Step 4] Creating Download latest GitHub version button.")
+        local downloadButton = viewFactory:push_button {
+            title = LOC("$$$/iNat/DownloadGitHub=Download last Github version"),
+            action = function()
+                local latestTag = Updates.getLatestGitHubVersion() or "?"
+                if Updates.getCurrentVersion() == latestTag then
+                    LrDialogs.message(
+                        LOC("$$$/iNat/VersionUpToDate=Version up to date")
+                    )
+                else
+                    local choice = LrDialogs.confirm(
+                        LOC("$$$/iNat/NewVersion=New version available"),
+                        LOC("$$$/iNat/DownloadPrompt=Do you want to download the new version?"),
+                        LOC("$$$/iNat/OK=OK"),
+                        LOC("$$$/iNat/Cancel=Cancel")
+                    )
+                    if choice == "ok" then
+                        LrTasks.startAsyncTask(function()
+                            -- Open GitHub latest release page
+                            LrHttp.openUrlInBrowser("https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
+                        end)
+                    end
+                end
+            end
+        }
+
+        -- Step 5: Token field with multiline input
+        logger.logMessage("[Step 5] Creating token field.")
+        local tokenField = viewFactory:edit_field {
+            value = prefs.token or "",
+            width = 500,
+            min_width = 500,
+            height = 80, -- allows approx. 2 lines
+            wrap = true, -- force line breaks
+            tooltip = LOC("$$$/iNat/TokenTooltip=Your iNaturalist API token")
+        }
+
+        -- Token comment below GitHub button
+        local tokenComment = viewFactory:static_text {
+            title = LOC("$$$/iNat/TokenReminder=Take care that Token validity is limited to 24 hours; it must be refreshed every day"),
+            width = 500
+        }
+
+        -- Step 6: Refresh Token button
+        logger.logMessage("[Step 6] Creating Refresh Token button.")
+        local refreshTokenButton = viewFactory:push_button {
+            title = LOC("$$$/iNat/RefreshToken=Refresh Token"),
+            action = function()
+                local tokenUpdater = require("TokenUpdater")
+                tokenUpdater.runUpdateTokenScript()
+            end
+        }
+
+        -- Step 7: Logging enable checkbox
+        logger.logMessage("[Step 7] Creating logging checkbox.")
+        local logCheck = viewFactory:checkbox {
+            title = LOC("$$$/iNat/EnableLogging=Enable logging to log.txt"),
+            value = prefs.logEnabled or false,
+            checked_value = true,
+            unchecked_value = false,
+        }
+
+        -- Step 8: Automatic update check and "Check now" button
+        logger.logMessage("[Step 8] Creating update preferences rows.")
+        local autoUpdateRow = viewFactory:row {
+            spacing = viewFactory:control_spacing(),
+            viewFactory:static_text {
+                title = LOC("$$$/iNat/AutoUpdateCheck=Automatically check for updates"),
+                alignment = "right",
+                width = 200
+            },
+            viewFactory:checkbox {
+                value = bind("checkForUpdates")
+            }
+        }
+
+        local checkNowRow = viewFactory:row {
+            spacing = viewFactory:control_spacing(),
+            viewFactory:static_text {
+                title = LOC("$$$/iNat/CheckUpdatesNow=Check for updates now"),
+                alignment = "right",
+                width = 200
+            },
+            viewFactory:push_button {
+                title = LOC("$$$/iNat/Go=Go"),
+                action = Updates.forceUpdate
+            }
+        }
+
+        -- Step 9: Save button for preferences
+        logger.logMessage("[Step 9] Creating save button.")
+        local saveButton = viewFactory:push_button {
+            title = LOC("$$$/iNat/Save=Save"),
+            action = function()
+                prefs.logEnabled = logCheck.value
+                prefs.token = tokenField.value
+                logger.logMessage("[Preferences] Logging saved, token updated.")
+            end
+        }
+
+        -- Step 10: Return dialog UI layout
+        logger.logMessage("[Step 10] Returning final UI layout.")
+        return {
+            {
+                title = LOC("$$$/iNat/DialogTitle=iNaturalist connection settings"),
+
+                -- Version row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    localVersionField,
+                    viewFactory:static_text { title = LOC("$$$/iNat/VersionSeparator= | "), width = 20 },
+                    githubVersionField
+                },
+
+                -- GitHub download button row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    downloadButton
+                },
+
+                -- Token comment row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    tokenComment
+                },
+
+                -- Token field row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    tokenField
+                },
+
+                -- Refresh Token button row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    refreshTokenButton
+                },
+
+                -- Logging checkbox row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    logCheck
+                },
+
+                -- Automatic update check row
+                autoUpdateRow,
+
+                -- Check updates now row
+                checkNowRow,
+
+                -- Save button row
+                viewFactory:row {
+                    spacing = viewFactory:control_spacing(),
+                    saveButton
+                }
+            }
+        }
+    end
 }
-
---------------------------------------------------------------------------------
--- Step 1: Get latest release metadata
---------------------------------------------------------------------------------
-local function getLatestVersion()
-    local url = Updates.baseUrl .. "repos/" .. Updates.repo .. "/releases/latest"
-    local headers = {
-        { field = "User-Agent", value = Updates.repo .. "/" .. Updates.version() },
-        { field = "X-GitHub-Api-Version", value = "2022-11-28" },
-    }
-    logger.logMessage("[Step 1] Sending GET request to GitHub API: " .. url)
-    local data, respHeaders = LrHttp.get(url, headers)
-    if respHeaders.error or respHeaders.status ~= 200 then
-        logger.logMessage("[Step 1] ERROR: GitHub API request failed: " .. tostring(respHeaders.status))
-        return nil
-    end
-    logger.logMessage("[Step 1] GitHub API response: " .. data)
-    local success, release = pcall(json.decode, data)
-    if not success then
-        logger.logMessage("[Step 1] ERROR: Failed to decode GitHub JSON response")
-        return nil
-    end
-    logger.logMessage("[Step 1] Found latest release: " .. release.tag_name)
-    return release
-end
-
---------------------------------------------------------------------------------
--- Step 2: Construct the source ZIP URL
---------------------------------------------------------------------------------
-local function findSourceZipAsset(release)
-    if not release or not release.tag_name then
-        logger.logMessage("[Step 2] ERROR: Release or tag_name missing")
-        return nil
-    end
-    local url = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/archive/refs/tags/"
-                .. release.tag_name .. ".zip"
-    logger.logMessage("[Step 2] Constructed source zip URL: " .. url)
-    return url
-end
-
---------------------------------------------------------------------------------
--- Step 3: Download ZIP into plugin parent directory
---------------------------------------------------------------------------------
-local function downloadZip(url, zipPath)
-    logger.logMessage("[Step 3] Downloading ZIP from: " .. url)
-    local data, headers = LrHttp.get(url)
-    if headers.error then
-        logger.logMessage("[Step 3] ERROR: Download failed: " .. tostring(headers.error))
-        return false
-    end
-    local f = io.open(zipPath, "wb")
-    if not f then
-        logger.logMessage("[Step 3] ERROR: Cannot open file for writing: " .. zipPath)
-        return false
-    end
-    f:write(data)
-    f:close()
-    logger.logMessage("[Step 3] ZIP successfully downloaded to: " .. zipPath)
-    return true
-end
-
---------------------------------------------------------------------------------
--- Step 4: Rename current plugin directory with version suffix
---------------------------------------------------------------------------------
-local function backupCurrentPlugin(pluginPath)
-    local v = Updates.version()
-    local backupPath = pluginPath .. "-" .. v
-    logger.logMessage("[Step 4] Renaming current plugin: " .. pluginPath .. " → " .. backupPath)
-    local ok = LrFileUtils.move(pluginPath, backupPath)
-    if not ok then
-        logger.logMessage("[Step 4] ERROR: Could not rename current plugin")
-        return nil
-    end
-    return backupPath
-end
-
---------------------------------------------------------------------------------
--- Step 5 & 6: Extract ZIP and keep only plugin directory
---------------------------------------------------------------------------------
-local function extractZip(zipPath, parentDir)
-    logger.logMessage("[Step 5] Extracting ZIP into: " .. parentDir)
-    local cmd = "unzip -o " .. '"' .. zipPath .. '"' .. " -d " .. '"' .. parentDir .. '"'
-    logger.logMessage("[Step 5] Executing: " .. cmd)
-    local ret = LrTasks.execute(cmd)
-    if ret ~= 0 then
-        logger.logMessage("[Step 5] ERROR: Could not extract ZIP file")
-        return false
-    end
-
-    -- Find the extracted top-level directory
-    local extractedDir = nil
-    for path in LrFileUtils.directoryEntries(parentDir) do
-        if LrFileUtils.isDirectory(path) and path:find("Inaturalist%-Identifier%-Lightroom") then
-            extractedDir = path
-            break
-        end
-    end
-
-    if not extractedDir then
-        logger.logMessage("[Step 6] ERROR: Could not find extracted directory")
-        return false
-    end
-
-    -- Move the plugin folder into place
-    local pluginDir = LrPathUtils.child(extractedDir, "iNaturalist_Identifier.lrplugin")
-    if not LrFileUtils.exists(pluginDir) then
-        logger.logMessage("[Step 6] ERROR: iNaturalist_Identifier.lrplugin not found in extracted folder")
-        return false
-    end
-
-    local finalPath = LrPathUtils.child(parentDir, "iNaturalist_Identifier.lrplugin")
-    logger.logMessage("[Step 6] Moving new plugin into place: " .. finalPath)
-    LrFileUtils.delete(finalPath) -- remove old if exists
-    LrFileUtils.move(pluginDir, finalPath)
-
-    -- Clean up temporary extracted directory
-    LrFileUtils.delete(extractedDir)
-
-    return true
-end
-
---------------------------------------------------------------------------------
--- Step 7: Delete ZIP archive
---------------------------------------------------------------------------------
-local function cleanup(zipPath)
-    logger.logMessage("[Step 7] Deleting ZIP file: " .. zipPath)
-    LrFileUtils.delete(zipPath)
-end
-
---------------------------------------------------------------------------------
--- Step 8: Orchestrate update
---------------------------------------------------------------------------------
-local function downloadAndInstall(ctx, release)
-    local pluginPath = _PLUGIN.path
-    local parentDir = LrPathUtils.parent(pluginPath)
-    local zipPath = LrPathUtils.child(parentDir, "download.zip")
-    local url = findSourceZipAsset(release)
-    if not url then return end
-    if not downloadZip(url, zipPath) then return end
-    if not backupCurrentPlugin(pluginPath) then return end
-    if not extractZip(zipPath, parentDir) then return end
-    cleanup(zipPath)
-    LrDialogs.message(LOC("$$$/iNat/UpdateComplete=iNaturalist Identifier updated"),
-                      LOC("$$$/iNat/RestartLightroom=Please restart Lightroom to complete installation"),
-                      "info")
-end
-
---------------------------------------------------------------------------------
--- Version helper
---------------------------------------------------------------------------------
-function Updates.version()
-    local v = Info.VERSION
-    return string.format("%s.%s.%s", v.major, v.minor, v.revision)
-end
-
---------------------------------------------------------------------------------
--- Public access functions
---------------------------------------------------------------------------------
-function Updates.getCurrentVersion()
-    return Updates.version()
-end
-
-function Updates.getLatestGitHubVersion()
-    local latest = getLatestVersion()
-    if latest then
-        return latest.tag_name
-    end
-    return nil
-end
-
---------------------------------------------------------------------------------
--- Check for update
---------------------------------------------------------------------------------
-function Updates.check(force)
-    local current = Updates.version()
-    logger.logMessage("Running version " .. (Info.VERSION.display or current))
-    if not force and not prefs.checkForUpdates then return end
-    local latest = getLatestVersion()
-    if not latest then return end
-    local currentNorm = current:gsub("^v", "")
-    local latestNorm = latest.tag_name and latest.tag_name:gsub("^v", "") or ""
-    if currentNorm ~= latestNorm then
-        logger.logMessage("Offering update from " .. current .. " to " .. latest.tag_name)
-        LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, latest)
-        return
-    end
-    return current
-end
-
---------------------------------------------------------------------------------
--- Force update
---------------------------------------------------------------------------------
-function Updates.forceUpdate()
-    LrTasks.startAsyncTask(function()
-        local v = Updates.check(true)
-        if v then
-            LrDialogs.message(
-                LOC("$$$/iNat/NoUpdates=No updates available"),
-                string.format(LOC("$$$/iNat/MostRecent=You have the most recent version of the iNaturalist Identifier Plugin, %s"), v),
-                "info"
-            )
-        end
-    end)
-end
-
-return Updates
