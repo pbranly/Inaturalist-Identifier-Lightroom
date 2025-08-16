@@ -3,7 +3,7 @@
 Functional Description
 ------------------------------------------------------------
 This module `selectAndTagResults.lua` parses a text string 
-resulting from animal identification (iNaturalist results), 
+resulting from plant or animal identification (iNaturalist results), 
 extracts the list of recognized species, then displays a 
 Lightroom UI allowing the user to select which species to add 
 as keywords to the active photo.
@@ -15,7 +15,8 @@ Main features:
 3. Display a modal dialog listing these species as checkboxes.
 4. Allow the user to select species to add as Lightroom keywords.
 5. Create keywords if they don't exist, then add them to the photo.
-6. Log the various steps and show error or success messages.
+6. Handle `Unknown` names by using only the Latin name as keyword.
+7. Log the various steps and show error or success messages.
 
 ------------------------------------------------------------
 Numbered Steps
@@ -23,8 +24,9 @@ Numbered Steps
 2. Define the function `showSelection` which:
     2.1. Retrieves the active photo from the catalog.
     2.2. Checks if a photo is selected, else logs and quits.
-    2.3. Finds the recognized animals section in the results string.
+    2.3. Finds the recognized species section in the results string.
     2.4. Extracts species with French name, Latin name, and confidence.
+         - If French name is "Unknown", only use Latin name as keyword.
     2.5. Checks if any species were detected, else logs and quits.
     2.6. Creates a modal interface with checkboxes for each species.
     2.7. On user confirmation, collects selected species.
@@ -69,7 +71,7 @@ local function showSelection(resultsString)
     end
     logger.logMessage("[2.2] Active photo retrieved successfully.")
 
-    -- [2.3] Find the recognized animals section in the results string
+    -- [2.3] Find the recognized species section in the results string
     logger.logMessage("[2.3] Searching for recognized species section in results string.")
     local startIndex = resultsString:find("🕊️%s*Recognized species%s*:")
     if not startIndex then
@@ -86,21 +88,31 @@ local function showSelection(resultsString)
     local subResult = resultsString:sub(startIndex)
     logger.logMessage("[2.3] Extracted recognized species section: " .. subResult)
 
-    -- [2.4] Parse species lines
-    logger.logMessage("[2.4] Parsing species lines from results.")
-    local parsedItems = {}
-    for line in subResult:gmatch("[^\r\n]+") do
-        logger.logMessage("[2.4] Processing line: " .. line)
-        local nom_fr, nom_latin, pourcent = line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)%%")
-        if nom_fr and nom_latin and pourcent then
-            local label = string.format("%s (%s) — %s%%", nom_fr, nom_latin, pourcent)
-            local keyword = string.format("%s (%s)", nom_fr, nom_latin)
+-- [2.4] Parse species lines
+logger.logMessage("[2.4] Parsing species lines from results.")
+local parsedItems = {}
+for line in subResult:gmatch("[^\r\n]+") do
+    logger.logMessage("[2.4] Processing line: " .. line)
+    local nom_fr, nom_latin, pourcent = line:match("%- (.-) %((.-)%)%s*:%s*([%d%.]+)")
+    if nom_fr and nom_latin and pourcent then
+        local pourcentNum = tonumber(pourcent) or 0
+        if pourcentNum >= 5 then -- ignore species < 5%
+            local pourcentArrondi = string.format("%.0f", pourcentNum)
+            -- Si le nom français est Unknown, ne garder que le nom latin
+            local keyword = (nom_fr == "Unknown") and nom_latin or string.format("%s (%s)", nom_fr, nom_latin)
+            local label   = (nom_fr == "Unknown") and string.format("%s — %s%%", nom_latin, pourcentArrondi)
+                              or string.format("%s (%s) — %s%%", nom_fr, nom_latin, pourcentArrondi)
             logger.logMessage("[2.4] Parsed species: label='" .. label .. "', keyword='" .. keyword .. "'")
             table.insert(parsedItems, { label = label, keyword = keyword })
         else
-            logger.logMessage("[2.4] Line did not match species format.")
+            logger.logMessage("[2.4] Species ignored, pourcentage < 5%: " .. line)
         end
+    else
+        logger.logMessage("[2.4] Line did not match species format.")
     end
+end
+
+
 
     -- [2.5] Check at least one species detected
     if #parsedItems == 0 then
@@ -114,7 +126,6 @@ local function showSelection(resultsString)
     logger.logMessage("[2.5] Parsed " .. tostring(#parsedItems) .. " species from results.")
 
     -- [2.6] Create modal UI with checkboxes for each species
-    logger.logMessage("[2.6] Creating modal dialog UI with checkboxes.")
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
@@ -136,10 +147,8 @@ local function showSelection(resultsString)
             bind_to_object = props,
             f:column(checkboxes)
         }
-        logger.logMessage("[2.6] Modal dialog UI created.")
 
         -- [2.7] Show dialog and wait for user response
-        logger.logMessage("[2.7] Presenting modal dialog to user.")
         local result = LrDialogs.presentModalDialog {
             title = LOC("$$$/iNat/Dialog/SelectSpecies=Select species to add as keywords"),
             contents = contents,
@@ -148,9 +157,7 @@ local function showSelection(resultsString)
 
         -- [2.8] If user confirmed, gather selected keywords
         if result == "ok" then
-            logger.logMessage("[2.8] User confirmed selection. Gathering selected keywords.")
             local selectedKeywords = {}
-
             for i, item in ipairs(parsedItems) do
                 local key = "item_" .. i
                 if props[key] == true then
@@ -170,24 +177,19 @@ local function showSelection(resultsString)
             end
 
             -- [2.10] Add selected keywords to the photo (create if needed)
-            logger.logMessage("[2.10] Adding " .. tostring(#selectedKeywords) .. " keywords to the photo.")
             catalog:withWriteAccessDo(LOC("$$$/iNat/WriteAccess/AddingKeywords=Adding keywords"), function()
                 local function getOrCreateKeyword(name)
-                    logger.logMessage("[2.10] Searching for keyword: " .. name)
                     for _, kw in ipairs(catalog:getKeywords()) do
                         if kw:getName() == name then
-                            logger.logMessage("[2.10] Found existing keyword: " .. name)
                             return kw
                         end
                     end
-                    logger.logMessage("[2.10] Creating new keyword: " .. name)
                     return catalog:createKeyword(name, {}, true, nil, true)
                 end
 
                 for _, keyword in ipairs(selectedKeywords) do
                     local kw = getOrCreateKeyword(keyword)
                     if kw then
-                        logger.logMessage("[2.10] Adding keyword to photo: " .. keyword)
                         photo:addKeyword(kw)
                     end
                 end

@@ -77,66 +77,15 @@ return {
         local downloadButton = viewFactory:push_button {
             title = LOC("$$$/iNat/DownloadGitHub=Download last Github version"),
             action = function()
-                local latestTag = Updates.getLatestGitHubVersion() or "?"
-                if Updates.getCurrentVersion() == latestTag then
-                    LrDialogs.message(
-                        LOC("$$$/iNat/VersionUpToDate=Version up to date")
-                    )
-                else
-                    local choice = LrDialogs.confirm(
-                        LOC("$$$/iNat/NewVersion=New version available"),
-                        LOC("$$$/iNat/DownloadPrompt=Do you want to download the new version?"),
-                        LOC("$$$/iNat/OK=OK"),
-                        LOC("$$$/iNat/Cancel=Cancel")
-                    )
-                    if choice == "ok" then
-                        LrTasks.startAsyncTask(function()
-                            -- Open GitHub latest release page
-                            LrHttp.openUrlInBrowser("https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
-                        end)
-                    end
-                end
+                LrTasks.startAsyncTask(function()
+                    LrHttp.openUrlInBrowser("https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
+                    logger.logMessage("[Step 4] Opened GitHub releases page in browser")
+                end)
             end
         }
 
-        -- Step 5: Token field with multiline input
-        logger.logMessage("[Step 5] Creating token field.")
-        local tokenField = viewFactory:edit_field {
-            value = prefs.token or "",
-            width = 500,
-            min_width = 500,
-            height = 80, -- allows approx. 2 lines
-            wrap = true, -- force line breaks
-            tooltip = LOC("$$$/iNat/TokenTooltip=Your iNaturalist API token")
-        }
-
-        -- Token comment below GitHub button
-        local tokenComment = viewFactory:static_text {
-            title = LOC("$$$/iNat/TokenReminder=Take care that Token validity is limited to 24 hours; it must be refreshed every day"),
-            width = 500
-        }
-
-        -- Step 6: Refresh Token button
-        logger.logMessage("[Step 6] Creating Refresh Token button.")
-        local refreshTokenButton = viewFactory:push_button {
-            title = LOC("$$$/iNat/RefreshToken=Refresh Token"),
-            action = function()
-                local tokenUpdater = require("TokenUpdater")
-                tokenUpdater.runUpdateTokenScript()
-            end
-        }
-
-        -- Step 7: Logging enable checkbox
-        logger.logMessage("[Step 7] Creating logging checkbox.")
-        local logCheck = viewFactory:checkbox {
-            title = LOC("$$$/iNat/EnableLogging=Enable logging to log.txt"),
-            value = prefs.logEnabled or false,
-            checked_value = true,
-            unchecked_value = false,
-        }
-
-        -- Step 8: Automatic update check and "Check now" button
-        logger.logMessage("[Step 8] Creating update preferences rows.")
+        -- Step 5: Automatic update check and "Check now" button
+        logger.logMessage("[Step 5] Creating update preferences rows immediately after GitHub button.")
         local autoUpdateRow = viewFactory:row {
             spacing = viewFactory:control_spacing(),
             viewFactory:static_text {
@@ -160,6 +109,41 @@ return {
                 title = LOC("$$$/iNat/Go=Go"),
                 action = Updates.forceUpdate
             }
+        }
+
+        -- Step 6: Token field with multiline input
+        logger.logMessage("[Step 6] Creating token field.")
+        local tokenField = viewFactory:edit_field {
+            value = prefs.token or "",
+            width = 500,
+            min_width = 500,
+            height = 80,
+            wrap = true,
+            tooltip = LOC("$$$/iNat/TokenTooltip=Your iNaturalist API token")
+        }
+
+        local tokenComment = viewFactory:static_text {
+            title = LOC("$$$/iNat/TokenReminder=Take care that Token validity is limited to 24 hours; it must be refreshed every day"),
+            width = 500
+        }
+
+        -- Step 7: Refresh Token button
+        logger.logMessage("[Step 7] Creating Refresh Token button.")
+        local refreshTokenButton = viewFactory:push_button {
+            title = LOC("$$$/iNat/RefreshToken=Refresh Token"),
+            action = function()
+                local tokenUpdater = require("TokenUpdater")
+                tokenUpdater.runUpdateTokenScript()
+            end
+        }
+
+        -- Step 8: Logging enable checkbox
+        logger.logMessage("[Step 8] Creating logging checkbox.")
+        local logCheck = viewFactory:checkbox {
+            title = LOC("$$$/iNat/EnableLogging=Enable logging to log.txt"),
+            value = prefs.logEnabled or false,
+            checked_value = true,
+            unchecked_value = false,
         }
 
         -- Step 9: Save button for preferences
@@ -193,6 +177,10 @@ return {
                     downloadButton
                 },
 
+                -- Auto update and Check now rows (moved immediately after GitHub button)
+                autoUpdateRow,
+                checkNowRow,
+
                 -- Token comment row
                 viewFactory:row {
                     spacing = viewFactory:control_spacing(),
@@ -216,12 +204,6 @@ return {
                     spacing = viewFactory:control_spacing(),
                     logCheck
                 },
-
-                -- Automatic update check row
-                autoUpdateRow,
-
-                -- Check updates now row
-                checkNowRow,
 
                 -- Save button row
                 viewFactory:row {
