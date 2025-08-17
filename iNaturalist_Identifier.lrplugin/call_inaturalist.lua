@@ -71,15 +71,11 @@ local function identifyAsync(imagePath, token, callback)
         }
 
         -- Log HTTP request details
-        logger.logMessage("[Step 4] Sending POST request to iNaturalist API:")
+        logger.logMessage("[Step 4] Sending POST request to iNaturalist API")
         logger.logMessage("URL: https://api.inaturalist.org/v1/computervision/score_image")
-        logger.logMessage("Headers: " .. table.concat({
-            "Authorization: Bearer " .. token,
-            "User-Agent: LightroomBirdIdentifier/1.0",
-            "Content-Type: multipart/form-data; boundary=" .. boundary,
-            "Accept: application/json"
-        }, ", "))
+        logger.logMessage("Headers: Authorization: Bearer " .. token .. ", User-Agent: LightroomBirdIdentifier/1.0, Content-Type: multipart/form-data; boundary=" .. boundary .. ", Accept: application/json")
         logger.logMessage("Body length: " .. #body .. " bytes")
+        logger.logMessage("Body preview (first 500 chars): " .. string.sub(body, 1, 500))
 
         -- Step 4: POST request
         local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
@@ -88,8 +84,10 @@ local function identifyAsync(imagePath, token, callback)
             callback(nil, "API error: No response")
             return
         end
+
         logger.logMessage("[Step 5] API response received (" .. tostring(#result) .. " bytes)")
-        logger.logMessage("Response content: " .. result)
+        logger.logMessage("Full response content: " .. result)
+        logger.logMessage("Response headers: " .. json.encode(hdrs or {}))
 
         -- Step 6: Decode JSON
         local success, parsed = pcall(json.decode, result)
@@ -99,6 +97,7 @@ local function identifyAsync(imagePath, token, callback)
             return
         end
         logger.logMessage("[Step 6] JSON decoded successfully")
+        logger.logMessage("Decoded JSON results: " .. json.encode(parsed.results or {}))
 
         local results = parsed.results or {}
         if #results == 0 then
@@ -115,12 +114,12 @@ local function identifyAsync(imagePath, token, callback)
             local name_latin = taxon.name or "Unknown"
             local score = tonumber(r.combined_score) or 0
             logger.logMessage(string.format("  Species #%d: FR='%s', Latin='%s', Score=%.3f", i, name_fr, name_latin, score))
+            logger.logMessage("  Full result table: " .. json.encode(r))
         end
 
         -- Step 8: Pass results to selection module
         selectAndTagResults.showSelection(results)
 
-        -- Optional: callback with raw formatted text
         if callback then
             callback(table.concat({ "🕊️ Recognized species:" }, "\n"))
         end
