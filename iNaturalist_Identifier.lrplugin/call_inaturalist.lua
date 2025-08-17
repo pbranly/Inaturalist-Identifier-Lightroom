@@ -13,16 +13,18 @@
  2. Construct multipart/form-data HTTP body containing the image.
  3. Build HTTP headers including Authorization and Content-Type.
  4. Send POST request to iNaturalist's AI scoring endpoint.
- 5. Handle network or API errors gracefully.
- 6. Decode JSON response from API.
- 7. Extract species prediction results from the parsed response.
- 8. Format species names and raw confidence scores into a readable string.
- 9. Return the final formatted result string to the calling script.
+ 5. Detect invalid/expired token and handle it.
+ 6. Handle network or API errors gracefully.
+ 7. Decode JSON response from API.
+ 8. Extract species prediction results from the parsed response.
+ 9. Format species names and raw confidence scores into a readable string.
+10. Return the final formatted result string to the calling script.
 
  Dependencies:
- - Lightroom SDK: LrFileUtils, LrHttp, LrTasks
+ - Lightroom SDK: LrFileUtils, LrHttp, LrTasks, LrDialogs, LrPrefs
  - JSON library (json)
  - Logger.lua (for detailed step-by-step logging)
+ - TokenUpdater.lua (for refreshing the token)
  - Requires a valid iNaturalist API token (Bearer format)
 
  Called By:
@@ -34,29 +36,26 @@
  2. Construct multipart/form-data for the POST request.
  3. Prepare HTTP headers including Authorization with token.
  4. Send HTTP POST request to iNaturalist API endpoint.
- 5. Handle API errors or network issues.
- 6. Decode JSON response from API.
- 7. Extract species predictions from decoded JSON.
- 8. Format species names and scores into Lightroom-readable string.
- 9. Return the final formatted string to caller.
-
- All logging is in English. All messages displayed to user are in basic English
- using LOC() for potential internationalization.
+ 5. Detect invalid token from HTTP code or error in JSON.
+ 6. Handle API errors or network issues.
+ 7. Decode JSON response from API.
+ 8. Extract species predictions from decoded JSON.
+ 9. Format species names and scores into Lightroom-readable string.
+10. Return the final formatted string to caller.
 =====================================================================================
 --]]
 
--- Lightroom SDK imports
 local LrFileUtils = import "LrFileUtils"
 local LrHttp      = import "LrHttp"
 local LrTasks     = import "LrTasks"
+local LrDialogs   = import "LrDialogs"
+local LrPrefs     = import "LrPrefs"
 
--- JSON decoding library
-local json        = require("json")  -- or your preferred JSON library
-
--- Logger module
+local json        = require("json")
 local logger      = require("Logger")
+local tokenUpdater = require("TokenUpdater")
 
--- Function to normalize accented characters
+-- Normalize accented characters
 local function normalizeAccents(str)
     str = str:gsub("à","a"):gsub("â","a"):gsub("é","e"):gsub("è","e")
            :gsub("ê","e"):gsub("ô","o"):gsub("ù","u"):gsub("û","u")
@@ -64,19 +63,9 @@ local function normalizeAccents(str)
     return str
 end
 
---[[
-=====================================================================================
- Function: identifyAsync
- Purpose : Perform asynchronous species identification for a given image
- Params  : 
-    imagePath (string) : Path to JPEG image exported from Lightroom
-    token (string)     : iNaturalist API token (Bearer)
-    callback (function): Function to call with result string or error message
-=====================================================================================
---]]
 local function identifyAsync(imagePath, token, callback)
     LrTasks.startAsyncTask(function()
-        -- Step 1: Read image from disk
+        -- Step 1: Read image
         logger.logMessage("[Step 1] Reading image: " .. tostring(imagePath))
         local imageData = LrFileUtils.readFile(imagePath)
         if not imageData then
@@ -108,9 +97,24 @@ local function identifyAsync(imagePath, token, callback)
         }
         logger.logMessage("[Step 3] HTTP headers prepared with token and content type.")
 
-        -- Step 4: Send POST request to iNaturalist API
-        logger.logMessage("[Step 4] Sending POST request to iNaturalist API endpoint.")
+        -- Step 4: Send POST request
+        logger.logMessage("[Step 4] Sending POST request to iNaturalist API.")
         local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
+
+        -- Step 5: Detect invalid token
+        local httpCode = (hdrs and hdrs.status) or "unknown"
+        if httpCode == 401 then
+            logger.logMessage("[Step 5] Unauthorized access detected (HTTP 401) - Token invalid or expired")
+            LrDialogs.message(
+                LOC("$$$/iNat/Error/InvalidToken=Token is not valid, please refresh it"),
+                LOC("$$$/iNat/Error/InvalidTokenDesc=Your iNaturalist token is invalid or expired. Please enter a new token."),
+                "ok"
+            )
+            tokenUpdater.runUpdateTokenScript()
+            callback(nil, "Token invalid or expired")
+            return
+        end
+
         if not result then
             logger.logMessage("[Step 5] API call failed: no response received.")
             callback(nil, "API error: No response from iNaturalist API")
@@ -118,7 +122,7 @@ local function identifyAsync(imagePath, token, callback)
         end
         logger.logMessage("[Step 5] API response received (" .. tostring(#result) .. " bytes)")
 
-        -- Step 6: Decode JSON response
+        -- Step 6: Decode JSON
         local success, parsed = pcall(json.decode, result)
         if not success or not parsed then
             logger.logMessage("[Step 6] Failed to decode JSON response: " .. tostring(result))
@@ -126,6 +130,19 @@ local function identifyAsync(imagePath, token, callback)
             return
         end
         logger.logMessage("[Step 6] JSON decoded successfully.")
+
+        -- Step 5b: Detect token error in JSON
+        if parsed.error then
+            logger.logMessage("[Step 5b] API returned error: " .. tostring(parsed.error))
+            LrDialogs.message(
+                LOC("$$$/iNat/Error/InvalidToken=Token is not valid, please refresh it"),
+                LOC("$$$/iNat/Error/InvalidTokenDesc=Your iNaturalist token is invalid or expired. Please enter a new token."),
+                "ok"
+            )
+            tokenUpdater.runUpdateTokenScript()
+            callback(nil, "Token invalid or expired")
+            return
+        end
 
         -- Step 7: Extract species predictions
         local results = parsed.results or {}
@@ -139,7 +156,6 @@ local function identifyAsync(imagePath, token, callback)
         -- Step 8: Format species names and raw scores
         local output = { "🕊️ Recognized species:" }
         table.insert(output, "")
-
         for _, r in ipairs(results) do
             local taxon = r.taxon or {}
             local name_fr = normalizeAccents(taxon.preferred_common_name or "Unknown")
@@ -150,13 +166,12 @@ local function identifyAsync(imagePath, token, callback)
             logger.logMessage("[Step 8] Recognized species: " .. line)
         end
 
-        -- Step 9: Return final formatted string
+        -- Step 9: Return formatted result
         logger.logMessage("[Step 9] Returning formatted species recognition results.")
         callback(table.concat(output, "\n"))
     end)
 end
 
--- Export module
 return {
     identifyAsync = identifyAsync
 }
