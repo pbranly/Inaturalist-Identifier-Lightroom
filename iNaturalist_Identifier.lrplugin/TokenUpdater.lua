@@ -1,39 +1,36 @@
---[[
-============================================================
-Functional Description
+--[[============================================================
+TokenUpdater.lua
 ------------------------------------------------------------
+Functional Description:
 This module `TokenUpdater.lua` manages the iNaturalist authentication token
-by storing it in plugin preferences along with a timestamp. Token validity
-is determined by checking that the token is not older than 24 hours.
+for the Lightroom plugin by allowing the user to enter a token and saving it
+with a timestamp. Token validity is considered < 24 hours old.
 
 Main Features:
-1. Display a modal dialog for entering and saving the token.
-2. Open the official token generation page in the browser.
-3. Save the token and its timestamp in Lightroom plugin preferences.
-4. Provide a simple function to check token status based on age.
-5. Provide a function to return a user-friendly status text.
+1. Display a modal dialog to enter and save the token.
+2. Save the token and its timestamp in Lightroom plugin preferences.
+3. Provide functions to check token freshness and display token status.
 
 Modules and Scripts Used:
 - LrPrefs
 - LrDialogs
 - LrView
 - LrTasks
+- Logger.lua (custom logging)
 
-Scripts Calling This Module:
-- PluginInfoProvider.lua (for UI)
-- AnimalIdentifier.lua (to ensure token is fresh before use)
+Called Scripts:
+- PluginInfoProvider.lua (e.g., to show token status or open the dialog)
 
 Numbered Steps:
-1. Import Lightroom SDK modules.
-2. Define runUpdateTokenScript() to display modal dialog and save token.
-3. Save the current timestamp when token is saved.
-4. Provide isTokenFresh() to check token age.
-5. Provide getTokenStatusText() to return human-readable status.
+1. Import Lightroom SDK modules and Logger.
+2. Define `isTokenFresh()` to check token age (<24h).
+3. Define `getTokenStatusText()` to return a human-readable token status.
+4. Define `runUpdateTokenScript()` to show a modal UI to enter/update token.
+5. Save token and update timestamp when user clicks "Save".
 6. Export functions for external use.
-============================================================
-]]
+============================================================]]
 
--- Step 1: Import Lightroom modules
+-- Step 1: Lightroom SDK imports
 local LrPrefs   = import "LrPrefs"
 local LrDialogs = import "LrDialogs"
 local LrView    = import "LrView"
@@ -41,13 +38,39 @@ local LrTasks   = import "LrTasks"
 
 local logger = require("Logger")
 
--- Step 2: Function to run token update UI
+-- Step 2: Function to check if token is fresh (<24h old)
+local function isTokenFresh()
+    local prefs = LrPrefs.prefsForPlugin()
+    if not prefs.token or prefs.token == "" then
+        return false
+    end
+    local timestamp = prefs.tokenTimestamp or 0
+    local age = os.time() - timestamp
+    logger.logMessage("[TokenUpdater] Token age in seconds: " .. tostring(age))
+    return age <= 24 * 3600
+end
+
+-- Step 3: Function to get token status text for UI display
+local function getTokenStatusText()
+    local prefs = LrPrefs.prefsForPlugin()
+    if not prefs.token or prefs.token == "" then
+        return LOC("$$$/iNat/TokenStatus/None=No token available.")
+    end
+    if isTokenFresh() then
+        return LOC("$$$/iNat/TokenStatus/Valid=Token is fresh and valid (less than 24h old).")
+    else
+        return LOC("$$$/iNat/TokenStatus/Expired=Token expired. Please refresh.")
+    end
+end
+
+-- Step 4: Function to run token update UI
 local function runUpdateTokenScript()
     LrTasks.startAsyncTask(function()
-        local f = LrView.osFactory()
         local prefs = LrPrefs.prefsForPlugin()
+        local f = LrView.osFactory()
         local props = { token = prefs.token or "" }
 
+        -- Function to open token generation page
         local function openTokenPage()
             local url = "https://www.inaturalist.org/users/api_token"
             local openCommand
@@ -58,15 +81,17 @@ local function runUpdateTokenScript()
             else
                 openCommand = 'xdg-open "' .. url .. '"'
             end
+            logger.logMessage("[TokenUpdater] Opening token page with command: " .. openCommand)
             LrTasks.execute(openCommand)
         end
 
+        -- Modal UI
         local contents = f:column {
             bind_to_object = props,
             spacing = f:control_spacing(),
 
             f:static_text {
-                title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid 24 hours):"),
+                title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
                 width = 400,
             },
 
@@ -84,8 +109,8 @@ local function runUpdateTokenScript()
                 title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
                 action = function()
                     prefs.token = props.token
-                    prefs.tokenTimestamp = os.time()  -- Step 3: save timestamp
-                    logger.logMessage("[TokenUpdater] Token saved at timestamp: " .. tostring(prefs.tokenTimestamp))
+                    prefs.tokenTimestamp = os.time()
+                    logger.logMessage("[TokenUpdater] Token saved. Timestamp updated to " .. tostring(prefs.tokenTimestamp))
                     LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
                 end
             }
@@ -96,29 +121,6 @@ local function runUpdateTokenScript()
             contents = contents
         }
     end)
-end
-
--- Step 4: Check if token is fresh (<24h)
-local function isTokenFresh()
-    local prefs = LrPrefs.prefsForPlugin()
-    if not prefs.token or prefs.token == "" then
-        return false
-    end
-    local timestamp = prefs.tokenTimestamp or 0
-    local age = os.time() - timestamp
-    return age <= 24*3600
-end
-
--- Step 5: Return user-friendly token status text
-local function getTokenStatusText()
-    if not prefs.token or prefs.token == "" then
-        return LOC("$$$/iNat/TokenStatus/None=No token available.")
-    end
-    if isTokenFresh() then
-        return LOC("$$$/iNat/TokenStatus/Valid=Token is fresh and valid (less than 24h old).")
-    else
-        return LOC("$$$/iNat/TokenStatus/Expired=Token expired. Please refresh.")
-    end
 end
 
 -- Step 6: Export functions
