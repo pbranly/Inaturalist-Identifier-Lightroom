@@ -7,10 +7,11 @@
 
  Functional Overview:
  1. Receives structured table of results from call_inaturalist.lua.
- 2. Filters out predictions with score <= 10%.
+ 2. Filters out predictions with score < 5%.
  3. Displays species in a Lightroom dialog (checkboxes).
  4. Allows the user to confirm which species to tag.
- 5. Applies selected species as keywords in Lightroom.
+ 5. Applies selected species as keywords in Lightroom,
+    using only the Latin name if the French name is "Unknown".
 
  Dependencies:
  - Lightroom SDK:
@@ -43,11 +44,11 @@ local LOC = LOC
 local function selectAndTagResults(results, photo)
     logger.logMessage("[Step 1] Entering selectAndTagResults with " .. tostring(#results) .. " results.")
 
-    -- [Step 2] Filter out predictions with percent <= 10%
-    logger.logMessage("[Step 2] Filtering results with confidence <= 10%.")
+    -- [Step 2] Filter out predictions with percent < 5%
+    logger.logMessage("[Step 2] Filtering results with confidence < 5%.")
     local filtered = {}
     for _, r in ipairs(results) do
-        if r.percent > 10 then
+        if r.percent >= 5 then
             table.insert(filtered, r)
             logger.logMessage(string.format(
                 "[Step 2] Kept: %s (%s) %.2f%%",
@@ -62,10 +63,10 @@ local function selectAndTagResults(results, photo)
     end
 
     if #filtered == 0 then
-        logger.logMessage("[Step 2] No results above 10% threshold.")
+        logger.logMessage("[Step 2] No results above 5% threshold.")
         LrDialogs.message(
             LOC("$$$/iNat/NoValidResults=No valid results"),
-            LOC("$$$/iNat/ThresholdWarning=No species above 10% confidence.")
+            LOC("$$$/iNat/ThresholdWarning=No species above 5% confidence.")
         )
         return
     end
@@ -77,11 +78,15 @@ local function selectAndTagResults(results, photo)
     for i, r in ipairs(filtered) do
         local key = "sel_" .. tostring(i)
         props[key] = true -- default: checked
+
+        -- Handle Unknown French name
+        local displayFr = (r.fr == "Unknown") and r.latin or r.fr
+
         table.insert(rows,
             LrView:row {
                 bind_to_object = props,
                 LrView:checkbox {
-                    title = string.format("%s (%s) - %.1f%%", r.fr, r.latin, r.percent),
+                    title = string.format("%s (%s) - %.1f%%", displayFr, r.latin, r.percent),
                     value = LrView.bind(key),
                 }
             }
@@ -141,7 +146,7 @@ local function selectAndTagResults(results, photo)
         local catalog = LrApplication.activeCatalog()
         catalog:withWriteAccessDo("Tag iNaturalist results", function()
             for _, r in ipairs(selected) do
-                local keywordName = r.fr .. " (" .. r.latin .. ")"
+                local keywordName = (r.fr == "Unknown") and r.latin or (r.fr .. " (" .. r.latin .. ")")
                 logger.logMessage("[Step 6] Applying keyword: " .. keywordName)
                 local keyword = catalog:createKeyword(keywordName, {}, true, nil, true)
                 photo:addKeyword(keyword)
