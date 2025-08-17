@@ -3,22 +3,19 @@
 VerificationToken.lua
 ------------------------------------------------------------
 Functional Description:
-This module `VerificationToken.lua` verifies the validity of the 
-iNaturalist authentication token stored in the Lightroom plugin 
-preferences. It uses Lightroom's native HTTP API (LrHttp) to 
-perform the validation without relying on external curl commands.
+This module verifies the iNaturalist authentication token stored in 
+Lightroom plugin preferences by checking its timestamp. No HTTP request 
+is performed; token validity is determined by its age (must not exceed 24 hours).
 
 Main Features:
-1. Read the authentication token from plugin preferences.
-2. Use LrHttp to send a GET request to the iNaturalist API to 
-   verify the token.
-3. Log all steps and HTTP response details for debugging.
+1. Read the token and its timestamp from plugin preferences.
+2. Compare the token age to a 24-hour threshold.
+3. Log all steps using Logger.lua.
 4. Display messages in an internationalized format using LOC().
 5. Return a boolean and a descriptive message regarding token status.
 
 Modules and scripts used:
 - LrPrefs
-- LrHttp
 - LrDialogs
 - Logger.lua (custom logging module)
 
@@ -31,12 +28,10 @@ Numbered Steps:
 3. Log module load event.
 4. Define function `isTokenValid` to:
     4.1 Log the start of validation.
-    4.2 Retrieve token from preferences.
-    4.3 Check if the token is missing or empty.
-    4.4 Build and log the HTTP GET request.
-    4.5 Send the request using LrHttp.
-    4.6 Log the HTTP response code and body.
-    4.7 Analyze the response and return status.
+    4.2 Retrieve token and timestamp from preferences.
+    4.3 Check if token exists and has a timestamp.
+    4.4 Compare timestamp with current time.
+    4.5 Log and display validation result.
 5. Export the function for external use.
 ============================================================
 ]]
@@ -44,7 +39,6 @@ Numbered Steps:
 -- [Step 1] Lightroom module imports
 local LrPrefs   = import "LrPrefs"
 local LrDialogs = import "LrDialogs"
-local LrHttp    = import "LrHttp"
 
 -- [Step 1] Custom logging module
 local logger = require("Logger")
@@ -53,17 +47,17 @@ local logger = require("Logger")
 local prefs = LrPrefs.prefsForPlugin()
 
 -- [Step 3] Log module load
-logger.logMessage("VerificationToken.lua module loaded.")
+logger.logMessage("VerificationToken.lua module loaded (timestamp-based check).")
 
--- [Step 4] Validate the iNaturalist token using the API
+-- [Step 4] Token validation based on timestamp
 local function isTokenValid()
     -- [4.1] Log start of validation
-    logger.logMessage("Starting token validation process.")
+    logger.logMessage("Starting token validation based on timestamp.")
 
-    -- [4.2] Retrieve token
     local token = prefs.token
+    local tokenTimestamp = prefs.tokenTimestamp -- should be a UNIX timestamp
 
-    -- [4.3] Check for missing or empty token
+    -- [4.3] Check token existence and timestamp
     if not token or token == "" then
         local msg = "No token found in Lightroom preferences."
         logger.logMessage(msg)
@@ -71,49 +65,32 @@ local function isTokenValid()
         return false, msg
     end
 
-    logger.logMessage("Token detected (length: " .. tostring(#token) .. " characters).")
-
-    -- [4.4] Build and log the HTTP GET request
-    local url = "https://api.inaturalist.org/v1/users/me"
-    local headers = { Authorization = "Bearer " .. token }
-    logger.logMessage("Preparing HTTP GET request to URL: " .. url)
-    logger.logMessage("Request headers: Authorization: Bearer <token>")
-
-    -- [4.5] Send the request using LrHttp
-    local result, headersTable = LrHttp.get(url, headers)
-
-    -- [4.6] Log HTTP response
-    local httpCode = "000"
-    if headersTable and headersTable.status then
-        httpCode = tostring(headersTable.status)
+    if not tokenTimestamp then
+        local msg = "Token timestamp not found; token considered invalid."
+        logger.logMessage(msg)
+        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
+        return false, msg
     end
 
-    logger.logMessage("HTTP response code: " .. httpCode)
-    logger.logMessage("HTTP response body: " .. (result or "<empty>"))
+    -- [4.4] Compare timestamp with current time
+    local currentTime = os.time()
+    local ageSeconds = currentTime - tokenTimestamp
+    local ageHours = ageSeconds / 3600
 
-    -- [4.7] Analyze HTTP response
+    logger.logMessage(string.format("Token age: %.2f hours.", ageHours))
+
     local msg
-    if httpCode == "200" then
-        msg = "Success: token is valid."
+    if ageHours <= 24 then
+        msg = "Success: token is considered valid based on timestamp."
         logger.logMessage(msg)
-    elseif httpCode == "401" then
-        msg = "Failure: token is invalid or expired (401 Unauthorized)."
-        logger.logMessage(msg)
-    elseif httpCode == "500" then
-        msg = "iNaturalist server error (500)."
-        logger.logMessage(msg)
-    elseif httpCode == "000" then
-        msg = "No HTTP code received. Check internet connection."
-        logger.logMessage(msg)
+        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "info")
+        return true, msg
     else
-        msg = "Unexpected response (code " .. httpCode .. ")."
+        msg = "Failure: token is older than 24 hours; please refresh."
         logger.logMessage(msg)
+        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
+        return false, msg
     end
-
-    -- Display message on screen in internationalized form
-    LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, (httpCode=="200") and "info" or "critical")
-
-    return httpCode == "200", msg
 end
 
 -- [Step 5] Export function
