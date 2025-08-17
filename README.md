@@ -1,6 +1,5 @@
 [![🇫🇷 Français](https://img.shields.io/badge/langue-français-blue)](README.fr.md)
 
-
 # iNaturalist Identifier
 
 ![iNaturalist Identifier screenshot](logo.png)
@@ -9,7 +8,18 @@
 
 ---
 
-## 📌 Table of Contents
+> ⚠️ **Disclaimer**  
+> Use of this plugin is **at your own risk**.  
+> The author and contributors cannot be held responsible for any data loss, catalog corruption, or damage to your images in Lightroom.  
+> 
+> **Before using the plugin:**
+> - Make a **full backup of your Lightroom catalog**.  
+> - Ensure your **original images are safely backed up**.  
+> - Test the plugin on a **copy of your catalog or images** first.  
+> 
+> By using this plugin, you acknowledge and accept these precautions.  
+
+---
 
 ## 📌 Table of Contents
 
@@ -23,7 +33,6 @@
 - [Development](#-development)
 - [License](#-license)
 - [Support the Project](#-support-the-project)
-
 
 ---
 
