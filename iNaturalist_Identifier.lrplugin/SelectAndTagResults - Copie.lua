@@ -46,19 +46,6 @@ local logger = require("Logger") -- Detailed logging module
 
 -- [Step 2] Main function: show species selection dialog
 local function showSelection(resultsTable)
-
-    -- Handle the case where resultsTable is mistakenly a string
-    if type(resultsTable) == "string" then
-        logger.logMessage("[showSelection] Warning: resultsTable is a string. Creating minimal table to avoid error.")
-        resultsTable = { { 
-            taxon = { 
-                preferred_common_name = "Unknown", 
-                name = "Unknown" 
-            },
-            combined_score = 1
-        } }
-    end
-
     logger.logMessage("[Step 2] Starting showSelection. Number of results received: " .. tostring(#resultsTable))
 
     -- [Step 3] Prepare parsed species list
