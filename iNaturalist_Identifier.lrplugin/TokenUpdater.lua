@@ -8,15 +8,15 @@ dialog to the user.
 Main features:
 1. Display a modal dialog to enter and save the token.
 2. Open the official token generation webpage in the browser.
-3. Save the token in Lightroom plugin preferences.
+3. Save the token and its timestamp in Lightroom plugin preferences.
 
 ------------------------------------------------------------
 Numbered Steps
-1. Import necessary Lightroom modules (paths, files, tasks, dialogs, prefs, view).
+1. Import necessary Lightroom modules (paths, files, tasks, dialogs, view, prefs).
 2. Define the function `runUpdateTokenScript` which:
-    2.1. Builds the modal UI.
-    2.2. Opens the token generation page.
-    2.3. Saves the token in preferences.
+    2.1 Builds the modal UI.
+    2.2 Opens the token generation page.
+    2.3 Saves the token and current timestamp in preferences.
 3. Export the function for external use.
 
 ------------------------------------------------------------
@@ -75,7 +75,10 @@ local function runUpdateTokenScript()
             f:push_button {
                 title = LOC("$$$/iNat/TokenDialog/Save=Save token"),
                 action = function()
+                    -- Save token
                     prefs.token = props.token
+                    -- Save current timestamp
+                    prefs.tokenTimestamp = os.time()
                     LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
                 end
             }
