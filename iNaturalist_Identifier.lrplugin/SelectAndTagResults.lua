@@ -1,75 +1,89 @@
 --[[
-============================================================
-Module : selectAndTagResults.lua
-------------------------------------------------------------
-Ce module reçoit un tableau JSON renvoyé par l’API iNaturalist
-(resultsTable), affiche une interface permettant de choisir 
-les espèces reconnues et ajoute les sélections en mots-clés
-dans Lightroom.
+=====================================================================================
+Module       : selectAndTagResults.lua
+Author       : Philippe
+Purpose      : Display recognized species from iNaturalist results and add
+               selected species as Lightroom keywords.
+Dependencies : Lightroom SDK modules (LrDialogs, LrFunctionContext, LrBinding,
+               LrView, LrApplication), logger.lua
+Used by      : call_inaturalist.lua
+=====================================================================================
 
-Étapes principales :
-1. Récupère la photo active du catalogue.
-2. Transforme le tableau JSON en liste affichable (labels + keywords).
-3. Affiche une boîte de dialogue avec cases à cocher.
-4. Ajoute les mots-clés sélectionnés à la photo.
-============================================================
+Functional Description (English):
+This module receives the results table produced by the iNaturalist AI identification
+service (call_inaturalist.lua). It performs the following actions:
+
+1. Parses the iNaturalist results table to extract recognized species with their
+   French common name, Latin name, and confidence percentage.
+2. Displays a modal dialog in Lightroom with checkboxes for each species.
+3. Allows the user to select which species to add as keywords.
+4. Creates missing keywords in the Lightroom catalog if necessary.
+5. Adds the selected keywords to the active photo.
+6. Logs each step via logger.lua for debugging and traceability.
+7. Provides internationalized messages for screen display (English).
+
+=====================================================================================
+Numbered Steps:
+1. Import required Lightroom SDK modules and logger.
+2. Parse the iNaturalist results table and filter low-confidence species.
+3. Prepare labels and keywords for UI display.
+4. Check if there are valid species to display; warn if none.
+5. Create modal UI with checkboxes for each species.
+6. Handle user selection and gather selected keywords.
+7. Add selected keywords to the active photo, creating them if necessary.
+8. Log each significant action including UI choices and added keywords.
+=====================================================================================
 ]]
 
--- Imports Lightroom SDK
+-- [Step 1] Import Lightroom SDK modules and logger
 local LrDialogs        = import "LrDialogs"
 local LrFunctionContext= import "LrFunctionContext"
 local LrBinding        = import "LrBinding"
 local LrView           = import "LrView"
 local LrApplication    = import "LrApplication"
 
--- Logger
-local logger = require("Logger")
+local logger = require("Logger") -- Detailed logging module
 
--- Fonction principale
+-- [Step 2] Main function: show species selection dialog
 local function showSelection(resultsTable)
-    logger.logMessage("[Step 2] showSelection: " .. tostring(#resultsTable) .. " résultats reçus")
+    logger.logMessage("[Step 2] Starting showSelection. Number of results received: " .. tostring(#resultsTable))
 
-    -- [2.1] Photo active
-    local catalog = LrApplication.activeCatalog()
-    local photo = catalog:getTargetPhoto()
-    if not photo then
-        logger.logMessage("[2.1] Pas de photo active.")
-        LrDialogs.message("No photo selected", "Please select a photo before adding keywords.")
-        return
-    end
-
-    -- [2.2] Préparation des espèces à afficher
+    -- [Step 3] Prepare parsed species list
     local parsedItems = {}
-    for _, r in ipairs(resultsTable) do
+    for index, r in ipairs(resultsTable) do
         local taxon = r.taxon or {}
-        local nom_fr = taxon.preferred_common_name or "Unknown"
-        local nom_latin = taxon.name or "Unknown"
+        local name_fr = taxon.preferred_common_name or "Unknown"
+        local name_latin = taxon.name or "Unknown"
         local score = tonumber(r.combined_score) or 0
 
-        -- Filtrer (>= 5%)
+        logger.logMessage(string.format("[Step 3] Processing result #%d: FR='%s', Latin='%s', Score=%.3f",
+            index, name_fr, name_latin, score))
+
+        -- Filter low confidence results (<5%)
         if score >= 0.05 then
             local scorePct = string.format("%.0f", score * 100)
-            local keyword = (nom_fr == "Unknown")
-                and nom_latin
-                or string.format("%s (%s)", nom_fr, nom_latin)
-            local label   = (nom_fr == "Unknown")
-                and string.format("%s — %s%%", nom_latin, scorePct)
-                or string.format("%s (%s) — %s%%", nom_fr, nom_latin, scorePct)
+            local keyword = (name_fr == "Unknown") and name_latin or string.format("%s (%s)", name_fr, name_latin)
+            local label   = (name_fr == "Unknown") and string.format("%s — %s%%", name_latin, scorePct)
+                                                   or string.format("%s (%s) — %s%%", name_fr, name_latin, scorePct)
 
             table.insert(parsedItems, { label = label, keyword = keyword })
-            logger.logMessage("[2.2] Ajout espèce : " .. label)
+            logger.logMessage("[Step 3] Accepted species for UI: " .. label)
         else
-            logger.logMessage("[2.2] Espèce ignorée (<5%) : " .. (taxon.name or "??"))
+            logger.logMessage("[Step 3] Ignored species (confidence <5%): " .. (name_latin or "Unknown"))
         end
     end
 
+    -- [Step 4] Check for valid species
     if #parsedItems == 0 then
-        logger.logMessage("[2.2] Aucun résultat exploitable.")
-        LrDialogs.message("No species detected", "Try running the identification again.")
+        logger.logMessage("[Step 4] No species with sufficient confidence found.")
+        LrDialogs.message(
+            LOC("$$$/iNat/NoSpeciesDetected=No species detected"),
+            LOC("$$$/iNat/TryAgain=Please try running the identification again.")
+        )
         return
     end
 
-    -- [2.3] Interface utilisateur
+    -- [Step 5] Create modal UI for selection
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
@@ -82,38 +96,54 @@ local function showSelection(resultsTable)
                 title = item.label,
                 value = LrView.bind(key)
             })
+            logger.logMessage(string.format("[Step 5] Checkbox added for species: %s", item.label))
         end
 
         local contents = f:scrolled_view {
-            width = 500, height = 300,
+            width = 500,
+            height = 300,
             bind_to_object = props,
             f:column(checkboxes)
         }
 
-        -- [2.4] Affichage de la boîte de dialogue
+        logger.logMessage("[Step 5] Presenting modal dialog to user for species selection.")
         local result = LrDialogs.presentModalDialog {
-            title = "Select species to add as keywords",
+            title = LOC("$$$/iNat/PluginName=iNaturalist Identification"),
             contents = contents,
-            actionVerb = "Add"
+            actionVerb = LOC("$$$/iNat/Add=Add")
         }
 
-        -- [2.5] Traitement si OK
+        -- [Step 6] Process user selection
         if result == "ok" then
             local selectedKeywords = {}
             for i, item in ipairs(parsedItems) do
                 if props["item_" .. i] then
                     table.insert(selectedKeywords, item.keyword)
-                    logger.logMessage("[2.5] Sélectionné : " .. item.keyword)
+                    logger.logMessage("[Step 6] User selected: " .. item.keyword)
                 end
             end
 
             if #selectedKeywords == 0 then
-                logger.logMessage("[2.5] Aucun mot-clé choisi.")
-                LrDialogs.message("No species selected", "No keywords will be added.")
+                logger.logMessage("[Step 6] No keywords selected by user.")
+                LrDialogs.message(
+                    LOC("$$$/iNat/NoSpeciesSelected=No species selected"),
+                    LOC("$$$/iNat/NoKeywordsAdded=No keywords will be added.")
+                )
                 return
             end
 
-            -- [2.6] Ajout des mots-clés dans Lightroom
+            -- [Step 7] Add selected keywords to the active photo
+            local catalog = LrApplication.activeCatalog()
+            local photo = catalog:getTargetPhoto()
+            if not photo then
+                logger.logMessage("[Step 7] Error: no active photo found in catalog.")
+                LrDialogs.message(
+                    LOC("$$$/iNat/NoPhotoSelected=No photo selected"),
+                    LOC("$$$/iNat/PleaseSelectPhoto=Please select a photo before adding keywords.")
+                )
+                return
+            end
+
             catalog:withWriteAccessDo("Adding keywords", function()
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
@@ -124,19 +154,26 @@ local function showSelection(resultsTable)
 
                 for _, keyword in ipairs(selectedKeywords) do
                     local kw = getOrCreateKeyword(keyword)
-                    if kw then photo:addKeyword(kw) end
+                    if kw then
+                        photo:addKeyword(kw)
+                        logger.logMessage("[Step 7] Added keyword to photo: " .. keyword)
+                    end
                 end
             end)
 
-            logger.logMessage("[2.6] Mots-clés ajoutés : " .. table.concat(selectedKeywords, ", "))
-            LrDialogs.message("Success", "Selected keywords have been successfully added.")
+            logger.logMessage("[Step 7] Successfully added keywords: " .. table.concat(selectedKeywords, ", "))
+            LrDialogs.message(
+                LOC("$$$/iNat/Success=Success"),
+                LOC("$$$/iNat/KeywordsAdded=Selected keywords have been successfully added.")
+            )
         else
-            logger.logMessage("[2.4] L’utilisateur a annulé la boîte de dialogue.")
+            -- [Step 8] Log cancellation
+            logger.logMessage("[Step 8] User cancelled the species selection dialog.")
         end
     end)
 end
 
--- Export
+-- [Step 9] Export the function
 return {
     showSelection = showSelection
 }
