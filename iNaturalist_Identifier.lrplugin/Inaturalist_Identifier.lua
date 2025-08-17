@@ -21,8 +21,8 @@ Numbered Workflow Steps
 2. Initialize the log file and display a startup bezel message for 3 seconds.
 3. Retrieve the stored access token from plugin preferences.
 4. If token is missing, log the issue, notify the user, and run the token update module.
-5. Validate the token using TokenUpdater.lua based on timestamp.
-6. If token is invalid or expired, log the issue, notify the user, and run the token update module.
+5. Validate the token using the verification module.
+6. If token is invalid, log the issue, notify the user, and run the token update module.
 7. Retrieve the currently selected photo in the Lightroom catalog.
 8. If no photo is selected, log the issue, display a bezel for 3 seconds, and exit.
 9. Log and display the name of the selected photo for 3 seconds.
@@ -42,6 +42,7 @@ Called Modules
 - export_photo_to_tempo.lua→ Exports the selected photo to a temporary file.
 - call_inaturalist.lua     → Sends the exported image to iNaturalist API for identification.
 - TokenUpdater.lua         → Guides the user to enter or update their iNaturalist token.
+- VerificationToken.lua    → Checks if the stored token is valid.
 - SelectAndTagResults.lua  → Allows the user to select and tag recognized species.
 
 =====================================================================================
@@ -56,7 +57,8 @@ local LrPrefs       = import "LrPrefs"
 -- [Step 2] Import custom plugin modules
 local logger           = require("Logger")
 local callInaturalist  = require("call_inaturalist")
-local tokenUpdater     = require("TokenUpdater")  -- central token management
+local tokenUpdater     = require("TokenUpdater")
+local tokenChecker     = require("VerificationToken")
 local exportToTempoMod = require("export_photo_to_tempo")
 
 -- [Step 3] Main function definition
@@ -72,10 +74,8 @@ local function identify()
         -- [Step 6] Retrieve token from plugin preferences
         local prefs = LrPrefs.prefsForPlugin()
         local token = prefs.token
-        local tokenTimestamp = prefs.tokenTimestamp or 0
-        local currentTime = os.time()
 
-        -- [Step 7] If token missing, notify and update
+        -- [Step 7] If token missing, notify and exit
         if not token or token == "" then
             logger.logMessage("Missing token. Prompting user to update.")
             logger.notify(LOC("$$$/iNat/Error/MissingToken=Token is missing. Please enter it in Preferences."))
@@ -83,10 +83,10 @@ local function identify()
             return
         end
 
-        -- [Step 8] Validate token based on timestamp (max 24h)
-        if (currentTime - tokenTimestamp) > (24*60*60) then
-            logger.logMessage("Token expired (older than 24h). Prompting user to update.")
-            logger.notify(LOC("$$$/iNat/Error/ExpiredToken=Token is expired. Please update it."))
+        -- [Step 8] Validate the token
+        if not tokenChecker.isTokenValid() then
+            logger.logMessage("Invalid or expired token. Prompting user to update.")
+            logger.notify(LOC("$$$/iNat/Error/InvalidToken=Invalid or expired token."))
             tokenUpdater.runUpdateTokenScript()
             return
         end
