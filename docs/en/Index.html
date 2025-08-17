@@ -1,118 +1,100 @@
-[![🇫🇷 Français](https://img.shields.io/badge/langue-français-blue)](README.fr.md)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>iNaturalist Identifier Plugin – English</title>
+</head>
+<body>
+  <h1>🌿 iNaturalist Identifier</h1>
+  <p><a href="../fr/index.html">🇫🇷 Lire en français</a></p>
 
+  <img src="../assets/logo.png" alt="iNaturalist Identifier screenshot" width="300" />
 
-# iNaturalist Identifier
+  <p><em>A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.</em></p>
 
-![iNaturalist Identifier screenshot](logo.png)
+  <h2>📌 Table of Contents</h2>
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#installation">Installation</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#plugin-structure">Plugin Structure</a></li>
+    <li><a href="#dependencies">Dependencies</a></li>
+    <li><a href="#development">Development</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#support-the-project">Support the Project</a></li>
+  </ul>
 
-*A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.*
+  <h2 id="overview">🐾 Overview</h2>
+  <p>The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help photographers automatically identify species in their photos. It uses the iNaturalist API to analyze selected images and adds identification tags based on the results.</p>
 
----
+  <h2 id="features">✨ Features</h2>
+  <ul>
+    <li>📤 Send photos to iNaturalist’s image recognition API</li>
+    <li>🏷️ Automatically tag photos with identified species</li>
+    <li>📚 Batch tagging support (coming soon)</li>
+    <li>🔍 View detailed API responses for each image</li>
+    <li>🧩 Lightweight and simple plugin written in Lua</li>
+  </ul>
 
-## 📌 Table of Contents
+  <h2 id="installation">⚙️ Installation</h2>
+  <ol>
+    <li><a href="https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest">📥 Download the latest release</a></li>
+    <li>Open Lightroom Classic</li>
+    <li>Go to <strong>File > Plugin Manager</strong></li>
+    <li>Click <strong>Add</strong> and select the plugin folder</li>
+    <li>Confirm installation</li>
+  </ol>
 
-## 📌 Table of Contents
+  <h2 id="configuration">🔐 Configuration</h2>
+  <p>The plugin requires an iNaturalist API token:</p>
+  <ul>
+    <li>Create an account on <a href="https://www.inaturalist.org">iNaturalist</a></li>
+    <li>Generate a personal access token from your profile settings</li>
+    <li>Enter the token in the plugin panel in Lightroom</li>
+  </ul>
+  <p><strong>⚠️ Note:</strong> Tokens are valid for 24 hours only.</p>
 
-- [Overview](#-overview)
-- [Features](#-features)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [Plugin Structure](#-plugin-structure)
-- [Dependencies](#-dependencies)
-- [Development](#-development)
-- [License](#-license)
-- [Support the Project](#-support-the-project)
+  <h2 id="usage">🖼️ Usage</h2>
+  <ul>
+    <li>Select one or more photos in the Lightroom Library (<em>batch mode not fully tested</em>)</li>
+    <li>Use the plugin menu to send them to the iNaturalist API</li>
+    <li>Review and apply species tags based on the results</li>
+  </ul>
 
+  <h2 id="plugin-structure">📁 Plugin Structure</h2>
+  <table border="1" cellpadding="6">
+    <tr><th>File</th><th>Description</th></tr>
+    <tr><td><code>Info.lua</code></td><td>Plugin metadata and entry point</td></tr>
+    <tr><td><code>AnimalIdentifier.lua</code></td><td>Handles image upload and API calls</td></tr>
+    <tr><td><code>call_inaturalist.lua</code></td><td>Sends requests and processes responses</td></tr>
+    <tr><td><code>SelectAndTagResults.lua</code></td><td>UI for selecting and tagging species</td></tr>
+    <tr><td><code>json.lua</code></td><td>JSON utility functions</td></tr>
+  </table>
 
----
+  <h2 id="dependencies">🧩 Dependencies</h2>
+  <ul>
+    <li>Adobe Lightroom Classic (Lua plugin support)</li>
+    <li>Internet connection</li>
+    <li>Lua standard libraries (bundled with Lightroom)</li>
+  </ul>
 
-## 🐾 Overview
+  <h2 id="development">🛠️ Development</h2>
+  <ol>
+    <li>Fork the repository</li>
+    <li>Make your changes</li>
+    <li>Submit a pull request</li>
+  </ol>
 
-The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help photographers automatically identify species in their photos. It uses the iNaturalist API to analyze selected images and adds identification tags based on the results.
+  <h2 id="license">📄 License</h2>
+  <p>This project is licensed under the MIT License. See the LICENSE file.<br />
+  Developed by Philippe Branly.</p>
 
----
-
-## ✨ Features
-
-- 📤 Send photos to iNaturalist’s image recognition API
-- 🏷️ Automatically tag photos with identified species
-- 📚 Batch tagging support (coming soon)
-- 🔍 View detailed API responses for each image
-- 🧩 Lightweight and simple plugin written in Lua
-
----
-
-## ⚙️ Installation
-
-1. [📥 Download the latest release](https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest)
-2. Open Lightroom Classic
-3. Go to **File > Plugin Manager**
-4. Click **Add** and select the plugin folder
-5. Confirm installation
-
----
-
-## 🔐 Configuration
-
-The plugin requires an iNaturalist API token:
-
-- Create an account on [iNaturalist](https://www.inaturalist.org)
-- Generate a personal access token from your profile settings
-- Enter the token in the plugin panel in Lightroom
-
-> ⚠️ **Note:** Tokens are valid for 24 hours only.
-
----
-
-## 🖼️ Usage
-
-- Select one or more photos in the Lightroom Library (*batch mode not fully tested*)
-- Use the plugin menu to send them to the iNaturalist API
-- Review and apply species tags based on the results
-
----
-
-## 📁 Plugin Structure
-
-| File | Description |
-|------|-------------|
-| `Info.lua` | Plugin metadata and entry point |
-| `AnimalIdentifier.lua` | Handles image upload and API calls |
-| `call_inaturalist.lua` | Sends requests and processes responses |
-| `SelectAndTagResults.lua` | UI for selecting and tagging species |
-| `json.lua` | JSON utility functions |
-
----
-
-## 🧩 Dependencies
-
-- Adobe Lightroom Classic (Lua plugin support)
-- Internet connection
-- Lua standard libraries (bundled with Lightroom)
-
----
-
-## 🛠️ Development
-
-Want to contribute? Great!
-
-1. Fork the repository
-2. Make your changes
-3. Submit a pull request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License. See the LICENSE file.  
-Developed by Philippe Branly.
-
----
-
-## ☕ Support the Project
-
-If this plugin is useful to you, consider supporting its development:
-
-- [Buy me a coffee](https://www.buymeacoffee.com/philippebro)
-- [Donate via PayPal](https://www.paypal.me/philippebranly)
+  <h2 id="support-the-project">☕ Support the Project</h2>
+  <ul>
+    <li><a href="https://www.buymeacoffee.com/philippebro">Buy me a coffee</a></li>
+    <li><a href="https://www.paypal.me/philippebranly">Donate via PayPal</a></li>
+  </ul>
+</body>
+</html>
