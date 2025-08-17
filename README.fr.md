@@ -1,3 +1,6 @@
+<p><a href="../en/index.html">🇬🇧 Read in English</a></p>
+
+
 # iNaturalist Identifier
 
 ![Capture d’écran du plugin](logo.png)
