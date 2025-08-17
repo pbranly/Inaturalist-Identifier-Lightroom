@@ -106,7 +106,6 @@ local function identifyAsync(imagePath, token, callback)
         if httpCode == 401 then
             logger.logMessage("[Step 5] Unauthorized access detected (HTTP 401) - Token invalid or expired")
             LrDialogs.message(
-                LOC("$$$/iNat/Error/InvalidToken=Token is not valid, please refresh it"),
                 LOC("$$$/iNat/Error/InvalidTokenDesc=Your iNaturalist token is invalid or expired. Please enter a new token."),
                 "ok"
             )
@@ -135,7 +134,6 @@ local function identifyAsync(imagePath, token, callback)
         if parsed.error then
             logger.logMessage("[Step 5b] API returned error: " .. tostring(parsed.error))
             LrDialogs.message(
-                LOC("$$$/iNat/Error/InvalidToken=Token is not valid, please refresh it"),
                 LOC("$$$/iNat/Error/InvalidTokenDesc=Your iNaturalist token is invalid or expired. Please enter a new token."),
                 "ok"
             )
