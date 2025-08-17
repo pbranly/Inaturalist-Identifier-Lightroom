@@ -1,23 +1,26 @@
---[[
-====================================================================
+--[[============================================================
 Functional Description
 --------------------------------------------------------------------
 This Lightroom plugin dialog section manages the user interface for 
 configuring iNaturalist integration, plugin updates, and logging.
 
+New feature:
+- Token validity is checked based on timestamp. Tokens older than 24h are considered expired.
+
 Features:
 1. View current plugin version and latest GitHub version.
 2. Download the latest GitHub version if outdated.
-3. Token field with multiline display and validity info.
+3. Token field with multiline display.
 4. Refresh Token button below token.
-5. Enable/disable logging with save button.
-6. Enable/disable automatic update checks.
-7. Force update check immediately.
+5. Show token validity status based on timestamp.
+6. Enable/disable logging with save button.
+7. Enable/disable automatic update checks.
+8. Force update check immediately.
 
 Modules and Scripts Used:
 - LrView, LrPrefs, LrDialogs, LrTasks, LrHttp (Lightroom SDK)
 - Logger.lua
-- Update_plugin.lua (provides getCurrentVersion(), getLatestGitHubVersion(), and forceUpdate())
+- Update_plugin.lua
 - TokenUpdater.lua
 
 Execution Steps:
@@ -26,13 +29,13 @@ Execution Steps:
 3. Fetch latest GitHub version asynchronously.
 4. Create button to download latest GitHub version.
 5. Create token field with multiline input.
-6. Add Refresh Token button.
-7. Add logging enable checkbox.
-8. Add automatic update check checkbox and "Check now" button.
-9. Create Save button for preferences.
-10. Return dialog UI layout.
-====================================================================
---]]
+6. Show token validity based on timestamp.
+7. Add Refresh Token button.
+8. Add logging enable checkbox.
+9. Add automatic update check checkbox and "Check now" button.
+10. Create Save button for preferences.
+11. Return dialog UI layout.
+============================================================]]
 
 local LrView    = import "LrView"
 local LrPrefs   = import "LrPrefs"
@@ -42,7 +45,6 @@ local LrHttp    = import "LrHttp"
 
 local logger  = require("Logger")
 local Updates = require("Update_plugin")  -- Provides getCurrentVersion(), getLatestGitHubVersion(), and forceUpdate()
-
 local bind = LrView.bind
 
 return {
@@ -85,7 +87,7 @@ return {
         }
 
         -- Step 5: Automatic update check and "Check now" button
-        logger.logMessage("[Step 5] Creating update preferences rows immediately after GitHub button.")
+        logger.logMessage("[Step 5] Creating update preferences rows.")
         local autoUpdateRow = viewFactory:row {
             spacing = viewFactory:control_spacing(),
             viewFactory:static_text {
@@ -122,8 +124,25 @@ return {
             tooltip = LOC("$$$/iNat/TokenTooltip=Your iNaturalist API token")
         }
 
+        -- Step 6a: Token validity message based on timestamp
+        local function getTokenValidityMessage()
+            if not prefs.token or prefs.token == "" then
+                return LOC("$$$/iNat/TokenStatus/Missing=No token set")
+            elseif not prefs.tokenTimestamp then
+                return LOC("$$$/iNat/TokenStatus/Unknown=Token timestamp missing")
+            else
+                local age = os.time() - prefs.tokenTimestamp
+                if age > 24*3600 then
+                    return LOC("$$$/iNat/TokenStatus/Expired=Token expired (older than 24h)")
+                else
+                    local hoursLeft = math.floor((24*3600 - age)/3600)
+                    return LOC("$$$/iNat/TokenStatus/Valid=Token valid, approx. ") .. hoursLeft .. LOC("$$$/iNat/TokenStatus/hoursLeft= hours left")
+                end
+            end
+        end
+
         local tokenComment = viewFactory:static_text {
-            title = LOC("$$$/iNat/TokenReminder=Take care that Token validity is limited to 24 hours; it must be refreshed every day"),
+            title = getTokenValidityMessage(),
             width = 500
         }
 
@@ -153,6 +172,9 @@ return {
             action = function()
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
+                if prefs.token ~= "" then
+                    prefs.tokenTimestamp = os.time()
+                end
                 logger.logMessage("[Preferences] Logging saved, token updated.")
             end
         }
@@ -172,44 +194,26 @@ return {
                 },
 
                 -- GitHub download button row
-                viewFactory:row {
-                    spacing = viewFactory:control_spacing(),
-                    downloadButton
-                },
+                viewFactory:row { spacing = viewFactory:control_spacing(), downloadButton },
 
-                -- Auto update and Check now rows (moved immediately after GitHub button)
+                -- Auto update and Check now rows
                 autoUpdateRow,
                 checkNowRow,
 
-                -- Token comment row
-                viewFactory:row {
-                    spacing = viewFactory:control_spacing(),
-                    tokenComment
-                },
+                -- Token status row
+                viewFactory:row { spacing = viewFactory:control_spacing(), tokenComment },
 
                 -- Token field row
-                viewFactory:row {
-                    spacing = viewFactory:control_spacing(),
-                    tokenField
-                },
+                viewFactory:row { spacing = viewFactory:control_spacing(), tokenField },
 
                 -- Refresh Token button row
-                viewFactory:row {
-                    spacing = viewFactory:control_spacing(),
-                    refreshTokenButton
-                },
+                viewFactory:row { spacing = viewFactory:control_spacing(), refreshTokenButton },
 
                 -- Logging checkbox row
-                viewFactory:row {
-                    spacing = viewFactory:control_spacing(),
-                    logCheck
-                },
+                viewFactory:row { spacing = viewFactory:control_spacing(), logCheck },
 
                 -- Save button row
-                viewFactory:row {
-                    spacing = viewFactory:control_spacing(),
-                    saveButton
-                }
+                viewFactory:row { spacing = viewFactory:control_spacing(), saveButton }
             }
         }
     end
