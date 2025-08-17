@@ -1,117 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plugin iNaturalist Identifier – Français</title>
+</head>
+<body>
+  <h1>🌿 Plugin iNaturalist Identifier</h1>
+  <p><a href="../en/index.html">🇬🇧 Read in English</a></p>
 
-<p><a href="../en/index.html">🇬🇧 Read in English</a></p>
+  <img src="../assets/logo.png" alt="Capture d’écran du plugin" width="300" />
 
+  <p><em>Un plugin pour Lightroom Classic qui identifie les espèces présentes sur les photos en utilisant l'API iNaturalist.</em></p>
 
-# iNaturalist Identifier
+  <h2>📌 Sommaire</h2>
+  <ul>
+    <li><a href="#présentation">Présentation</a></li>
+    <li><a href="#fonctionnalités">Fonctionnalités</a></li>
+    <li><a href="#installation">Installation</a></li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#utilisation">Utilisation</a></li>
+    <li><a href="#structure-du-plugin">Structure du plugin</a></li>
+    <li><a href="#dépendances">Dépendances</a></li>
+    <li><a href="#développement">Développement</a></li>
+    <li><a href="#licence">Licence</a></li>
+    <li><a href="#soutenir-le-projet">Soutenir le projet</a></li>
+  </ul>
 
-![Capture d’écran du plugin](logo.png)
+  <h2 id="présentation">🐾 Présentation</h2>
+  <p>Le plugin iNaturalist Identifier s’intègre à Adobe Lightroom Classic pour aider les photographes à identifier automatiquement les espèces visibles sur leurs clichés. Il utilise l’API iNaturalist pour analyser les images sélectionnées et ajoute des balises d’identification selon les résultats obtenus.</p>
 
-Un plugin pour Lightroom Classic qui identifie les espèces présentes sur les photos en utilisant l'API iNaturalist.
+  <h2 id="fonctionnalités">✨ Fonctionnalités</h2>
+  <ul>
+    <li>📤 Envoi des photos vers l’API de reconnaissance d’image d’iNaturalist</li>
+    <li>🏷️ Balises automatiques avec les espèces identifiées</li>
+    <li>📚 Traitement en lot des photos (fonctionnalité à venir)</li>
+    <li>🔍 Affichage des réponses détaillées de l’API pour chaque image</li>
+    <li>🧩 Plugin léger et simple, développé en Lua</li>
+  </ul>
 
----
+  <h2 id="installation">⚙️ Installation</h2>
+  <ol>
+    <li><a href="https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest">📥 Télécharger la dernière version</a></li>
+    <li>Ouvrir Lightroom Classic</li>
+    <li>Aller dans <strong>Fichier > Gestionnaire de modules externes</strong></li>
+    <li>Cliquer sur <strong>Ajouter</strong> et sélectionner le dossier du plugin</li>
+    <li>Confirmer l’installation</li>
+  </ol>
 
-## Sommaire
-
-- [Présentation](#présentation)
-- [Fonctionnalités](#fonctionnalités)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Utilisation](#utilisation)
-- [Structure du plugin](#structure-du-plugin)
-- [Dépendances](#dépendances)
-- [Développement](#développement)
-- [Licence](#licence)
-- [Soutenir le projet](#soutenir-le-projet)
-
----
-
-## Présentation
-
-Le plugin iNaturalist Identifier s’intègre à Adobe Lightroom Classic pour aider les photographes à identifier automatiquement les espèces visibles sur leurs clichés.  
-Il utilise l’API iNaturalist pour analyser les images sélectionnées et ajoute des balises d’identification selon les résultats obtenus.
-
----
-
-## Fonctionnalités
-
-- 📤 Envoi des photos vers l’API de reconnaissance d’image d’iNaturalist  
-- 🏷️ Balises automatiques avec les espèces identifiées  
-- 📚 Traitement en lot des photos (fonctionnalité à venir)  
-- 🔍 Affichage des réponses détaillées de l’API pour chaque image  
-- 🧩 Plugin léger et simple, développé en Lua
-
----
-
-## Installation
-
-1. [📥 Télécharger la dernière version](https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest)  
-2. Ouvrir Lightroom Classic  
-3. Aller dans **Fichier > Gestionnaire de modules externes**  
-4. Cliquer sur **Ajouter** et sélectionner le dossier du plugin  
-5. Confirmer l’installation
-
----
-
-## Configuration
-
-Le plugin nécessite un jeton d’accès API iNaturalist :
-
-- Créer un compte sur [iNaturalist](https://www.inaturalist.org)  
-- Générer un jeton personnel dans les paramètres du profil  
-- Saisir ce jeton dans le panneau du plugin dans Lightroom
-
-> ⚠️ Remarque : Le jeton est valide pendant 24 heures seulement.
-
----
-
-## Utilisation
-
-- Sélectionner une ou plusieurs photos dans la bibliothèque Lightroom (*fonctionnalité en cours de test*)  
-- Utiliser le menu du plugin pour les envoyer à l’API iNaturalist  
-- Vérifier les résultats et appliquer les balises d’espèces proposées
-
----
-
-## Structure du plugin
-
-| Fichier                    | Description                                         |
-|---------------------------|-----------------------------------------------------|
-| `Info.lua`                | Métadonnées et point d’entrée du plugin             |
-| `AnimalIdentifier.lua`    | Gestion de l’envoi des images et des appels API     |
-| `call_inaturalist.lua`    | Requêtes vers l’API et traitement des réponses      |
-| `SelectAndTagResults.lua` | Interface utilisateur pour le marquage des espèces  |
-| `json.lua`                | Fonctions utilitaires pour le JSON                  |
-
----
-
-## Dépendances
-
-- Adobe Lightroom Classic (support des plugins Lua)  
-- Connexion Internet  
-- Bibliothèques Lua standard (incluses avec Lightroom)
-
----
-
-## Développement
-
-Tu veux contribuer ? Super !
-
-1. Forker le dépôt  
-2. Modifier le code  
-3. Soumettre une pull request
-
----
-
-## Licence
-
-Projet sous licence MIT. Voir le fichier LICENSE.  
-Développé par Philippe Branly.
-
----
-
-## Soutenir le projet
-
-Si ce plugin t’est utile, tu peux soutenir son développement :
-
-- [☕ Offrez-moi un café](https://www.buymeacoffee.com/philippebro)  
-- [💸 Faire un don via PayPal](https://www.paypal.me/philippebranly)
+  <h2 id="configuration">🔐 Configuration</h2>
+  <p>Le plugin nécessite un jeton d’accès API iNaturalist :</p>
+  <ul>
+    <li>Créer un compte sur <a href="https://www.inaturalist.org">iNaturalist</a></li>
+    <li>Générer un jeton personnel dans les paramètres du profil</li>
+    < [A](https://github.com/dudor/BookmarkHub/tree/52eb170c11bd75ef8e9e2e893b716e66e310c26b/README.md?copilot_analytics_metadata=eyJldmVudEluZm9fbWVzc2FnZUlkIjoiWGhoenNXVFR1MnVvbU1wY0Jnb1pmIiwiZXZlbnRJbmZvX2NsaWNrU291cmNlIjoiY2l0YXRpb25MaW5rIiwiZXZlbnRJbmZvX2NsaWNrRGVzdGluYXRpb24iOiJodHRwczpcL1wvZ2l0aHViLmNvbVwvZHVkb3JcL0Jvb2ttYXJrSHViXC90cmVlXC81MmViMTcwYzExYmQ3NWVmOGU5ZTJlODkzYjcxNmU2NmUzMTBjMjZiXC9SRUFETUUubWQiLCJldmVudEluZm9fY29udmVyc2F0aW9uSWQiOiJKNjNDUWt2NXhaTmREQ21MeGNiQkEifQ%3D%3D&citationMarker=9F742443-6C92-4C44-BF58-8F5A7C53B6F1) [B](https://github.com/TheodoreChu/append-editor/tree/51e3107690644a539b6408dcebdd9f6276c86981/README.md?copilot_analytics_metadata=eyJldmVudEluZm9fY2xpY2tEZXN0aW5hdGlvbiI6Imh0dHBzOlwvXC9naXRodWIuY29tXC9UaGVvZG9yZUNodVwvYXBwZW5kLWVkaXRvclwvdHJlZVwvNTFlMzEwNzY5MDY0NGE1MzliNjQwOGRjZWJkZDlmNjI3NmM4Njk4MVwvUkVBRE1FLm1kIiwiZXZlbnRJbmZvX2NvbnZlcnNhdGlvbklkIjoiSjYzQ1FrdjV4Wk5kRENtTHhjYkJBIiwiZXZlbnRJbmZvX21lc3NhZ2VJZCI6IlhoaHpzV1RUdTJ1b21NcGNCZ29aZiIsImV2ZW50SW5mb19jbGlja1NvdXJjZSI6ImNpdGF0aW9uTGluayJ9&citationMarker=9F742443-6C92-4C44-BF58-8F5A7C53B6F1) [C](https://github.com/AlexAnimateMP4/Dayz-Logger/tree/db20ba42467bd7773aeaf45f26b9b78124884f98/README.md?copilot_analytics_metadata=eyJldmVudEluZm9fY2xpY2tTb3VyY2UiOiJjaXRhdGlvbkxpbmsiLCJldmVudEluZm9fbWVzc2FnZUlkIjoiWGhoenNXVFR1MnVvbU1wY0Jnb1pmIiwiZXZlbnRJbmZvX2NvbnZlcnNhdGlvbklkIjoiSjYzQ1FrdjV4Wk5kRENtTHhjYkJBIiwiZXZlbnRJbmZvX2NsaWNrRGVzdGluYXRpb24iOiJodHRwczpcL1wvZ2l0aHViLmNvbVwvQWxleEFuaW1hdGVNUDRcL0RheXotTG9nZ2VyXC90cmVlXC9kYjIwYmE0MjQ2N2JkNzc3M2FlYWY0NWYyNmI5Yjc4MTI0ODg0Zjk4XC9SRUFETUUubWQifQ%3D%3D&citationMarker=9F742443-6C92-4C44-BF58-8F5A7C53B6F1)
