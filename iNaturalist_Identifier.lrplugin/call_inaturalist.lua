@@ -67,7 +67,7 @@ local function identifyAsync(imagePath, token, callback)
         logger.logMessage("[Step 4] Preparing to send POST request to iNaturalist API")
         logger.logMessage("URL: https://api.inaturalist.org/v1/computervision/score_image")
         logger.logMessage("Headers: " .. json.encode(headers))
-        logger.logMessage("Body preview (first 500 chars): " .. string.sub(body, 1, 500))
+--        logger.logMessage("Body preview (first 500 chars): " .. string.sub(body, 1, 500))
 
         local curlCommand = string.format(
             'curl -X POST "https://api.inaturalist.org/v1/computervision/score_image" -H "Authorization: Bearer %s" -H "Content-Type: multipart/form-data" -F "image=@%s"',
