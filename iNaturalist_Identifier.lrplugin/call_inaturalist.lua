@@ -8,18 +8,6 @@ Dependencies : Lightroom SDK (LrFileUtils, LrHttp, LrTasks, LrDialogs, LrApplica
                json decoding library, logger.lua, selectAndTagResults.lua
 Used by      : Lightroom plugin workflow
 =====================================================================================
-
-Functional Description (English):
-1. Read JPEG image exported from Lightroom.
-2. Construct a multipart/form-data HTTP request for iNaturalist AI scoring.
-3. Log full request details (URL, headers, body length).
-4. Send POST request to iNaturalist API.
-5. Log full response content.
-6. Decode JSON and extract species predictions.
-7. Pass results table to selectAndTagResults.showSelection for user selection
-   and keyword addition in Lightroom.
-8. Handle all errors with detailed logs and messages to the user.
-=====================================================================================
 ]]
 
 local LrFileUtils = import "LrFileUtils"
@@ -41,16 +29,19 @@ end
 
 local function identifyAsync(imagePath, token, callback)
     LrTasks.startAsyncTask(function()
-        logger.logMessage("[Step 1] Reading image: " .. tostring(imagePath))
+
+        -- Step 1: Read image
+        logger.logMessage("[Step 1] Reading JPEG image from disk: " .. tostring(imagePath))
         local imageData = LrFileUtils.readFile(imagePath)
         if not imageData then
-            logger.logMessage("[Step 1] Failed to read image: " .. tostring(imagePath))
-            callback(nil, "Unable to read image: " .. imagePath)
+            logger.logMessage("[Step 1] Failed to read image file.")
+            callback(nil, LOC("$$$/iNat/Error/ReadImage=Unable to read image file."))
             return
         end
         logger.logMessage("[Step 1] Image read successfully (" .. #imageData .. " bytes)")
 
-        -- Step 2: Construct multipart/form-data
+        -- Step 2: Construct multipart/form-data body
+        logger.logMessage("[Step 2] Constructing multipart/form-data body")
         local boundary = "----LightroomBoundary" .. tostring(math.random(1000000))
         local body = table.concat({
             "--" .. boundary,
@@ -61,8 +52,10 @@ local function identifyAsync(imagePath, token, callback)
             "--" .. boundary .. "--",
             ""
         }, "\r\n")
+        logger.logMessage("[Step 2] Body constructed (" .. #body .. " bytes)")
 
-        -- Step 3: HTTP headers
+        -- Step 3: Prepare HTTP headers
+        logger.logMessage("[Step 3] Preparing HTTP headers")
         local headers = {
             { field = "Authorization", value = "Bearer " .. token },
             { field = "User-Agent", value = "LightroomBirdIdentifier/1.0" },
@@ -70,58 +63,67 @@ local function identifyAsync(imagePath, token, callback)
             { field = "Accept", value = "application/json" }
         }
 
-        -- Log HTTP request details
-        logger.logMessage("[Step 4] Sending POST request to iNaturalist API")
+        -- Step 4: Log full request details
+        logger.logMessage("[Step 4] Preparing to send POST request to iNaturalist API")
         logger.logMessage("URL: https://api.inaturalist.org/v1/computervision/score_image")
-        logger.logMessage("Headers: Authorization: Bearer " .. token .. ", User-Agent: LightroomBirdIdentifier/1.0, Content-Type: multipart/form-data; boundary=" .. boundary .. ", Accept: application/json")
-        logger.logMessage("Body length: " .. #body .. " bytes")
+        logger.logMessage("Headers: " .. json.encode(headers))
         logger.logMessage("Body preview (first 500 chars): " .. string.sub(body, 1, 500))
 
-        -- Step 4: POST request
+        local curlCommand = string.format(
+            'curl -X POST "https://api.inaturalist.org/v1/computervision/score_image" -H "Authorization: Bearer %s" -H "Content-Type: multipart/form-data" -F "image=@%s"',
+            token,
+            imagePath
+        )
+        logger.logMessage("[Step 4] Equivalent curl command: " .. curlCommand)
+
+        -- Step 5: Send POST request
+        logger.logMessage("[Step 5] Sending POST request to iNaturalist API")
         local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
         if not result then
-            logger.logMessage("[Step 5] API call failed: no response")
-            callback(nil, "API error: No response")
+            logger.logMessage("[Step 5] API call failed: No response received.")
+            callback(nil, LOC("$$$/iNat/Error/NoResponse=No response from iNaturalist API."))
             return
         end
-
         logger.logMessage("[Step 5] API response received (" .. tostring(#result) .. " bytes)")
-        logger.logMessage("Full response content: " .. result)
         logger.logMessage("Response headers: " .. json.encode(hdrs or {}))
+        logger.logMessage("Response body: " .. result)
 
-        -- Step 6: Decode JSON
+        -- Step 6: Decode JSON response
+        logger.logMessage("[Step 6] Decoding JSON response")
         local success, parsed = pcall(json.decode, result)
         if not success or not parsed then
-            logger.logMessage("[Step 6] Failed to decode JSON: " .. tostring(result))
-            callback(nil, "API error: Invalid JSON")
+            logger.logMessage("[Step 6] Failed to decode JSON response")
+            callback(nil, LOC("$$$/iNat/Error/InvalidJSON=Invalid response format from iNaturalist API."))
             return
         end
         logger.logMessage("[Step 6] JSON decoded successfully")
-        logger.logMessage("Decoded JSON results: " .. json.encode(parsed.results or {}))
+        logger.logMessage("Parsed results: " .. json.encode(parsed.results or {}))
 
+        -- Step 7: Extract species predictions
         local results = parsed.results or {}
         if #results == 0 then
-            logger.logMessage("[Step 7] No species recognized by iNaturalist")
-            callback("🕊️ No species recognized.")
+            logger.logMessage("[Step 7] No species recognized in image")
+            callback(nil, LOC("$$$/iNat/Result/NoSpecies=No species recognized in the image."))
             return
         end
 
-        -- Log each recognized species
-        logger.logMessage("[Step 7] iNaturalist species predictions:")
+        logger.logMessage("[Step 7] Species predictions received:")
         for i, r in ipairs(results) do
             local taxon = r.taxon or {}
             local name_fr = normalizeAccents(taxon.preferred_common_name or "Unknown")
             local name_latin = taxon.name or "Unknown"
             local score = tonumber(r.combined_score) or 0
-            logger.logMessage(string.format("  Species #%d: FR='%s', Latin='%s', Score=%.3f", i, name_fr, name_latin, score))
-            logger.logMessage("  Full result table: " .. json.encode(r))
+            logger.logMessage(string.format("  Species #%d: Common='%s', Latin='%s', Score=%.3f", i, name_fr, name_latin, score))
+            logger.logMessage("  Full result: " .. json.encode(r))
         end
 
-        -- Step 8: Pass results to selection module
+        -- Step 8: Display species selection UI
+        logger.logMessage("[Step 8] Displaying species selection UI")
         selectAndTagResults.showSelection(results)
 
+        -- Step 9: Final callback
         if callback then
-            callback(table.concat({ "🕊️ Recognized species:" }, "\n"))
+            callback(LOC("$$$/iNat/Result/Success=Species identification completed."))
         end
     end)
 end
