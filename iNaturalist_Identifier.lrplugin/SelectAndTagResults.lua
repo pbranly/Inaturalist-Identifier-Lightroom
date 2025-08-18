@@ -21,47 +21,37 @@ service (call_inaturalist.lua). It performs the following actions:
 5. Adds the selected keywords to the active photo.
 6. Logs each step via logger.lua for debugging and traceability.
 7. Provides internationalized messages for screen display (English).
-
-=====================================================================================
-Numbered Steps:
-1. Import required Lightroom SDK modules and logger.
-2. Parse the iNaturalist results table and filter low-confidence species.
-3. Prepare labels and keywords for UI display.
-4. Check if there are valid species to display; warn if none.
-5. Create modal UI with checkboxes for each species.
-6. Handle user selection and gather selected keywords.
-7. Add selected keywords to the active photo, creating them if necessary.
-8. Log each significant action including UI choices and added keywords.
 =====================================================================================
 ]]
 
 -- [Step 1] Import Lightroom SDK modules and logger
-local LrDialogs        = import "LrDialogs"
-local LrFunctionContext= import "LrFunctionContext"
-local LrBinding        = import "LrBinding"
-local LrView           = import "LrView"
-local LrApplication    = import "LrApplication"
+local LrDialogs         = import "LrDialogs"
+local LrFunctionContext = import "LrFunctionContext"
+local LrBinding         = import "LrBinding"
+local LrView            = import "LrView"
+local LrApplication     = import "LrApplication"
 
-local logger = require("Logger") -- Detailed logging module
+local logger = require("logger")
 
 -- [Step 2] Main function: show species selection dialog
 local function showSelection(resultsTable)
 
-    -- Handle the case where resultsTable is mistakenly a string
     if type(resultsTable) == "string" then
-        logger.logMessage("[showSelection] Warning: resultsTable is a string. Creating minimal table to avoid error.")
-        resultsTable = { { 
-            taxon = { 
-                preferred_common_name = "Unknown", 
-                name = "Unknown" 
-            },
-            combined_score = 1
-        } }
+        logger.logMessage("[Step 2] Warning: resultsTable is a string. Creating fallback entry.")
+        resultsTable = {
+            {
+                taxon = {
+                    preferred_common_name = "Unknown",
+                    name = "Unknown"
+                },
+                combined_score = 1
+            }
+        }
     end
 
     logger.logMessage("[Step 2] Starting showSelection. Number of results received: " .. tostring(#resultsTable))
 
-    -- [Step 3] Prepare parsed species list
+    -- [Step 3] Parse and filter species
     local parsedItems = {}
     for index, r in ipairs(resultsTable) do
         local taxon = r.taxon or {}
@@ -69,15 +59,13 @@ local function showSelection(resultsTable)
         local name_latin = taxon.name or "Unknown"
         local score = tonumber(r.combined_score) or 0
 
-        logger.logMessage(string.format("[Step 3] Processing result #%d: FR='%s', Latin='%s', Score=%.3f",
-            index, name_fr, name_latin, score))
+        logger.logMessage(string.format("[Step 3] Processing result #%d: FR='%s', Latin='%s', Score=%.3f", index, name_fr, name_latin, score))
 
-        -- Filter low confidence results (<5%)
-        if score >= 0.05 then
-            local scorePct = string.format("%.0f", score * 100)
+        if score >= 5 then
+            local scorePct = string.format("%.0f%%", score)
             local keyword = (name_fr == "Unknown") and name_latin or string.format("%s (%s)", name_fr, name_latin)
-            local label   = (name_fr == "Unknown") and string.format("%s — %s%%", name_latin, scorePct)
-                                                   or string.format("%s (%s) — %s%%", name_fr, name_latin, scorePct)
+            local label   = (name_fr == "Unknown") and string.format("%s — %s", name_latin, scorePct)
+                                                   or string.format("%s (%s) — %s", name_fr, name_latin, scorePct)
 
             table.insert(parsedItems, { label = label, keyword = keyword })
             logger.logMessage("[Step 3] Accepted species for UI: " .. label)
@@ -96,7 +84,7 @@ local function showSelection(resultsTable)
         return
     end
 
-    -- [Step 5] Create modal UI for selection
+    -- [Step 5] Create modal UI
     LrFunctionContext.callWithContext("showSelection", function(context)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
@@ -105,9 +93,12 @@ local function showSelection(resultsTable)
         for i, item in ipairs(parsedItems) do
             local key = "item_" .. i
             props[key] = false
-            table.insert(checkboxes, f:checkbox {
-                title = item.label,
-                value = LrView.bind(key)
+            table.insert(checkboxes, f:row {
+                spacing = 5,
+                f:checkbox {
+                    title = item.label,
+                    value = LrView.bind(key)
+                }
             })
             logger.logMessage(string.format("[Step 5] Checkbox added for species: %s", item.label))
         end
@@ -126,7 +117,7 @@ local function showSelection(resultsTable)
             actionVerb = LOC("$$$/iNat/Add=Add")
         }
 
-        -- [Step 6] Process user selection
+        -- [Step 6] Handle user selection
         if result == "ok" then
             local selectedKeywords = {}
             for i, item in ipairs(parsedItems) do
@@ -145,11 +136,11 @@ local function showSelection(resultsTable)
                 return
             end
 
-            -- [Step 7] Add selected keywords to the active photo
+            -- [Step 7] Add keywords to active photo
             local catalog = LrApplication.activeCatalog()
             local photo = catalog:getTargetPhoto()
             if not photo then
-                logger.logMessage("[Step 7] Error: no active photo found in catalog.")
+                logger.logMessage("[Step 7] ERROR: No active photo found.")
                 LrDialogs.message(
                     LOC("$$$/iNat/NoPhotoSelected=No photo selected"),
                     LOC("$$$/iNat/PleaseSelectPhoto=Please select a photo before adding keywords.")
@@ -186,7 +177,7 @@ local function showSelection(resultsTable)
     end)
 end
 
--- [Step 9] Export the function
+-- [Step 9] Export function
 return {
     showSelection = showSelection
 }
