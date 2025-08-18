@@ -1,0 +1,7 @@
+Plug-in error log for plug-in at: F:\Lightroom par date\Paramètres Lightroom\iNaturalist_Identifier.lrplugin
+
+**** Error 1
+
+Impossible de créer des sections d'informations pour le module externe.
+TokenUpdater.lua:114: attempt to index global 'prefs' (a nil value)
+
