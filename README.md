@@ -1,161 +1,127 @@
+[![🇫🇷 Français](https://img.shields.io/badge/langue-français-blue)](README.fr.md)
+
 # iNaturalist Identifier
 
 ![iNaturalist Identifier screenshot](logo.png)
 
-*A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.*  
-*Un plugin pour Lightroom Classic qui identifie les espèces présentes sur les photos en utilisant l'API iNaturalist.*
+*A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.*
 
 ---
 
-## Table of Contents
-
-- [Overview](#overview)  
-- [Features](#features)  
-- [Installation](#installation)  
-- [Configuration](#configuration)  
-- [Usage](#usage)  
-- [Plugin Structure](#plugin-structure)  
-- [Dependencies](#dependencies)  
-- [Development](#development)  
-- [License](#license)  
-- [Support the Project](#support-the-project)
+> ⚠️ **Disclaimer**  
+> Use of this plugin is **at your own risk**.  
+> The author and contributors cannot be held responsible for any data loss, catalog corruption, or damage to your images in Lightroom.  
+> 
+> **Before using the plugin:**
+> - Make a **full backup of your Lightroom catalog**.  
+> - Ensure your **original images are safely backed up**.  
+> - Test the plugin on a **copy of your catalog or images** first.  
+> 
+> By using this plugin, you acknowledge and accept these precautions.  
 
 ---
 
-## Overview  
-*Présentation*
+## 📌 Table of Contents
 
-The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help users automatically identify species captured in their photographs. It leverages the iNaturalist API to analyze selected photos and adds species identification tags based on the API's results.  
-Le plugin *iNaturalist Identifier* s’intègre à Adobe Lightroom Classic pour aider les utilisateurs à identifier automatiquement les espèces présentes sur leurs photos.
-
----
-
-## Features  
-*Fonctionnalités*
-
-- Send photos from Lightroom to iNaturalist's image recognition API  
-  *Envoyer les photos vers l’API de reconnaissance d’image d’iNaturalist*
-- Automatically tag photos with identified species  
-  *Baliser automatiquement les photos avec les espèces identifiées*
-- Select and tag multiple photos in batch (to be done)  
-  *Sélectionner et baliser plusieurs photos en lot (à venir)*
-- View detailed API responses for each image  
-  *Voir les réponses détaillées de l’API pour chaque image*
-- Simple and lightweight plugin using Lua  
-  *Plugin simple et léger basé sur Lua*
+- [Overview](#-overview)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Plugin Structure](#-plugin-structure)
+- [Dependencies](#-dependencies)
+- [Development](#-development)
+- [License](#-license)
+- [Support the Project](#-support-the-project)
 
 ---
 
-## Installation  
-*Installation*
+## 🐾 Overview
 
-1.  [📥 Télécharger la dernière version / Download the last version ](https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest)
-2. Open Lightroom Classic.  
-   *Ouvrez Lightroom Classic.*
-3. Go to **File > Plugin Manager**.  
-   *Allez dans **Fichier > Gestionnaire de modules externes**.*
-4. Click **Add** and navigate to the cloned folder.  
-   *Cliquez sur **Ajouter** et naviguez jusqu’au dossier cloné.*
-5. Select the folder and confirm.  
-   *Sélectionnez le dossier et confirmez l’installation.*
+The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help photographers automatically identify species in their photos. It uses the iNaturalist API to analyze selected images and adds identification tags based on the results.
 
 ---
 
-## Configuration  
-*Configuration*
+## ✨ Features
 
-The plugin requires an iNaturalist API token for authentication:  
-Le plugin nécessite un jeton API iNaturalist pour l’authentification :
-
-- Create an account on [iNaturalist](https://www.inaturalist.org).  
-  *Créez un compte sur iNaturalist.*
-- Generate a personal access token in your profile settings.  
-  *Générez un jeton d’accès personnel dans vos paramètres de profil.*
-- In Lightroom, enter your API token in the plugin panel.  
-  *Dans Lightroom, entrez votre jeton API dans le panneau du plugin.*
-
-> ⚠️ **Note:** This token is only valid for 24 hours.  
-> ⚠️ *Remarque : Ce jeton est valide pendant 24 heures seulement.*
+- 📤 Send photos to iNaturalist’s image recognition API
+- 🏷️ Automatically tag photos with identified species
+- 📚 Batch tagging support (coming soon)
+- 🔍 View detailed API responses for each image
+- 🧩 Lightweight and simple plugin written in Lua
 
 ---
 
-## Usage  
-*Utilisation*
+## ⚙️ Installation
 
-- Select one or more photos in the Lightroom Library (*not fully tested*)  
-  *Sélectionnez une ou plusieurs photos dans la bibliothèque (*non testé complètement)*
-- Use the plugin menu to send them to the iNaturalist API  
-  *Utilisez le menu du plugin pour les envoyer à l’API iNaturalist*
-- Review and apply the species tags based on results  
-  *Vérifiez et appliquez les balises d’espèces selon les résultats*
+1. [📥 Download the latest release](https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest)
+2. Open Lightroom Classic
+3. Go to **File > Plugin Manager**
+4. Click **Add** and select the plugin folder
+5. Confirm installation
 
 ---
 
-## Plugin Structure  
-*Structure du plugin*
+## 🔐 Configuration
 
-- `Info.lua` — Plugin metadata and entry point.  
-  *Métadonnées du plugin et point d’entrée principal*
-- `AnimalIdentifier.lua` — Uploads images and manages API calls.  
-  *Gère l’envoi des images et les appels à l’API*
-- `call_inaturalist.lua` — Sends requests and processes responses.  
-  *Envoie les requêtes et traite les réponses*
-- `SelectAndTagResults.lua` — Interface for tagging selected species.  
-  *Interface utilisateur pour le choix des résultats et le marquage*
-- `json.lua` — JSON utility functions.  
-  *Utilitaire pour l’encodage/décodage JSON*
+The plugin requires an iNaturalist API token:
+
+- Create an account on [iNaturalist](https://www.inaturalist.org)
+- Generate a personal access token from your profile settings
+- Enter the token in the plugin panel in Lightroom
+
+> ⚠️ **Note:** Tokens are valid for 24 hours only.
 
 ---
 
-## Dependencies  
-*Dépendances*
+## 🖼️ Usage
 
-- Adobe Lightroom Classic (Lua plugin support)  
-  *Adobe Lightroom Classic avec support des plugins Lua*
-- Internet connection  
-  *Connexion Internet*
-- Lua standard libraries  
-  *Bibliothèques standard Lua (fournies avec Lightroom)*
+- Select one or more photos in the Lightroom Library (*batch mode not fully tested*)
+- Use the plugin menu to send them to the iNaturalist API
+- Review and apply species tags based on the results
 
 ---
 
-## Development  
-*Développement*
+## 📁 Plugin Structure
 
-Feel free to fork and contribute!  
-*N’hésitez pas à forker et proposer des améliorations !*
-
-1. Fork the repository  
-   *Forkez le dépôt*
-2. Make your changes  
-   *Modifiez le code*
-3. Submit a pull request  
-   *Soumettez une pull request*
+| File | Description |
+|------|-------------|
+| `Info.lua` | Plugin metadata and entry point |
+| `AnimalIdentifier.lua` | Handles image upload and API calls |
+| `call_inaturalist.lua` | Sends requests and processes responses |
+| `SelectAndTagResults.lua` | UI for selecting and tagging species |
+| `json.lua` | JSON utility functions |
 
 ---
 
-## License  
-*Licence*
+## 🧩 Dependencies
+
+- Adobe Lightroom Classic (Lua plugin support)
+- Internet connection
+- Lua standard libraries (bundled with Lightroom)
+
+---
+
+## 🛠️ Development
+
+Want to contribute? Great!
+
+1. Fork the repository
+2. Make your changes
+3. Submit a pull request
+
+---
+
+## 📄 License
 
 This project is licensed under the MIT License. See the LICENSE file.  
-*Projet sous licence MIT. Voir le fichier LICENSE.*
-
-Developed by Philippe Branly  
-*Développé par Philippe Branly*
+Developed by Philippe Branly.
 
 ---
 
-## Support the Project  
-*Soutenir le projet*
+## ☕ Support the Project
 
-If this plugin is useful to you, consider supporting its development:  
-*Si ce plugin vous est utile, vous pouvez soutenir son développement :*
+If this plugin is useful to you, consider supporting its development:
 
-- [Buy me a coffee](https://www.buymeacoffee.com/philippebro)  
-  *Offrez-moi un café*
-- Donate via PayPal: [paypal.me/philippebranly](https://www.paypal.me/philippebranly)  
-  *Ou faites un don via PayPal*  
-
-
-
-
+- [Buy me a coffee](https://www.buymeacoffee.com/philippebro)
+- [Donate via PayPal](https://www.paypal.me/philippebranly)

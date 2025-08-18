@@ -1,153 +1,177 @@
 --[[
 =====================================================================================
-Inaturalist_Identifier.lua (Modified version)
+Inaturalist_Identifier.lua (Sequential Multi-photo Version with Detailed Logging)
 -------------------------------------------------------------------------------------
-Functional Description
--------------------------------------------------------------------------------------
-This updated version changes the original workflow as follows:
+Functional Description:
+This plugin identifies species from selected photos in Adobe Lightroom using the 
+iNaturalist API. It processes photos sequentially to avoid concurrency issues, 
+exports temporary images for API submission, checks and updates access tokens, 
+and allows the user to select and tag recognized species. All key events, API 
+requests, and responses are logged in English. UI messages are internationalized 
+using LOC() and appear in English by default.
 
-- Removes the step that displays identification results to the user.
-- Automatically calls the "Select and Tag" module if at least one species is recognized.
-- If no species is recognized, displays a modal message "There are no recognized species" 
-  with an "OK" button before exiting.
-- Keeps 3-second bezel displays for main progress steps.
-- Logs all major events to log.txt in English (not localized).
-- All on-screen UI messages are internationalized using LOC().
+Modules/Scripts Used:
+- Logger.lua              → Handles detailed logging of all events, errors, and API activity
+- call_inaturalist.lua    → Sends images to iNaturalist API for species identification
+- export_photo_to_tempo.lua → Exports Lightroom photos to a temporary JPEG file
+- TokenUpdater.lua        → Prompts user to enter/update iNaturalist token
+- VerificationToken.lua   → Validates existing token
+- SelectAndTagResults.lua → Allows user to select/tag recognized species
 
--------------------------------------------------------------------------------------
-Numbered Workflow Steps
--------------------------------------------------------------------------------------
-1. Launch a Lightroom asynchronous task to avoid blocking the UI.
-2. Initialize the log file and display a startup bezel message for 3 seconds.
-3. Retrieve the stored access token from plugin preferences.
-4. If token is missing, log the issue, notify the user, and run the token update module.
-5. Validate the token using the verification module.
-6. If token is invalid, log the issue, notify the user, and run the token update module.
-7. Retrieve the currently selected photo in the Lightroom catalog.
-8. If no photo is selected, log the issue, display a bezel for 3 seconds, and exit.
-9. Log and display the name of the selected photo for 3 seconds.
-10. Export the photo to tempo.jpg (1024×1024 JPEG) using export_photo_to_tempo.lua.
-11. If export fails, log the error, display a bezel for 3 seconds, and exit.
-12. Log successful export and display a bezel for 3 seconds.
-13. Call the call_inaturalist.lua module to identify the image.
-14. If an error occurs during identification, log the error, display a modal message, and exit.
-15. If at least one species is recognized, log the fact and directly call the SelectAndTagResults module.
-16. If no species is recognized, log the fact and display a modal "No recognized species" message with an OK button.
-17. Log "Analysis completed" and display a completion bezel for 3 seconds.
+Scripts that use this script:
+- Optional Lightroom export hooks: processRenderedPhotos
+- Can also be called directly via identify()
 
+=====================================================================================
+Numbered Workflow Steps:
 -------------------------------------------------------------------------------------
-Called Modules
--------------------------------------------------------------------------------------
-- Logger.lua               → Handles logging of events and errors.
-- export_photo_to_tempo.lua→ Exports the selected photo to a temporary file.
-- call_inaturalist.lua     → Sends the exported image to iNaturalist API for identification.
-- TokenUpdater.lua         → Guides the user to enter or update their iNaturalist token.
-- VerificationToken.lua    → Checks if the stored token is valid.
-- SelectAndTagResults.lua  → Allows the user to select and tag recognized species.
+1. Launch asynchronous Lightroom task to avoid UI blocking.
+2. Initialize log file and display startup bezel for 3 seconds.
+3. Retrieve stored iNaturalist token from plugin preferences.
+4. If token is missing, log, notify user, and run TokenUpdater.
+5. Validate the token using VerificationToken module.
+6. If token invalid, log, notify user, and run TokenUpdater.
+7. Retrieve selected photos from Lightroom catalog.
+8. If no photo selected, log and display a 3-second bezel, then exit.
+9. Process each photo sequentially:
+    9.1. Log photo filename and show bezel message.
+    9.2. Export photo to tempo.jpg using export_photo_to_tempo.lua.
+    9.3. If export fails, log error, show bezel, and continue to next photo.
+    9.4. Log exported file path.
+    9.5. Call call_inaturalist.identifyAsync() with the temporary file.
+    9.6. Log API request sent and response received.
+    9.7. If species recognized, log and launch SelectAndTagResults module.
+    9.8. If no species recognized, log and display modal message.
+    9.9. Log analysis completion for current photo and show 3-second bezel.
+10. After all photos processed, log completion and show final bezel.
 
 =====================================================================================
 ]]
 
--- [Step 1] Import Lightroom SDK modules
+-- Step 1: Import Lightroom SDK modules
 local LrTasks       = import "LrTasks"
 local LrDialogs     = import "LrDialogs"
 local LrApplication = import "LrApplication"
 local LrPrefs       = import "LrPrefs"
 
--- [Step 2] Import custom plugin modules
+-- Step 2: Import custom plugin modules
 local logger           = require("Logger")
 local callInaturalist  = require("call_inaturalist")
 local tokenUpdater     = require("TokenUpdater")
 local tokenChecker     = require("VerificationToken")
 local exportToTempoMod = require("export_photo_to_tempo")
+local selectorModule   = require("SelectAndTagResults") -- imported early for clarity
 
--- [Step 3] Main function definition
+-- Step 3: Main identify function
 local function identify()
-    -- [Step 4] Run inside an asynchronous Lightroom task
     LrTasks.startAsyncTask(function()
-        
-        -- [Step 5] Initialize logging and show startup bezel
+        -- Step 2: Initialize logging and show startup bezel
         logger.initializeLogFile()
-        logger.logMessage("Plugin started")
+        logger.logMessage("[Step 2] Plugin started.")
         LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PluginStarted=Plugin started"), 3)
 
-        -- [Step 6] Retrieve token from plugin preferences
+        -- Step 3: Retrieve stored token
         local prefs = LrPrefs.prefsForPlugin()
         local token = prefs.token
+        logger.logMessage("[Step 3] Retrieved token: " .. (token or "<missing>"))
 
-        -- [Step 7] If token missing, notify and exit
+        -- Step 4: Token missing
         if not token or token == "" then
-            logger.logMessage("Missing token. Prompting user to update.")
-            logger.notify(LOC("$$$/iNat/Error/MissingToken=Token is missing. Please enter it in Preferences."))
+            logger.logMessage("[Step 4] Missing token. Prompting user to update.")
+            logger.notify("Token is missing. Please enter it in Preferences.")
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- [Step 8] Validate the token
-        if not tokenChecker.isTokenValid() then
-            logger.logMessage("Invalid or expired token. Prompting user to update.")
-            logger.notify(LOC("$$$/iNat/Error/InvalidToken=Invalid or expired token."))
+        -- Step 5: Validate token
+        local valid = tokenChecker.isTokenValid()
+        logger.logMessage("[Step 5] Token validation result: " .. tostring(valid))
+        if not valid then
+            -- Step 6: Token invalid
+            logger.logMessage("[Step 6] Invalid or expired token. Prompting user to update.")
+            logger.notify("Invalid or expired token.")
             tokenUpdater.runUpdateTokenScript()
             return
         end
 
-        -- [Step 9] Get the selected photo from Lightroom
+        -- Step 7: Retrieve selected photos
         local catalog = LrApplication.activeCatalog()
-        local photo   = catalog:getTargetPhoto()
+        local photos  = catalog:getTargetPhotos()
+        logger.logMessage("[Step 7] Number of selected photos: " .. (#photos or 0))
 
-        -- [Step 10] If no photo selected, notify and exit
-        if not photo then
-            logger.logMessage("No photo selected.")
+        -- Step 8: No photos selected
+        if not photos or #photos == 0 then
+            logger.logMessage("[Step 8] No photos selected. Exiting.")
             LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
             return
         end
 
-        -- [Step 11] Log and show the selected photo filename
-        local filename = photo:getFormattedMetadata("fileName") or "unknown"
-        logger.logMessage("Selected photo: " .. filename)
-        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PhotoName=Selected photo: ") .. filename, 3)
-
-        -- [Step 12] Export to tempo.jpg
-        local tempoPath, err = exportToTempoMod.exportToTempo(photo)
-        if not tempoPath then
-            logger.logMessage("Export failed: " .. (err or "unknown error"))
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Temporary export failed."), 3)
-            return
-        end
-        logger.logMessage("Image exported to " .. tempoPath)
-        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
-
-        -- [Step 13] Call identification
-        callInaturalist.identifyAsync(tempoPath, token, function(result, err)
-            -- [Step 14] Handle identification errors
-            if err then
-                logger.logMessage("Identification error: " .. err)
-                LrDialogs.message(
-                    LOC("$$$/iNat/Title/Error=Error during identification"), 
-                    err
-                )
+        -- Step 9: Sequential processing of photos
+        local function processNextPhoto(index)
+            if index > #photos then
+                logger.logMessage("[Step 10] All photos processed.")
+                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AllDone=All photos processed."), 3)
                 return
             end
 
-            -- [Step 15] If at least one species recognized → go directly to selection/tagging
-            if result:match("🕊️") then
-                logger.logMessage("Species recognized. Launching selection and tagging module.")
-                local selector = require("SelectAndTagResults")
-                selector.showSelection(result)
-            else
-                -- [Step 16] No species recognized
-                logger.logMessage("No recognized species.")
-                LrDialogs.message(
-                    LOC("$$$/iNat/Title/NoSpecies=No recognized species"),
-                    LOC("$$$/iNat/Message/NoSpecies=There are no recognized species"),
-                    "ok"
-                )
+            local photo = photos[index]
+            local filename = photo:getFormattedMetadata("fileName") or ("photo_" .. index)
+            logger.logMessage("[Step 9.1] Processing photo " .. index .. "/" .. #photos .. ": " .. filename)
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PhotoName=Selected photo: ") .. filename, 3)
+
+            -- Step 9.2: Export photo
+            local tempoPath, err = exportToTempoMod.exportToTempo(photo)
+            if not tempoPath then
+                -- Step 9.3: Export failed
+                logger.logMessage("[Step 9.3] Export failed for " .. filename .. ": " .. (err or "unknown error"))
+                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Temporary export failed."), 3)
+                processNextPhoto(index + 1)
+                return
             end
 
-            -- [Step 17] Final log and completion bezel
-            logger.logMessage("Analysis completed.")
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
-        end)
+            -- Step 9.4: Log exported path
+            logger.logMessage("[Step 9.4] Image exported to: " .. tempoPath)
+            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
+
+            -- Step 9.5 & 9.6: Call iNaturalist API and log request/response
+            logger.logMessage("[Step 9.5] Sending identification request for " .. filename .. " to iNaturalist API")
+            callInaturalist.identifyAsync(tempoPath, token, function(result, err, httpDetails)
+                if httpDetails then
+                    logger.logMessage("[Step 9.6] HTTP request: " .. (httpDetails.request or "<unknown>"))
+                    logger.logMessage("[Step 9.6] HTTP response: " .. (httpDetails.response or "<unknown>"))
+                end
+
+                if err then
+                    logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. err)
+                    LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), err)
+                    processNextPhoto(index + 1)
+                    return
+                end
+
+                -- Step 9.7 & 9.8: Handle recognized or unrecognized species
+                if result:match("🕊️") then
+                    logger.logMessage("[Step 9.7] Species recognized for " .. filename .. ". Launching selection/tagging module.")
+                    selectorModule.showSelection(result)
+                else
+                    logger.logMessage("[Step 9.8] No recognized species for " .. filename)
+                    LrDialogs.message(
+                        LOC("$$$/iNat/Title/NoSpecies=No recognized species"),
+                        LOC("$$$/iNat/Message/NoSpecies=There are no recognized species"),
+                        "ok"
+                    )
+                end
+
+                -- Step 9.9: Log analysis completion
+                logger.logMessage("[Step 9.9] Analysis completed for " .. filename)
+                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
+
+                -- Continue with next photo
+                processNextPhoto(index + 1)
+            end)
+        end
+
+        -- Start sequential processing from first photo
+        processNextPhoto(1)
     end)
 end
 

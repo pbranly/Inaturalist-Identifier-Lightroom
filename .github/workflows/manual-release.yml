@@ -1,0 +1,66 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (ex: 1.1.4)"
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update Info.lua
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          IFS='.' read -r MAJOR MINOR REVISION <<< "$VERSION"
+
+          awk -v maj=$MAJOR -v min=$MINOR -v rev=$REVISION '
+            BEGIN {inblock=0}
+            {
+              if ($0 ~ /VERSION = {/) {print "    VERSION = {"; inblock=1; next}
+              if (inblock && $0 ~ /}/) {
+                print "        major = " maj ","
+                print "        minor = " min ","
+                print "        revision = " rev ","
+                print "        build = 0,"
+                print "    },"
+                inblock=0; next
+              }
+              if (!inblock) print $0
+            }' iNaturalist_Identifier.lrplugin/Info.lua > Info.lua.tmp
+
+          mv Info.lua.tmp iNaturalist_Identifier.lrplugin/Info.lua
+
+      - name: Commit updated Info.lua
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add iNaturalist_Identifier.lrplugin/Info.lua
+          git commit -m "Update Info.lua to version ${{ github.event.inputs.version }}"
+          git push origin HEAD:main
+
+      - name: Create tag
+        run: |
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+      - name: Zip plugin directory
+        run: |
+          ZIP_NAME="iNaturalist_Identifier.lrplugin-${{ github.event.inputs.version }}.zip"
+          zip -r "$ZIP_NAME" iNaturalist_Identifier.lrplugin
+          echo "ZIP_FILE=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
+          body: "Automated release with Info.lua updated."
+          files: ${{ env.ZIP_FILE }}

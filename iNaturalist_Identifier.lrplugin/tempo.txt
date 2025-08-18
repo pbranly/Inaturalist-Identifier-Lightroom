@@ -1,7 +1,0 @@
-Plug-in error log for plug-in at: D:\Telechargement\Inaturalist-Identifier-Lightroom\iNaturalist_Identifier.lrplugin
-
-**** Error 1
-
-Une erreur s'est produite lors de la tentative d'exécution d'un script du module externe.
-Could not find namespace: LrPlatform
-

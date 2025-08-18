@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>iNaturalist Identifier Plugin</title>
+  <script>
+    const lang = navigator.language || navigator.userLanguage;
+    if (lang.startsWith("fr")) {
+      window.location.href = "fr/index.html";
+    } else {
+      window.location.href = "en/index.html";
+    }
+  </script>
+</head>
+<body>
+  <noscript>
+    <h1>🌿 iNaturalist Identifier for Lightroom</h1>
+    <p>Select your language / Choisissez votre langue :</p>
+    <ul>
+      <li><a href="en/index.html">🇬🇧 English</a></li>
+      <li><a href="fr/index.html">🇫🇷 Français</a></li>
+    </ul>
+  </noscript>
+</body>
+</html>
