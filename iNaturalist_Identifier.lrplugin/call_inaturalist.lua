@@ -99,7 +99,7 @@ local function identifyAsync(imagePath, token, callback)
         logger.logMessage("[Step 6] JSON decoded successfully")
         logger.logMessage("Parsed results: " .. json.encode(parsed.results or {}))
 
-        -- Step 7: Extract species predictions
+        -- Step 7: Extract and filter species predictions
         local results = parsed.results or {}
         if #results == 0 then
             logger.logMessage("[Step 7] No species recognized in image")
@@ -107,19 +107,32 @@ local function identifyAsync(imagePath, token, callback)
             return
         end
 
-        logger.logMessage("[Step 7] Species predictions received:")
+        logger.logMessage("[Step 7] Filtering species predictions with score >= 0.5")
+        local filteredResults = {}
         for i, r in ipairs(results) do
             local taxon = r.taxon or {}
             local name_fr = normalizeAccents(taxon.preferred_common_name or "Unknown")
             local name_latin = taxon.name or "Unknown"
             local score = tonumber(r.combined_score) or 0
-            logger.logMessage(string.format("  Species #%d: Common='%s', Latin='%s', Score=%.3f", i, name_fr, name_latin, score))
-            logger.logMessage("  Full result: " .. json.encode(r))
+
+            if score >= 0.5 then
+                logger.logMessage(string.format("  Accepted Species #%d: Common='%s', Latin='%s', Score=%.3f", i, name_fr, name_latin, score))
+                logger.logMessage("  Full result: " .. json.encode(r))
+                table.insert(filteredResults, r)
+            else
+                logger.logMessage(string.format("  Discarded Species #%d: Common='%s', Latin='%s', Score=%.3f", i, name_fr, name_latin, score))
+            end
+        end
+
+        if #filteredResults == 0 then
+            logger.logMessage("[Step 7] No species passed the score threshold")
+            callback(nil, LOC("$$$/iNat/Result/NoFilteredSpecies=No species passed the confidence threshold."))
+            return
         end
 
         -- Step 8: Display species selection UI
         logger.logMessage("[Step 8] Displaying species selection UI")
-        selectAndTagResults.showSelection(results)
+        selectAndTagResults.showSelection(filteredResults)
 
         -- Step 9: Final callback
         if callback then
