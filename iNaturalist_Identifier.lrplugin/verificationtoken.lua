@@ -8,7 +8,7 @@ Main Features:
 1. Read token and its timestamp from plugin preferences.
 2. Determine if the token is valid (less than 24 hours old).
 3. Log all actions via Logger.lua.
-4. Display token status to the user in internationalized form.
+4. Display token status to the user ONLY if the token is missing or expired.
 
 Modules and Scripts Used:
 - LrPrefs
@@ -41,14 +41,14 @@ local function isTokenValid()
     local age = os.time() - timestamp
     logger.logMessage("[VerificationToken] Token age (seconds): " .. tostring(age))
 
-    local msg
     if age <= 24*3600 then
-        msg = LOC("$$$/iNat/Log/TokenValid=✅ Token is fresh and valid (less than 24 hours old).")
+        -- ✅ Token still valid: log only, no dialog shown
+        local msg = "Token is fresh and valid (less than 24 hours old)."
         logger.logMessage("[VerificationToken] " .. msg)
-        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "info")
         return true, msg
     else
-        msg = LOC("$$$/iNat/Log/TokenExpired=❌ Token expired or older than 24 hours. Please refresh.")
+        -- ❌ Token expired: log + dialog
+        local msg = LOC("$$$/iNat/Log/TokenExpired=❌ Token expired or older than 24 hours. Please refresh.")
         logger.logMessage("[VerificationToken] " .. msg)
         LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
         return false, msg
