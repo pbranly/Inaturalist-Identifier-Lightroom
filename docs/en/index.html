@@ -7,23 +7,23 @@
 <body>
 
   <div style="border:2px solid #f44336; padding: 16px; margin-bottom: 20px; background-color: #fff0f0;">
-    <strong>⚠ Disclaimer</strong><br>
-    Use of this plugin is <strong>at your own risk</strong>. The author and contributors cannot be held responsible for any data loss, catalog corruption, or damage to your images in Lightroom.<br>
-    <strong>Before using the plugin:</strong>
+    <strong>⚠ Warning</strong><br>
+    The use of this plugin is <strong>at your own risk</strong>. The author and contributors cannot be held responsible for any data loss, catalog corruption, or damage to your images in Lightroom.<br>
+    <strong>Before using:</strong>
     <ul>
       <li>Make a <strong>full backup of your Lightroom catalog</strong>.</li>
-      <li>Ensure your <strong>original images are safely backed up</strong>.</li>
-      <li>Test the plugin on a <strong>copy of your catalog or images</strong> first.</li>
+      <li>Ensure that your <strong>original images are backed up</strong>.</li>
+      <li>Test the plugin on a <strong>copy of your catalog or your images</strong> before using it in production.</li>
     </ul>
-    By using this plugin, you acknowledge and accept these precautions.
+    By using this plugin, you acknowledge that you have read these precautions and agree to follow them.
   </div>
 
   <h1>🌿 iNaturalist Identifier</h1>
   <p><a href="../fr/index.html">🇫🇷 Lire en français</a></p>
 
-  <img src="../assets/logo.png" alt="iNaturalist Identifier screenshot" width="300" />
+  <img src="../assets/logo.png" alt="Screenshot of the iNaturalist Identifier plugin" width="300" />
 
-  <p><em>A Lightroom Classic plugin that identifies species in photos using the iNaturalist API.</em></p>
+  <p><em>A plugin for Lightroom Classic that identifies species in photos using the iNaturalist API.</em></p>
 
   <h2>📌 Table of Contents</h2>
   <ul>
@@ -40,57 +40,58 @@
   </ul>
 
   <h2 id="overview">🐾 Overview</h2>
-  <p>The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help photographers automatically identify species in their photos. It uses the iNaturalist API to analyze selected images and adds identification tags based on the results.</p>
+  <p>The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to help photographers automatically identify species visible in their shots. It uses the iNaturalist API to analyze selected images and adds identification tags based on the results.</p>
 
   <h2 id="features">✨ Features</h2>
   <ul>
-    <li>📤 Send photos to iNaturalist’s image recognition API</li>
-    <li>🏷️ Automatically tag photos with identified species</li>
-    <li>📚 Batch tagging support</li>
-    <li>🔍 View detailed API responses for each image</li>
-    <li>🧩 Lightweight and simple plugin written in Lua</li>
+    <li>📤 Send photos to the iNaturalist image recognition API</li>
+    <li>🏷️ Automatic tagging with identified species</li>
+    <li>📚 Batch processing of photos</li>
+    <li>🔍 Display detailed API responses for each image</li>
+    <li>🧩 Lightweight and simple plugin, developed in Lua</li>
   </ul>
 
   <h2 id="installation">⚙️ Installation</h2>
   <ol>
     <li><a href="https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest">📥 Download the latest release</a></li>
     <li>Open Lightroom Classic</li>
-    <li>Go to <strong>File > Plugin Manager</strong></li>
+    <li>Go to <strong>File > Plug-in Manager</strong></li>
     <li>Click <strong>Add</strong> and select the plugin folder</li>
     <li>Confirm installation</li>
   </ol>
 
   <h2 id="configuration">🔐 Configuration</h2>
-  <p>The plugin requires an iNaturalist API token:</p>
+  <p>The plugin requires an iNaturalist API access token:</p>
   <ul>
     <li>Create an account on <a href="https://www.inaturalist.org">iNaturalist</a></li>
-    <li>Generate a personal access token from your profile settings</li>
+    <li>From the plugin, access the token generation page</li>
+    <li>Copy the token found between the ""</li>
     <li>Enter the token in the plugin panel in Lightroom</li>
   </ul>
-  <p><strong>⚠️ Note:</strong> Tokens are valid for 24 hours only.</p>
+  <p><strong>⚠️ Note:</strong> Tokens are only valid for 24 hours.</p>
 
   <h2 id="usage">🖼️ Usage</h2>
   <ul>
-    <li>Select one or more photos in the Lightroom Library</li>
+    <li>Select one or more photos in the Lightroom library</li>
     <li>Use the plugin menu to send them to the iNaturalist API</li>
-    <li>Review and apply species tags based on the results</li>
+    <li>Review and apply the species tags according to the results</li>
   </ul>
 
   <h2 id="plugin-structure">📁 Plugin Structure</h2>
   <table border="1" cellpadding="6">
     <tr><th>File</th><th>Description</th></tr>
     <tr><td><code>Info.lua</code></td><td>Plugin metadata and entry point</td></tr>
-    <tr><td><code>AnimalIdentifier.lua</code></td><td>Handles image upload and API calls</td></tr>
+    <tr><td><code>AnimalIdentifier.lua</code></td><td>Handles image sending and API calls</td></tr>
     <tr><td><code>call_inaturalist.lua</code></td><td>Sends requests and processes responses</td></tr>
-    <tr><td><code>SelectAndTagResults.lua</code></td><td>UI for selecting and tagging species</td></tr>
-    <tr><td><code>json.lua</code></td><td>JSON utility functions</td></tr>
+    <tr><td><code>SelectAndTagResults.lua</code></td><td>Interface to select and tag species</td></tr>
+    <tr><td><code>json.lua</code></td><td>Utility functions for JSON</td></tr>
   </table>
 
   <h2 id="dependencies">🧩 Dependencies</h2>
   <ul>
     <li>Adobe Lightroom Classic (Lua plugin support)</li>
     <li>Internet connection</li>
-    <li>Lua standard libraries (bundled with Lightroom)</li>
+    <li>Standard Lua libraries (included with Lightroom)</li>
   </ul>
 
   <h2 id="development">🛠️ Development</h2>
@@ -113,7 +114,7 @@
   </p>
 
   <h2 id="license">📄 License</h2>
-  <p>This project is licensed under the MIT License. See the LICENSE file.<br />
+  <p>This project is under the MIT license. See the LICENSE file.<br />
   Developed by Philippe Branly.</p>
 
   <h2 id="support-the-project">☕ Support the Project</h2>
