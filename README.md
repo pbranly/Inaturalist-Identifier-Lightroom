@@ -76,7 +76,7 @@ The plugin requires an iNaturalist API token:
 
 ## 🖼️ Usage
 
-- Select one or more photos in the Lightroom Library (*batch mode not fully tested*)
+- Select one or more photos in the Lightroom Library
 - Use the plugin menu to send them to the iNaturalist API
 - Review and apply species tags based on the results
 
