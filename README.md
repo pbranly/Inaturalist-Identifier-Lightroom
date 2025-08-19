@@ -46,7 +46,7 @@ The iNaturalist Identifier plugin integrates with Adobe Lightroom Classic to hel
 
 - 📤 Send photos to iNaturalist’s image recognition API
 - 🏷️ Automatically tag photos with identified species
-- 📚 Batch tagging support (coming soon)
+- 📚 Batch tagging support
 - 🔍 View detailed API responses for each image
 - 🧩 Lightweight and simple plugin written in Lua
 
