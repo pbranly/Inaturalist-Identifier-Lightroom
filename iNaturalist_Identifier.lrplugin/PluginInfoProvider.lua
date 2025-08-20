@@ -42,6 +42,7 @@ Execution Steps:
 7. Provide button to refresh token.
 8. Provide checkbox to enable/disable logging.
 9. Save button to persist preferences.
+
 ====================================================================
 --]]
 
@@ -62,61 +63,48 @@ return {
         local prefs = LrPrefs.prefsForPlugin()
 
         -- Step 1: Initialize preferences
-        logger.logMessage("[Step 1] Preferences initialized.")
+        logger.logMessage("[PluginInfoProvider.lua] [Step 1] Preferences initialized.")
 
         -- Step 2: Current plugin version
         local localVersion = Updates.getCurrentVersion()
-        logger.logMessage("[Step 2] Current plugin version: " .. tostring(localVersion))
+        logger.logMessage("[PluginInfoProvider.lua] [Step 2] Current plugin version: " .. tostring(localVersion))
 
         local localVersionField = viewFactory:static_text {
             title = LOC("$$$/iNat/CurrentVersion=Plugin current version: ") .. localVersion,
             width = 250
         }
 
-        -- Step 3: Latest GitHub release version
+        -- Step 3: Latest GitHub release version (initially unknown)
         local githubVersionField = viewFactory:static_text {
             title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ..."),
             width = 250
         }
 
-        LrTasks.startAsyncTask(function()
-            logger.logMessage("[Step 3] Fetching latest GitHub release...")
-            local latestTag = Updates.getLatestGitHubVersion() or "?"
-            githubVersionField.title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ") .. latestTag
-            logger.logMessage("[Step 3] Latest GitHub version fetched: " .. latestTag)
-            if updateButton then updateButton.enabled = true end
-        end)
-
         -- Step 4: Manual download button
         local downloadButton = viewFactory:push_button {
             title = LOC("$$$/iNat/DownloadGitHub=Download latest GitHub version"),
             action = function()
-                logger.logMessage("[Step 4] User clicked 'Download latest GitHub version'.")
+                logger.logMessage("[PluginInfoProvider.lua] [Step 4] User clicked 'Download latest GitHub version'.")
                 LrTasks.startAsyncTask(function()
                     local url = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
-                    logger.logMessage("[Step 4] Opening browser at: " .. url)
+                    logger.logMessage("[PluginInfoProvider.lua] [Step 4] Opening browser at: " .. url)
                     LrHttp.openUrlInBrowser(url)
                 end)
             end
         }
 
         -- Step 5: Manual update check with confirmation dialog
-        local updateButton
-        local checkNowRow = viewFactory:row {
-            spacing = viewFactory:control_spacing(),
-            viewFactory:static_text {
-                title = LOC("$$$/iNat/CheckUpdatesNow=Check for updates now"),
-                alignment = "right",
-                width = 250
-            },
-            updateButton = viewFactory:push_button {
-                title = LOC("$$$/iNat/Go=Go"),
-                enabled = false,
-                action = function()
-                    logger.logMessage("[Step 5] User triggered manual update check.")
+        local updateButton = viewFactory:push_button {
+            title = LOC("$$$/iNat/Go=Go"),
+            enabled = false, -- Will be enabled after fetching latest version
+            action = function()
+                logger.logMessage("[PluginInfoProvider.lua] [Step 5] User triggered manual update check.")
+                LrTasks.startAsyncTask(function()
                     local current = Updates.getCurrentVersion()
                     local latest = Updates.getLatestGitHubVersion()
                     local function normalizeVersion(v) return (v or ""):gsub("^v", "") end
+
+                    logger.logMessage("[PluginInfoProvider.lua] [Step 5] Comparing versions: local=" .. tostring(current) .. ", github=" .. tostring(latest))
 
                     if normalizeVersion(current) == normalizeVersion(latest) then
                         LrDialogs.message(
@@ -124,7 +112,7 @@ return {
                             "Your version is up to date (" .. current .. ")",
                             "info"
                         )
-                        logger.logMessage("[Step 5] Version is up to date: " .. current)
+                        logger.logMessage("[PluginInfoProvider.lua] [Step 5] Plugin is up to date: " .. current)
                     else
                         local result = LrDialogs.confirm(
                             LOC("$$$/iNat/PluginName=iNaturalist Identification"),
@@ -133,19 +121,38 @@ return {
                             "No"
                         )
                         if result == "ok" then
-                            logger.logMessage("[Step 5] User confirmed update.")
+                            logger.logMessage("[PluginInfoProvider.lua] [Step 5] User confirmed update.")
                             Updates.forceUpdate()
                         else
-                            logger.logMessage("[Step 5] User declined update.")
+                            logger.logMessage("[PluginInfoProvider.lua] [Step 5] User declined update.")
                         end
                     end
-                end
-            }
+                end)
+            end
         }
+
+        local checkNowRow = viewFactory:row {
+            spacing = viewFactory:control_spacing(),
+            viewFactory:static_text {
+                title = LOC("$$$/iNat/CheckUpdatesNow=Check for updates now"),
+                alignment = "right",
+                width = 250
+            },
+            updateButton
+        }
+
+        -- Step 3 continued: Fetch latest GitHub version asynchronously
+        LrTasks.startAsyncTask(function()
+            logger.logMessage("[PluginInfoProvider.lua] [Step 3] Fetching latest GitHub release...")
+            local latestTag = Updates.getLatestGitHubVersion() or "?"
+            githubVersionField.title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ") .. latestTag
+            logger.logMessage("[PluginInfoProvider.lua] [Step 3] Latest GitHub version fetched: " .. latestTag)
+            updateButton.enabled = true
+        end)
 
         -- Step 6: Token status and field
         local tokenStatus = TokenUpdater.getTokenStatusText()
-        logger.logMessage("[Step 6] Token status: " .. tostring(tokenStatus))
+        logger.logMessage("[PluginInfoProvider.lua] [Step 6] Token status: " .. tostring(tokenStatus))
 
         local tokenStatusText = viewFactory:static_text {
             title = tokenStatus,
@@ -164,7 +171,7 @@ return {
         local refreshTokenButton = viewFactory:push_button {
             title = LOC("$$$/iNat/RefreshToken=Refresh Token"),
             action = function()
-                logger.logMessage("[Step 7] User clicked 'Refresh Token'.")
+                logger.logMessage("[PluginInfoProvider.lua] [Step 7] User clicked 'Refresh Token'.")
                 TokenUpdater.runUpdateTokenScript()
             end
         }
@@ -181,7 +188,7 @@ return {
             action = function()
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
-                logger.logMessage("[Step 9] Preferences saved. Logging: "
+                logger.logMessage("[PluginInfoProvider.lua] [Step 9] Preferences saved. Logging: "
                     .. tostring(prefs.logEnabled)
                     .. ", Token length: "
                     .. tostring(#(prefs.token or "")))
