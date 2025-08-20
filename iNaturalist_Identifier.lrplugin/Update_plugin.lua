@@ -61,15 +61,22 @@ local function getLatestRelease()
         { field = "X-GitHub-Api-Version", value = "2022-11-28" },
     }
     logger.logMessage("[Step 1] Sending GET request to GitHub API: " .. url)
+    for _, h in ipairs(headers) do
+        logger.logMessage("[Step 1] Header: " .. h.field .. ": " .. h.value)
+    end
+
     local data, respHeaders = LrHttp.get(url, headers)
+    logger.logMessage("[Step 1] GitHub API response status: " .. tostring(respHeaders.status))
+    logger.logMessage("[Step 1] GitHub API response body: " .. tostring(data))
+
     if respHeaders.error or respHeaders.status ~= 200 then
-        logger.logMessage("[Step 1] ERROR: GitHub API request failed, status: " .. tostring(respHeaders.status))
+        logger.logMessage("[Step 1] ERROR: GitHub API request failed")
         LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
                           "ERROR: Failed to retrieve latest release metadata from GitHub.",
                           "critical")
         return nil
     end
-    logger.logMessage("[Step 1] GitHub response received, decoding JSON")
+
     local success, release = pcall(json.decode, data)
     if not success then
         logger.logMessage("[Step 1] ERROR: Failed to decode GitHub JSON response")
@@ -78,6 +85,7 @@ local function getLatestRelease()
                           "critical")
         return nil
     end
+
     logger.logMessage("[Step 1] Latest release found: " .. release.tag_name)
     return release
 end
@@ -88,8 +96,18 @@ end
 local function findPluginZipAsset(release)
     if not release or not release.assets then return nil end
     for _, asset in ipairs(release.assets) do
-        if asset.name:match("^iNaturalist_Identifier%.lrplugin") and asset.name:match("%.zip$") then
-            logger.logMessage("[Step 2] Found plugin ZIP asset: " .. asset.name)
+        local name = asset.name
+        logger.logMessage("[Step 2] Checking asset: " .. name)
+
+        if not name:match("^iNaturalist_Identifier") then
+            logger.logMessage("[Step 2] Skipped: name doesn't start with 'iNaturalist_Identifier'")
+        elseif not name:match("%.lrplugin") then
+            logger.logMessage("[Step 2] Skipped: missing '.lrplugin'")
+        elseif not name:match("%.zip$") then
+            logger.logMessage("[Step 2] Skipped: doesn't end with '.zip'")
+        else
+            logger.logMessage("[Step 2] Found plugin ZIP asset: " .. name)
+            logger.logMessage("[Step 2] Download URL: " .. asset.browser_download_url)
             return asset.browser_download_url
         end
     end
@@ -103,13 +121,18 @@ end
 local function downloadZip(url, zipPath)
     logger.logMessage("[Step 3] Downloading plugin ZIP from: " .. url)
     local data, headers = LrHttp.get(url)
-    if headers.error then
-        logger.logMessage("[Step 3] ERROR downloading ZIP: " .. tostring(headers.error))
+    logger.logMessage("[Step 3] HTTP response status: " .. tostring(headers.status))
+    logger.logMessage("[Step 3] HTTP response error: " .. tostring(headers.error or "none"))
+    logger.logMessage("[Step 3] HTTP response body length: " .. tostring(#data or 0))
+
+    if headers.error or headers.status ~= 200 then
+        logger.logMessage("[Step 3] ERROR downloading ZIP")
         LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
                           "ERROR: Failed to download plugin ZIP.",
                           "critical")
         return false
     end
+
     local f = io.open(zipPath, "wb")
     if not f then
         logger.logMessage("[Step 3] ERROR: Cannot write ZIP file to disk: " .. zipPath)
@@ -135,8 +158,10 @@ local function extractZip(zipPath, tmpDir)
     local cmd = "tar -xf " .. shellquote(zipPath) .. " -C " .. shellquote(tmpDir)
     logger.logMessage("[Step 4] Executing command: " .. cmd)
     local ret = LrTasks.execute(cmd)
+    logger.logMessage("[Step 4] Extraction return code: " .. tostring(ret))
+
     if ret ~= 0 then
-        logger.logMessage("[Step 4] ERROR extracting ZIP, return code: " .. tostring(ret))
+        logger.logMessage("[Step 4] ERROR extracting ZIP")
         return nil
     end
 
@@ -186,87 +211,4 @@ end
 ------------------------------------------------------------
 local function cleanup(zipPath, tmpDir)
     logger.logMessage("[Step 8] Cleaning up temporary files")
-    if LrFileUtils.exists(zipPath) then LrFileUtils.delete(zipPath) end
-    if LrFileUtils.exists(tmpDir) then LrFileUtils.delete(tmpDir) end
-end
-
-------------------------------------------------------------
--- Orchestration: Download and install latest plugin
-------------------------------------------------------------
-local function downloadAndInstall(ctx, release)
-    local pluginPath = _PLUGIN.path
-    local parentDir = LrPathUtils.parent(pluginPath)
-    local zipPath = LrPathUtils.child(parentDir, "download.zip")
-    local tmpDir = LrPathUtils.child(LrPathUtils.getStandardFilePath("temp"), "iNatTmp")
-
-    local url = findPluginZipAsset(release)
-    if not url then return end
-    if not downloadZip(url, zipPath) then return end
-
-    local extractedPlugin = extractZip(zipPath, tmpDir)
-    if not extractedPlugin then return end
-
-    if not backupCurrentPlugin(pluginPath) then return end
-
-    if not replacePlugin(pluginPath, extractedPlugin) then return end
-
-    cleanup(zipPath, tmpDir)
-
-    LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                      "iNaturalist Identifier updated. Please restart Lightroom to complete installation.",
-                      "info")
-end
-
-------------------------------------------------------------
--- Version helpers
-------------------------------------------------------------
-function Updates.version()
-    local v = Info.VERSION
-    return string.format("%s.%s.%s", v.major, v.minor, v.revision)
-end
-
-function Updates.getCurrentVersion()
-    return Updates.version()
-end
-
-function Updates.getLatestGitHubVersion()
-    local latest = getLatestRelease()
-    if latest then return latest.tag_name end
-    return nil
-end
-
-------------------------------------------------------------
--- Check for updates
-------------------------------------------------------------
-function Updates.check(force)
-    local current = Updates.version()
-    logger.logMessage("[Check] Current plugin version: " .. (Info.VERSION.display or current))
-    if not force and not prefs.checkForUpdates then return end
-
-    local latest = getLatestRelease()
-    if not latest then return end
-
-    local currentNorm = current:gsub("^v", "")
-    local latestNorm = latest.tag_name and latest.tag_name:gsub("^v", "") or ""
-
-    if currentNorm ~= latestNorm then
-        logger.logMessage("[Check] Update available: " .. current .. " → " .. latest.tag_name)
-        LrFunctionContext.callWithContext("downloadAndInstall", downloadAndInstall, latest)
-        return
-    end
-
-    return current
-end
-
-function Updates.forceUpdate()
-    LrTasks.startAsyncTask(function()
-        local v = Updates.check(true)
-        if v then
-            LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                              "No updates available. You already have the most recent version (" .. v .. ")",
-                              "info")
-        end
-    end)
-end
-
-return Updates
+    if LrFileUtils.exists(zipPath) then LrFile
