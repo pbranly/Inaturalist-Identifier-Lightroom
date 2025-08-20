@@ -1,8 +1,7 @@
 # Inaturalist_Identifier.lua
 "$$$/iNat/Bezel/PluginStarted=Plugin started"
-"$$$/iNat/Error/MissingToken=Token is missing. Please enter it in Preferences."
-"$$$/iNat/Error/InvalidToken=Invalid or expired token."
 "$$$/iNat/Bezel/NoPhoto=No photo selected."
+"$$$/iNat/Bezel/AllDone=All photos processed."
 "$$$/iNat/Bezel/PhotoName=Selected photo: "
 "$$$/iNat/Bezel/ExportFailed=Temporary export failed."
 "$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"
@@ -16,19 +15,22 @@
 "$$$/iNat/MenuItem=Identify wildlife via iNaturalist"
 
 # Logger.lua
+# "$$$/iNat/PluginName=iNaturalist Identification"
 "$$$/iNat/Log/PluginStarted=== Plugin launched ==="
+# "$$$/iNat/PluginName=iNaturalist Identification"
 
 # PluginInfoProvider.lua
 "$$$/iNat/CurrentVersion=Plugin current version: "
 "$$$/iNat/LatestGitHubVersion=Latest GitHub version: ..."
+"$$$/iNat/DownloadGitHub=Download latest GitHub version"
+"$$$/iNat/Go=Go"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+"$$$/iNat/CheckUpdatesNow=Check for updates now"
 "$$$/iNat/LatestGitHubVersion=Latest GitHub version: "
-"$$$/iNat/DownloadGitHub=Download last GitHub version"
 "$$$/iNat/TokenTooltip=Your iNaturalist API token"
 "$$$/iNat/RefreshToken=Refresh Token"
 "$$$/iNat/EnableLogging=Enable logging to log.txt"
-"$$$/iNat/AutoUpdateCheck=Automatically check for updates"
-"$$$/iNat/CheckUpdatesNow=Check for updates now"
-"$$$/iNat/Go=Go"
 "$$$/iNat/Save=Save"
 "$$$/iNat/DialogTitle=iNaturalist connection settings"
 
@@ -51,6 +53,13 @@
 "$$$/iNat/TokenDialog/Save=Save token"
 "$$$/iNat/TokenDialog/Saved=Token successfully saved."
 "$$$/iNat/TokenDialog/Title=iNaturalist Token Setup"
+
+# Update_plugin.lua
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
 
 # export_photo_to_tempo.lua
 "$$$/iNat/Log/JPGDeleted=JPG file deleted: "
