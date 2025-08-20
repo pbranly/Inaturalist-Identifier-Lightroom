@@ -89,16 +89,18 @@ function export_photo_to_tempo.exportToTempo(photo)
         LR_size_maxWidth = 1024,
         LR_size_maxHeight = 1024,
 
-        -- Metadata control
-        LR_metadata_keywordHandling = "excludeAll",
-        LR_metadata_include = "limited",    -- custom filter
-        LR_metadata_includeDate = true,     -- keep capture date/time
-        LR_metadata_includeLocation = true, -- keep GPS
-        LR_metadata_includeCopyright = true,
-        LR_metadata_includeCreator = true,
-        LR_removeLocationMetadata = false,
-        LR_minimizeEmbeddedMetadata = false,
-        LR_renamingTokensOn = false,
+
+-- Metadata control
+    LR_metadata_keywordHandling = "excludeAll",
+    LR_metadata_include = "all",             -- inclut tout au départ
+    LR_metadata_includeDate = true,          -- garder date/heure
+    LR_metadata_includeLocation = true,      -- garder GPS
+    LR_metadata_includeCopyright = true,     -- garder copyright
+    LR_metadata_includeCreator = true,       -- garder auteur
+    LR_removeLocationMetadata = false,
+    LR_minimizeEmbeddedMetadata = true,      -- <<< clé pour supprimer appareil, ISO, objectif, etc.
+    LR_renamingTokensOn = false,
+
     }
 
     -- Step 3: Create export session
