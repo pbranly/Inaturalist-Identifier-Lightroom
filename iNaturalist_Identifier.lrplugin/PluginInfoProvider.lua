@@ -12,8 +12,7 @@ for the iNaturalist Lightroom plugin. It provides a user interface to:
 5. Enable or disable detailed logging.
 6. Save preferences for persistence across Lightroom sessions.
 
-⚠️ Note: Automatic update checks have been removed. Only manual update
-actions are possible.
+⚠️ Automatic update checks have been removed. Only manual update actions are possible.
 
 --------------------------------------------------------------------
 Modules and Scripts Used:
@@ -22,7 +21,7 @@ Modules and Scripts Used:
   - LrPrefs (plugin preferences storage)
   - LrDialogs (dialogs and alerts)
   - LrTasks (asynchronous tasks)
-  - LrHttp (HTTP requests, e.g., to GitHub)
+  - LrHttp (HTTP requests)
 - Logger.lua (custom logging wrapper)
 - Update_plugin.lua (handles version management and manual update check)
 - TokenUpdater.lua (handles API token refresh)
@@ -32,33 +31,17 @@ Scripts Using This Script:
 - Declared in `Info.lua` under:
     LrPluginInfoProvider = "PluginInfoProvider.lua"
 
-Thus, this script is used by Lightroom to render the plugin’s settings dialog.
-
 --------------------------------------------------------------------
 Execution Steps:
 1. Initialize plugin preferences.
 2. Display current plugin version.
 3. Fetch the latest GitHub release version asynchronously.
 4. Display button to open GitHub release page in browser.
-5. Display button to manually check for updates.
+5. Manual update check with confirmation dialog if update exists.
 6. Display API token status and input field.
 7. Provide button to refresh token.
 8. Provide checkbox to enable/disable logging.
-9. Provide Save button to persist preferences.
-
---------------------------------------------------------------------
-Step Descriptions:
-1. Initialize preferences (ensures required prefs exist).
-2. Read current plugin version from Update_plugin.lua.
-3. Make an HTTP request to GitHub to get the latest release tag.
-   - Log both the request URL and the response.
-4. Display a button to open the GitHub release page in the user’s browser.
-5. Display a "Check updates now" button that invokes Update_plugin.forceUpdate().
-6. Display the stored iNaturalist API token and its status message.
-7. Provide a button to refresh token via TokenUpdater.lua.
-8. Allow the user to enable or disable detailed logging.
-9. Save preferences (logging state and token value) when the Save button is clicked.
-
+9. Save button to persist preferences.
 ====================================================================
 --]]
 
@@ -97,24 +80,18 @@ return {
         }
 
         LrTasks.startAsyncTask(function()
-            logger.logMessage("[Step 3] Starting async task to fetch latest GitHub release.")
-            local url = "https://api.github.com/repos/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
-            logger.logMessage("[Step 3] HTTP GET request: " .. url)
-
-            local body, hdrs = LrHttp.get(url)
-            logger.logMessage("[Step 3] HTTP Response headers: " .. tostring(hdrs))
-            logger.logMessage("[Step 3] HTTP Response body: " .. tostring(body))
-
-            local latestTag = Updates.getLatestGitHubVersion(body) or "?"
+            logger.logMessage("[Step 3] Fetching latest GitHub release...")
+            local latestTag = Updates.getLatestGitHubVersion() or "?"
             githubVersionField.title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ") .. latestTag
-            logger.logMessage("[Step 3] Latest GitHub version parsed: " .. tostring(latestTag))
+            logger.logMessage("[Step 3] Latest GitHub version fetched: " .. latestTag)
+            if updateButton then updateButton.enabled = true end
         end)
 
         -- Step 4: Manual download button
         local downloadButton = viewFactory:push_button {
             title = LOC("$$$/iNat/DownloadGitHub=Download latest GitHub version"),
             action = function()
-                logger.logMessage("[Step 4] User clicked 'Download latest GitHub version' button.")
+                logger.logMessage("[Step 4] User clicked 'Download latest GitHub version'.")
                 LrTasks.startAsyncTask(function()
                     local url = "https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest"
                     logger.logMessage("[Step 4] Opening browser at: " .. url)
@@ -123,7 +100,8 @@ return {
             end
         }
 
-        -- Step 5: Manual update check button
+        -- Step 5: Manual update check with confirmation dialog
+        local updateButton
         local checkNowRow = viewFactory:row {
             spacing = viewFactory:control_spacing(),
             viewFactory:static_text {
@@ -131,11 +109,36 @@ return {
                 alignment = "right",
                 width = 250
             },
-            viewFactory:push_button {
+            updateButton = viewFactory:push_button {
                 title = LOC("$$$/iNat/Go=Go"),
+                enabled = false,
                 action = function()
                     logger.logMessage("[Step 5] User triggered manual update check.")
-                    Updates.forceUpdate()
+                    local current = Updates.getCurrentVersion()
+                    local latest = Updates.getLatestGitHubVersion()
+                    local function normalizeVersion(v) return (v or ""):gsub("^v", "") end
+
+                    if normalizeVersion(current) == normalizeVersion(latest) then
+                        LrDialogs.message(
+                            LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+                            "Your version is up to date (" .. current .. ")",
+                            "info"
+                        )
+                        logger.logMessage("[Step 5] Version is up to date: " .. current)
+                    else
+                        local result = LrDialogs.confirm(
+                            LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+                            "A new version is available (" .. latest .. "). Do you want to update?",
+                            "Yes",
+                            "No"
+                        )
+                        if result == "ok" then
+                            logger.logMessage("[Step 5] User confirmed update.")
+                            Updates.forceUpdate()
+                        else
+                            logger.logMessage("[Step 5] User declined update.")
+                        end
+                    end
                 end
             }
         }
