@@ -129,6 +129,9 @@ local function identifyAsync(imagePath, token, callback)
             local name_fr = normalizeAccents(taxon.preferred_common_name or "Unknown")
             local name_latin = taxon.name or "Unknown"
             local raw_score = tonumber(r.combined_score) or 0
+			local pct = raw_score
+            if pct <= 1 then pct = pct * 100 end  -- supporte à la fois [0,1] et [0,100]
+--            local line = string.format("- %s (%s) : %.1f", name_fr, name_latin, pct)
             local line = string.format("- %s (%s) : %.3f", name_fr, name_latin, raw_score)
             table.insert(output, line)
             logger.logMessage("[Step 8] Recognized: " .. line)
