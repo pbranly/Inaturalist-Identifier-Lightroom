@@ -37,11 +37,16 @@ jobs:
       contents: write
 
     steps:
-      # Checkout the chosen branch with full history to allow push
+      # Checkout the chosen branch with full history
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
+
+      # Create local branch tracking the remote
+      - name: Set up local branch
+        run: |
+          git switch -C ${{ github.event.inputs.branch }}
 
       # Update Info.lua with new version
       - name: Update Info.lua
