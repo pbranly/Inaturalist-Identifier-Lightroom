@@ -1,32 +1,16 @@
 # ============================================================
 # Functional Description
 # ------------------------------------------------------------
-# This GitHub Actions workflow automates the manual release 
-# process of the Lightroom plugin `iNaturalist_Identifier.lrplugin`.
-#
-# New feature:
-# - User can choose which branch to release on (`main` or `beta`).
-#
-# Functional Flow:
-# 1. Manual Trigger:
-#    - Triggered manually via the `workflow_dispatch` event.
-#    - Requires a semantic version number (ex: 1.1.4).
-#    - User must select the target branch (`main` or `beta`).
-#
-# 2. Version Update in Info.lua:
-#    - Updates the VERSION block in Info.lua with new version data.
-#
-# 3. Commit Changes:
-#    - Commits Info.lua update to the chosen branch.
-#
-# 4. Tagging:
-#    - Creates and pushes a tag with the version number.
-#
-# 5. Packaging:
-#    - Creates a zip of the plugin directory.
-#
-# 6. Release Creation:
-#    - Publishes a GitHub Release with the zip attached.
+# GitHub Actions workflow: Manual release of iNaturalist_Identifier.lrplugin
+# 
+# Features:
+# - Manual trigger with version number input.
+# - Choose target branch: main or beta.
+# - Updates Info.lua with new version.
+# - Commits changes to chosen branch.
+# - Creates Git tag.
+# - Packages plugin as zip.
+# - Creates GitHub Release with zip attached.
 # ============================================================
 
 name: Manual Release
@@ -38,7 +22,7 @@ on:
         description: "Version number (ex: 1.1.4)"
         required: true
       branch:
-        description: "Target branch for release (main or beta)"
+        description: "Target branch for release"
         required: true
         default: "main"
         type: choice
@@ -53,10 +37,13 @@ jobs:
       contents: write
 
     steps:
+      # Checkout the chosen branch with full history to allow push
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
 
+      # Update Info.lua with new version
       - name: Update Info.lua
         run: |
           VERSION="${{ github.event.inputs.version }}"
@@ -79,25 +66,29 @@ jobs:
 
           mv Info.lua.tmp iNaturalist_Identifier.lrplugin/Info.lua
 
+      # Commit changes to the selected branch
       - name: Commit updated Info.lua
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add iNaturalist_Identifier.lrplugin/Info.lua
           git commit -m "Update Info.lua to version ${{ github.event.inputs.version }}"
-          git push origin HEAD:${{ github.event.inputs.branch }}
+          git push origin ${{ github.event.inputs.branch }}
 
+      # Create and push tag
       - name: Create tag
         run: |
           git tag ${{ github.event.inputs.version }}
           git push origin ${{ github.event.inputs.version }}
 
+      # Zip plugin directory
       - name: Zip plugin directory
         run: |
           ZIP_NAME="iNaturalist_Identifier.lrplugin-${{ github.event.inputs.version }}.zip"
           zip -r "$ZIP_NAME" iNaturalist_Identifier.lrplugin
           echo "ZIP_FILE=$ZIP_NAME" >> $GITHUB_ENV
 
+      # Create GitHub release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
