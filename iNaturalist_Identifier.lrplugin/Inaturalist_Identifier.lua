@@ -151,7 +151,8 @@ local function identify()
                 -- Step 9.7 & 9.8: Handle recognized or unrecognized species
                 if result:match("🕊️") then
                     logger.logMessage("[Step 9.7] Species recognized for " .. filename .. ". Launching selection/tagging module.")
-                    selectorModule.showSelection(result)
+                    -- 🔑 Modification : on passe la photo explicitement
+                    selectorModule.showSelection(result, photo)
                 else
                     logger.logMessage("[Step 9.8] No recognized species for " .. filename)
                     LrDialogs.message(
