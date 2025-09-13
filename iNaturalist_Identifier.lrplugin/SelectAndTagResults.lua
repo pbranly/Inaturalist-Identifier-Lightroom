@@ -14,7 +14,7 @@ Functional flow:
 2. Build a Lightroom modal dialog with checkboxes for each 
    detected species.
 3. Allow the user to select which species will be added.
-4. Add the selected keywords to the active photo in Lightroom, 
+4. Add the selected keywords to the provided photo in Lightroom, 
    creating new keywords if necessary.
 5. Log all actions in detail using `logger.lua`.
 
@@ -48,7 +48,7 @@ Numbered Steps
    2.5. Show modal dialog and handle user choice.
    2.6. If user confirmed, collect selected species.
    2.7. If none selected, notify and exit.
-   2.8. Add selected species as keywords to the active photo.
+   2.8. Add selected species as keywords to the given photo.
    2.9. Log success or cancellation.
 3. Export `showSelection` function.
 
@@ -70,7 +70,8 @@ local logger = require("Logger")
 local LOC = LOC
 
 -- [Step 2] Main function: show species selection dialog
-local function showSelection(resultsString)
+-- 🔑 Modification : ajout du paramètre `photo`
+local function showSelection(resultsString, photo)
     logger.logMessage("[Step 2] Starting showSelection. Results string length: " .. tostring(#resultsString or "nil"))
 
     -- [2.1] Find "Recognized species" section
@@ -176,10 +177,10 @@ local function showSelection(resultsString)
                 return
             end
 
-            -- [2.8] Add selected keywords to active photo
+            -- [2.8] Add selected keywords to the provided photo
             local catalog = LrApplication.activeCatalog()
-            local photo = catalog:getTargetPhoto()
-            logger.logMessage("[2.8] Preparing to add keywords to active photo.")
+            local photoName = photo and photo:getFormattedMetadata("fileName") or "<unknown>"
+            logger.logMessage("[2.8] Preparing to add keywords to photo: " .. photoName)
 
             catalog:withWriteAccessDo("Adding iNaturalist keywords", function()
                 local function getOrCreateKeyword(name)
@@ -196,14 +197,14 @@ local function showSelection(resultsString)
                 for _, keyword in ipairs(selectedKeywords) do
                     local kw = getOrCreateKeyword(keyword)
                     if kw and photo then
-                        logger.logMessage("[2.8] Adding keyword to photo: " .. keyword)
+                        logger.logMessage("[2.8] Adding keyword '" .. keyword .. "' to photo: " .. photoName)
                         photo:addKeyword(kw)
                     end
                 end
             end)
 
             -- [2.9] Log success
-            logger.logMessage("[2.9] Keywords successfully added: " .. table.concat(selectedKeywords, ", "))
+            logger.logMessage("[2.9] Keywords successfully added to " .. photoName .. ": " .. table.concat(selectedKeywords, ", "))
             LrDialogs.message(
                 LOC("$$$/iNat/Success/KeywordsAdded=Success"),
                 LOC("$$$/iNat/Success/KeywordsAddedMessage=Selected keywords were successfully added.")
