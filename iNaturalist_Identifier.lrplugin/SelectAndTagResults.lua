@@ -205,10 +205,10 @@ local function showSelection(resultsString, photo)
 
             -- [2.9] Log success
             logger.logMessage("[2.9] Keywords successfully added to " .. photoName .. ": " .. table.concat(selectedKeywords, ", "))
-            LrDialogs.message(
-                LOC("$$$/iNat/Success/KeywordsAdded=Success"),
-                LOC("$$$/iNat/Success/KeywordsAddedMessage=Selected keywords were successfully added.")
-            )
+--            LrDialogs.message(
+--                LOC("$$$/iNat/Success/KeywordsAdded=Success"),
+--                LOC("$$$/iNat/Success/KeywordsAddedMessage=Selected keywords were successfully added.")
+--            )
         else
             -- [2.9] User cancelled
             logger.logMessage("[2.9] User cancelled the species selection dialog.")
