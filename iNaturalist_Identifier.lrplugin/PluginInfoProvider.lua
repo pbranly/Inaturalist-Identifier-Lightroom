@@ -1,37 +1,49 @@
 --[[
 ====================================================================
-Functional Description
+iNaturalist Lightroom Plugin Info Provider
 --------------------------------------------------------------------
-PluginInfoProvider.lua manages the user interface for iNaturalist
-integration in Lightroom, using existing modules to handle token
-management and plugin updates. It does NOT duplicate token logic.
+Functional Description (English):
+This script manages the configuration dialog for the iNaturalist
+Lightroom plugin. It provides a user interface to:
 
-Features:
-1. Display plugin current version and latest GitHub version.
-2. Download latest GitHub version if outdated.
-3. Show token field (multiline) with status.
-4. Refresh Token button to update token using TokenUpdater.lua.
-5. Enable/disable logging.
-6. Enable/disable automatic update checks.
-7. Save preferences.
+1. Display the current plugin version and the latest GitHub release version.
+2. Automatically check for updates on GitHub and show update status.
+3. Provide a button to update the plugin if a new version exists.
+4. Display and manage the iNaturalist API token.
+5. Refresh the API token using the TokenUpdater helper.
+6. Enable or disable detailed logging.
+7. Save preferences persistently.
 
+No manual "Check for updates" button is required; the update status
+is displayed immediately upon opening the dialog.
+
+--------------------------------------------------------------------
 Modules and Scripts Used:
-- LrView, LrPrefs, LrDialogs, LrTasks (Lightroom SDK)
-- Logger.lua
-- Update_plugin.lua
-- TokenUpdater.lua
+- Lightroom SDK:
+  - LrView (UI elements)
+  - LrPrefs (plugin preferences storage)
+  - LrDialogs (dialogs and alerts)
+  - LrTasks (asynchronous tasks)
+  - LrHttp (open browser)
+- Logger.lua (custom logging)
+- Update_plugin.lua (version management and updates)
+- TokenUpdater.lua (API token management)
 
+--------------------------------------------------------------------
+Scripts Using This Script:
+- Declared in Info.lua under:
+    LrPluginInfoProvider = "PluginInfoProvider.lua"
+
+--------------------------------------------------------------------
 Execution Steps:
-1. Initialize plugin preferences and UI fields.
-2. Display current plugin version and latest GitHub version.
-3. Fetch latest GitHub version asynchronously.
-4. Create GitHub download button.
-5. Show token field and status (via TokenUpdater).
-6. Add Refresh Token button.
-7. Enable logging checkbox.
-8. Enable automatic update check checkbox and "Check now" button.
-9. Save button to persist preferences.
-10. Return dialog UI layout.
+1. Initialize plugin preferences.
+2. Display current plugin version.
+3. Fetch latest GitHub release asynchronously.
+4. Display update status text and Update button if needed.
+5. Display API token status and input field.
+6. Provide button to refresh token.
+7. Provide checkbox to enable/disable logging.
+8. Save preferences persistently.
 ====================================================================
 --]]
 
@@ -39,9 +51,10 @@ local LrView    = import "LrView"
 local LrPrefs   = import "LrPrefs"
 local LrDialogs = import "LrDialogs"
 local LrTasks   = import "LrTasks"
+local LrHttp    = import "LrHttp"
 
-local logger  = require("Logger")
-local Updates = require("Update_plugin")
+local logger       = require("Logger")
+local Updates      = require("Update_plugin")
 local TokenUpdater = require("TokenUpdater")
 
 local bind = LrView.bind
@@ -49,109 +62,108 @@ local bind = LrView.bind
 return {
     sectionsForTopOfDialog = function(viewFactory)
         local prefs = LrPrefs.prefsForPlugin()
-        if prefs.checkForUpdates == nil then
-            prefs.checkForUpdates = true
-        end
+        logger.logMessage("[Step 1] Preferences initialized.")
 
-        -- Version fields
+        -- Step 2: Current plugin version
+        local localVersion = Updates.getCurrentVersion()
+        logger.logMessage("[Step 2] Current plugin version: " .. tostring(localVersion))
+
         local localVersionField = viewFactory:static_text {
-            title = LOC("$$$/iNat/CurrentVersion=Plugin current version: ") .. Updates.getCurrentVersion(),
-            width = 200
+            title = "Plugin current version: " .. localVersion,
+            width = 250
         }
+
+        -- Step 3: Latest GitHub release version placeholder
         local githubVersionField = viewFactory:static_text {
-            title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ..."),
-            width = 200
+            title = "Latest GitHub version: ...",
+            width = 250
         }
 
-        -- Fetch latest GitHub version asynchronously
-        LrTasks.startAsyncTask(function()
-            local latestTag = Updates.getLatestGitHubVersion() or "?"
-            githubVersionField.title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ") .. latestTag
-            logger.logMessage("[GitHub] Latest version fetched: " .. tostring(latestTag))
-        end)
+        -- Step 4: Update status text and optional button
+        local updateStatusText = viewFactory:static_text {
+            title = "Checking updates...",
+            width = 400
+        }
 
-        -- Download GitHub version button
-        local downloadButton = viewFactory:push_button {
-            title = LOC("$$$/iNat/DownloadGitHub=Download last GitHub version"),
+        local updateButton = viewFactory:push_button {
+            title = "Update",
+            enabled = false,
             action = function()
-                LrTasks.startAsyncTask(function()
-                    LrHttp.openUrlInBrowser("https://github.com/pbranly/Inaturalist-Identifier-Lightroom/releases/latest")
-                    logger.logMessage("[GitHub] Opened releases page in browser")
-                end)
+                logger.logMessage("[Step 4] User clicked Update button.")
+                Updates.forceUpdate()
             end
         }
 
-        -- Token field with status
+        -- Asynchronous fetch of latest GitHub version
+        LrTasks.startAsyncTask(function()
+            logger.logMessage("[Step 3] Fetching latest GitHub release...")
+            local latest = Updates.getLatestGitHubVersion() or "?"
+            githubVersionField.title = "Latest GitHub version: " .. latest
+            logger.logMessage("[Step 3] Latest GitHub version fetched: " .. latest)
+
+            local function normalizeVersion(v) return (v or ""):gsub("^v", "") end
+            if normalizeVersion(localVersion) == normalizeVersion(latest) then
+                updateStatusText.title = "Your version is up to date (" .. localVersion .. ")"
+                updateButton.enabled = false
+                logger.logMessage("[Step 4] Plugin is up to date: " .. localVersion)
+            else
+                updateStatusText.title = "A new version is available (" .. latest .. ")"
+                updateButton.enabled = true
+                logger.logMessage("[Step 4] New version available: " .. latest)
+            end
+        end)
+
+        -- Step 5: Token status and input field
+        local tokenStatus = TokenUpdater.getTokenStatusText()
+        logger.logMessage("[Step 5] Token status: " .. tostring(tokenStatus))
+
+        local tokenStatusText = viewFactory:static_text {
+            title = tokenStatus,
+            width = 500
+        }
+
         local tokenField = viewFactory:edit_field {
             value = prefs.token or "",
             width = 500,
             height = 80,
             wrap = true,
-            tooltip = LOC("$$$/iNat/TokenTooltip=Your iNaturalist API token")
+            tooltip = "Your iNaturalist API token"
         }
 
-        local tokenStatusText = viewFactory:static_text {
-            title = TokenUpdater.getTokenStatusText(),
-            width = 500
-        }
-
+        -- Step 6: Refresh token button
         local refreshTokenButton = viewFactory:push_button {
-            title = LOC("$$$/iNat/RefreshToken=Refresh Token"),
+            title = "Refresh Token",
             action = function()
+                logger.logMessage("[Step 6] User clicked Refresh Token button.")
                 TokenUpdater.runUpdateTokenScript()
             end
         }
 
-        -- Logging checkbox
+        -- Step 7: Logging checkbox
         local logCheck = viewFactory:checkbox {
-            title = LOC("$$$/iNat/EnableLogging=Enable logging to log.txt"),
+            title = "Enable logging to log.txt",
             value = prefs.logEnabled or false
         }
 
-        -- Automatic update check row
-        local autoUpdateRow = viewFactory:row {
-            spacing = viewFactory:control_spacing(),
-            viewFactory:static_text {
-                title = LOC("$$$/iNat/AutoUpdateCheck=Automatically check for updates"),
-                alignment = "right",
-                width = 200
-            },
-            viewFactory:checkbox {
-                value = bind("checkForUpdates")
-            }
-        }
-
-        local checkNowRow = viewFactory:row {
-            spacing = viewFactory:control_spacing(),
-            viewFactory:static_text {
-                title = LOC("$$$/iNat/CheckUpdatesNow=Check for updates now"),
-                alignment = "right",
-                width = 200
-            },
-            viewFactory:push_button {
-                title = LOC("$$$/iNat/Go=Go"),
-                action = Updates.forceUpdate
-            }
-        }
-
-        -- Save button
+        -- Step 8: Save preferences button
         local saveButton = viewFactory:push_button {
-            title = LOC("$$$/iNat/Save=Save"),
+            title = "Save",
             action = function()
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
-                logger.logMessage("[Preferences] Logging saved, token updated.")
+                logger.logMessage("[Step 8] Preferences saved. Logging: "
+                    .. tostring(prefs.logEnabled)
+                    .. ", Token length: "
+                    .. tostring(#(prefs.token or "")))
             end
         }
 
-        -- Return final dialog layout
+        -- Return dialog layout
         return {
             {
-                title = LOC("$$$/iNat/DialogTitle=iNaturalist connection settings"),
+                title = "iNaturalist connection settings",
                 viewFactory:row { localVersionField, viewFactory:static_text { title = " | ", width = 20 }, githubVersionField },
-                viewFactory:row { downloadButton },
-                autoUpdateRow,
-                checkNowRow,
+                viewFactory:row { updateStatusText, updateButton },
                 viewFactory:row { tokenStatusText },
                 viewFactory:row { tokenField },
                 viewFactory:row { refreshTokenButton },

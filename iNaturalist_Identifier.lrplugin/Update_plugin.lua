@@ -1,12 +1,20 @@
---[[
-============================================================
+--[[ 
+====================================================================
 iNaturalist Lightroom Plugin Updater (Cross-Platform)
-------------------------------------------------------------
+--------------------------------------------------------------------
 Functional Description:
 This script securely updates the iNaturalist Identifier Lightroom plugin
 by downloading the latest plugin ZIP from GitHub and replacing the existing
 plugin while keeping a backup copy of the old version.
 
+It supports:
+- Fetching the latest release metadata from GitHub
+- Comparing local and remote versions
+- Downloading and extracting the latest plugin ZIP
+- Backing up and replacing the current plugin
+- Cleaning up temporary files
+- Logging all steps in detail
+====================================================================
 Modules and Scripts Used:
 - LrPrefs
 - LrDialogs
@@ -18,11 +26,9 @@ Modules and Scripts Used:
 - Logger.lua
 - Info.lua
 - json.lua
-
-Calling Scripts:
-- AnimalIdentifier.lua
+Scripts Using This Script:
 - PluginInfoProvider.lua
-
+- AnimalIdentifier.lua
 Numbered Steps:
 1. Retrieve latest release metadata from GitHub
 2. Identify the plugin ZIP asset in the release
@@ -32,7 +38,7 @@ Numbered Steps:
 6. Remove old plugin
 7. Install new plugin
 8. Cleanup temporary files
-============================================================
+====================================================================
 ]]
 
 local logger = require("Logger")
@@ -60,25 +66,32 @@ local function getLatestRelease()
         { field = "User-Agent", value = Updates.repo .. "/" .. Updates.version() },
         { field = "X-GitHub-Api-Version", value = "2022-11-28" },
     }
+
     logger.logMessage("[Step 1] Sending GET request to GitHub API: " .. url)
     local data, respHeaders = LrHttp.get(url, headers)
+    logger.logMessage("[Step 1] HTTP response: " .. tostring(respHeaders.status or "nil") .. ", error: " .. tostring(respHeaders.error))
+
     if respHeaders.error or respHeaders.status ~= 200 then
-        logger.logMessage("[Step 1] ERROR: GitHub API request failed, status: " .. tostring(respHeaders.status))
-        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                          "ERROR: Failed to retrieve latest release metadata from GitHub.",
-                          "critical")
+        LrDialogs.message(
+            LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+            "ERROR: Failed to retrieve latest release metadata from GitHub.",
+            "critical"
+        )
         return nil
     end
-    logger.logMessage("[Step 1] GitHub response received, decoding JSON")
+
     local success, release = pcall(json.decode, data)
     if not success then
         logger.logMessage("[Step 1] ERROR: Failed to decode GitHub JSON response")
-        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                          "ERROR: Failed to decode GitHub release metadata.",
-                          "critical")
+        LrDialogs.message(
+            LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+            "ERROR: Failed to decode GitHub release metadata.",
+            "critical"
+        )
         return nil
     end
-    logger.logMessage("[Step 1] Latest release found: " .. release.tag_name)
+
+    logger.logMessage("[Step 1] Latest release found: " .. tostring(release.tag_name))
     return release
 end
 
@@ -103,11 +116,13 @@ end
 local function downloadZip(url, zipPath)
     logger.logMessage("[Step 3] Downloading plugin ZIP from: " .. url)
     local data, headers = LrHttp.get(url)
+    logger.logMessage("[Step 3] HTTP download response: " .. tostring(headers.status or "nil") .. ", error: " .. tostring(headers.error))
     if headers.error then
-        logger.logMessage("[Step 3] ERROR downloading ZIP: " .. tostring(headers.error))
-        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                          "ERROR: Failed to download plugin ZIP.",
-                          "critical")
+        LrDialogs.message(
+            LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+            "ERROR: Failed to download plugin ZIP.",
+            "critical"
+        )
         return false
     end
     local f = io.open(zipPath, "wb")
@@ -154,7 +169,7 @@ end
 -- Step 5: Backup current plugin
 ------------------------------------------------------------
 local function backupCurrentPlugin(pluginPath)
-    local v = Updates.version()
+    local v = Updates.getCurrentVersion()
     local backupPath = pluginPath .. "-" .. v
     logger.logMessage("[Step 5] Creating backup of current plugin: " .. backupPath)
     local ok = LrFileUtils.copy(pluginPath, backupPath)
@@ -212,9 +227,11 @@ local function downloadAndInstall(ctx, release)
 
     cleanup(zipPath, tmpDir)
 
-    LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                      "iNaturalist Identifier updated. Please restart Lightroom to complete installation.",
-                      "info")
+    LrDialogs.message(
+        LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+        "iNaturalist Identifier updated. Please restart Lightroom to complete installation.",
+        "info"
+    )
 end
 
 ------------------------------------------------------------
@@ -222,7 +239,19 @@ end
 ------------------------------------------------------------
 function Updates.version()
     local v = Info.VERSION
-    return string.format("%s.%s.%s", v.major, v.minor, v.revision)
+    if type(v) == "table" then
+        if v.major and v.minor and v.revision then
+            return string.format("%s.%s.%s", v.major, v.minor, v.revision)
+        elseif v.display then
+            return tostring(v.display)
+        else
+            return "unknown"
+        end
+    elseif type(v) == "string" then
+        return v
+    else
+        return "unknown"
+    end
 end
 
 function Updates.getCurrentVersion()
@@ -239,15 +268,15 @@ end
 -- Check for updates
 ------------------------------------------------------------
 function Updates.check(force)
-    local current = Updates.version()
-    logger.logMessage("[Check] Current plugin version: " .. (Info.VERSION.display or current))
+    local current = Updates.getCurrentVersion()
+    logger.logMessage("[Check] Current plugin version: " .. tostring(current))
     if not force and not prefs.checkForUpdates then return end
 
     local latest = getLatestRelease()
     if not latest then return end
 
-    local currentNorm = current:gsub("^v", "")
-    local latestNorm = latest.tag_name and latest.tag_name:gsub("^v", "") or ""
+    local currentNorm = tostring(current):gsub("^v", "")
+    local latestNorm = latest.tag_name and tostring(latest.tag_name):gsub("^v", "") or ""
 
     if currentNorm ~= latestNorm then
         logger.logMessage("[Check] Update available: " .. current .. " → " .. latest.tag_name)
@@ -262,9 +291,11 @@ function Updates.forceUpdate()
     LrTasks.startAsyncTask(function()
         local v = Updates.check(true)
         if v then
-            LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"),
-                              "No updates available. You already have the most recent version (" .. v .. ")",
-                              "info")
+            LrDialogs.message(
+                LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+                "No updates available. You already have the most recent version (" .. v .. ")",
+                "info"
+            )
         end
     end)
 end
