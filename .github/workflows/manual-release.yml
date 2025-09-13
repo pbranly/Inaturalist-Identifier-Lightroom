@@ -1,3 +1,18 @@
+# ============================================================
+# Functional Description
+# ------------------------------------------------------------
+# GitHub Actions workflow: Manual release of iNaturalist_Identifier.lrplugin
+# 
+# Features:
+# - Manual trigger with version number input.
+# - Choose target branch: main or beta.
+# - Updates Info.lua with new version.
+# - Commits changes to chosen branch.
+# - Creates Git tag.
+# - Packages plugin as zip.
+# - Creates GitHub Release with zip attached.
+# ============================================================
+
 name: Manual Release
 
 on:
@@ -6,6 +21,14 @@ on:
       version:
         description: "Version number (ex: 1.1.4)"
         required: true
+      branch:
+        description: "Target branch for release"
+        required: true
+        default: "main"
+        type: choice
+        options:
+          - main
+          - beta
 
 jobs:
   release:
@@ -14,8 +37,13 @@ jobs:
       contents: write
 
     steps:
+      # Checkout the chosen branch with full history to allow push
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
 
+      # Update Info.lua with new version
       - name: Update Info.lua
         run: |
           VERSION="${{ github.event.inputs.version }}"
@@ -38,25 +66,29 @@ jobs:
 
           mv Info.lua.tmp iNaturalist_Identifier.lrplugin/Info.lua
 
+      # Commit changes to the selected branch
       - name: Commit updated Info.lua
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add iNaturalist_Identifier.lrplugin/Info.lua
           git commit -m "Update Info.lua to version ${{ github.event.inputs.version }}"
-          git push origin HEAD:main
+          git push origin ${{ github.event.inputs.branch }}
 
+      # Create and push tag
       - name: Create tag
         run: |
           git tag ${{ github.event.inputs.version }}
           git push origin ${{ github.event.inputs.version }}
 
+      # Zip plugin directory
       - name: Zip plugin directory
         run: |
           ZIP_NAME="iNaturalist_Identifier.lrplugin-${{ github.event.inputs.version }}.zip"
           zip -r "$ZIP_NAME" iNaturalist_Identifier.lrplugin
           echo "ZIP_FILE=$ZIP_NAME" >> $GITHUB_ENV
 
+      # Create GitHub release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
