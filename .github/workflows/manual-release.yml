@@ -1,3 +1,51 @@
+# ============================================================
+# Functional Description
+# ------------------------------------------------------------
+# This GitHub Actions workflow automates the manual release 
+# process of the Lightroom plugin `iNaturalist_Identifier.lrplugin`.
+#
+# Functional Flow:
+# 1. Manual Trigger:
+#    - The workflow is manually triggered via the 
+#      `workflow_dispatch` event.
+#    - The user must provide a semantic version number 
+#      (e.g., 1.1.4).
+#
+# 2. Version Update in Info.lua:
+#    - Extracts major, minor, and revision numbers 
+#      from the provided version.
+#    - Updates the `VERSION` block in 
+#      `iNaturalist_Identifier.lrplugin/Info.lua`
+#      with the new version values (build reset to 0).
+#
+# 3. Commit Changes:
+#    - Commits the updated `Info.lua` file back to the 
+#      `main` branch with a descriptive commit message.
+#
+# 4. Tagging:
+#    - Creates a new Git tag matching the provided version.
+#    - Pushes the tag to the repository for traceability.
+#
+# 5. Packaging:
+#    - Zips the `iNaturalist_Identifier.lrplugin` directory.
+#    - Names the zip file with the plugin name and version.
+#
+# 6. Release Creation:
+#    - Publishes a GitHub Release using the created tag.
+#    - Attaches the generated zip file to the release.
+#    - Release body contains an automated release note.
+#
+# Usage:
+# - Trigger manually from the "Actions" tab in GitHub.
+# - Enter the desired version number.
+# - The workflow handles updating, tagging, packaging, 
+#   and publishing the release automatically.
+#
+# Result:
+# - A ready-to-download plugin zip file attached to the 
+#   GitHub Release page, with version consistency ensured.
+# ============================================================
+
 name: Manual Release
 
 on:
