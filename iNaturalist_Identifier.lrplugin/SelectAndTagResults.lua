@@ -33,6 +33,7 @@ Modules and Scripts Used
   * LrView             : UI controls
   * LrApplication      : Access to catalog and photos
   * LrPathUtils / LrFileUtils : For checking existence of tempo.jpg
+  * LrPrefs            : Access to plugin preferences (for token)
 - logger.lua             : Logging utility (English logs)
 - observation_selection.lua : Handles confirmation + iNaturalist submission
 
@@ -58,7 +59,7 @@ Numbered Steps
    2.8. Add selected species as keywords to the provided photo.
    2.9. Log success or cancellation.
    2.10. Ask user whether to send exported photo (`tempo.jpg`) 
-         as observation to iNaturalist.
+         as observation to iNaturalist using observation_selection.lua.
 3. Export `showSelection` function.
 
 Each step is logged in English using `logger.lua`.
@@ -73,9 +74,11 @@ local LrView            = import "LrView"
 local LrApplication     = import "LrApplication"
 local LrPathUtils       = import "LrPathUtils"
 local LrFileUtils       = import "LrFileUtils"
+local LrPrefs           = import "LrPrefs"
 
--- [Step 1] Import logger
+-- [Step 1] Import logger and observation_selection modules
 local logger = require("Logger")
+local observationSelection = require("observation_selection")
 
 -- Localization function
 local LOC = LOC
@@ -219,14 +222,27 @@ local function showSelection(resultsString, photo)
             -- [2.9] Log success
             logger.logMessage("[2.9] Keywords successfully added: " .. table.concat(selectedKeywords, ", "))
 
-            -- [2.10] Ask for iNaturalist submission
-            local observation_selection = require("observation_selection")
+            -- [2.10] Ask for iNaturalist submission using observation_selection.lua
+            logger.logMessage("[2.10] Keywords applied successfully. Calling observation_selection module.")
+            
+            -- Get plugin preferences for token
+            local prefs = LrPrefs.prefsForPlugin()
+            local token = prefs.token
+            logger.logMessage("[2.10] Retrieved token from preferences: " .. (token and "present" or "missing"))
+            
+            -- Path to tempo.jpg (created by export_photo_to_tempo.lua)
             local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
+            logger.logMessage("[2.10] Checking for tempo.jpg at path: " .. tempoPath)
 
             if LrFileUtils.exists(tempoPath) then
-                observation_selection.askSubmit(tempoPath, selectedKeywords, nil)
+                logger.logMessage("[2.10] tempo.jpg found. Calling observation_selection.askSubmit()")
+                observationSelection.askSubmit(tempoPath, selectedKeywords, token)
             else
-                logger.logMessage("[2.10] tempo.jpg not found, cannot ask for observation submission.")
+                logger.logMessage("[2.10] tempo.jpg not found at expected path. Cannot ask for observation submission.")
+                LrDialogs.message(
+                    LOC("$$$/iNat/Error/TempoNotFound=Temporary file not found"),
+                    LOC("$$$/iNat/Error/CannotSubmitObservation=Cannot submit observation without exported image.")
+                )
             end
 
         else
