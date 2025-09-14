@@ -1,20 +1,21 @@
 --[[
     Script: observation_selection.lua
     ---------------------------------
-    This script handles user interaction for submitting a photo as an observation 
-    to the iNaturalist platform from within Lightroom.
+    This script handles user interaction for submitting an exported photo 
+    (tempo.jpg) as an observation to the iNaturalist platform from within Lightroom.
 
     Purpose:
     --------
     Displays a confirmation dialog asking the user whether they want to submit 
-    the current photo as an observation (with species information) to iNaturalist.
+    the exported photo as an observation (with species information) to iNaturalist.
 
     How It Works:
     -------------
     1. Prompts the user with a Yes/No dialog using `LrDialogs.confirm`.
     2. If the user confirms, starts an asynchronous task to:
        - Log the intent.
-       - Call the `submitObservation()` function from the `call_inaturalist` module.
+       - Call the `submitObservation()` function from the `call_inaturalist` module,
+         using the path of the already-exported JPEG (tempo.jpg).
        - Show a success or error message based on the result.
     3. If the user cancels, it logs that the action was aborted.
 
@@ -27,9 +28,8 @@
 
     Notes:
     ------
-    This script is invoked after a species has been identified and selected. 
-    It requires a valid photo, selected keywords (typically the species name), 
-    and a valid authentication token.
+    - The photo to submit must already have been exported via `export_photo_to_tempo.lua`.
+    - This script only receives the path to that exported file (tempo.jpg).
 ]]
 
 -- observation_selection.lua
@@ -47,7 +47,10 @@ local LOC = LOC                              -- Localization function for transl
 local observation = {}
 
 -- Main function to ask the user if they want to submit an observation
-function observation.askSubmit(photo, keywords, token)
+-- photoPath = full path of tempo.jpg (exported earlier)
+-- keywords  = selected species keywords
+-- token     = iNaturalist authentication token
+function observation.askSubmit(photoPath, keywords, token)
     -- Show a confirmation dialog asking the user to submit the photo to iNaturalist
     local response = LrDialogs.confirm(
         LOC("$$$/iNat/Dialog/AskObservation=Do you want to submit this photo as an observation to iNaturalist?"),
@@ -62,8 +65,8 @@ function observation.askSubmit(photo, keywords, token)
         LrTasks.startAsyncTask(function()
             logger.logMessage("[observation_selection] Submitting observation...")
 
-            -- Call the API submission function with the exported photo, selected keywords, and token
-            local success, msg = callAPI.submitObservation(photo, keywords, token)
+            -- Call the API submission function with the exported photo path, selected keywords, and token
+            local success, msg = callAPI.submitObservation(photoPath, keywords, token)
 
             -- If submission succeeded
             if success then

@@ -10,6 +10,9 @@ and allows the user to select and tag recognized species. All key events, API
 requests, and responses are logged in English. UI messages are internationalized 
 using LOC() and appear in English by default.
 
+MODIFICATION: Ajout du forçage de l'affichage de la photo en cours de traitement
+pour résoudre le problème d'image fixe en multi-sélection.
+
 Modules/Scripts Used:
 - Logger.lua              → Handles detailed logging of all events, errors, and API activity
 - call_inaturalist.lua    → Sends images to iNaturalist API for species identification
@@ -151,7 +154,17 @@ local function identify()
                 -- Step 9.7 & 9.8: Handle recognized or unrecognized species
                 if result:match("🕊️") then
                     logger.logMessage("[Step 9.7] Species recognized for " .. filename .. ". Launching selection/tagging module.")
-                    -- 🔑 Modification : on passe la photo explicitement
+                    
+                    -- 🔑 MODIFICATION : Forcer l'affichage de cette photo spécifique
+                    catalog:withWriteAccessDo("Set active photo", function()
+                        catalog:setSelectedPhotos(photo, {photo})
+                        logger.logMessage("[Step 9.7] Photo " .. filename .. " set as active photo in Lightroom.")
+                    end)
+                    
+                    -- Petit délai pour laisser l'interface se mettre à jour
+                    LrTasks.sleep(0.5)
+                    
+                    -- Lancer le module de sélection avec la photo ciblée
                     selectorModule.showSelection(result, photo)
                 else
                     logger.logMessage("[Step 9.8] No recognized species for " .. filename)
