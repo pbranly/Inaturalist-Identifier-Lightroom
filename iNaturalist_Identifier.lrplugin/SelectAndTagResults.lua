@@ -16,7 +16,12 @@ Functional flow:
 3. Allow the user to select which species will be added.
 4. Add the selected keywords to the provided photo in Lightroom, 
    creating new keywords if necessary.
-5. Log all actions in detail using `logger.lua`.
+5. After successful keyword addition, open a confirmation dialog 
+   ("Send photo to iNaturalist? Yes/No") by calling 
+   `observation_selection.lua`. If accepted, it uses the existing 
+   `tempo.jpg` (created by `export_photo_to_tempo.lua`) for 
+   submission.
+6. Log all actions in detail using `logger.lua`.
 
 ------------------------------------------------------------
 Modules and Scripts Used
@@ -27,7 +32,9 @@ Modules and Scripts Used
   * LrBinding          : Bind data to UI elements
   * LrView             : UI controls
   * LrApplication      : Access to catalog and photos
-- logger.lua           : Logging utility (English logs)
+  * LrPathUtils / LrFileUtils : For checking existence of tempo.jpg
+- logger.lua             : Logging utility (English logs)
+- observation_selection.lua : Handles confirmation + iNaturalist submission
 
 ------------------------------------------------------------
 Scripts Using This Script
@@ -50,6 +57,8 @@ Numbered Steps
    2.7. If none selected, notify and exit.
    2.8. Add selected species as keywords to the provided photo.
    2.9. Log success or cancellation.
+   2.10. Ask user whether to send exported photo (`tempo.jpg`) 
+         as observation to iNaturalist.
 3. Export `showSelection` function.
 
 Each step is logged in English using `logger.lua`.
@@ -62,6 +71,8 @@ local LrFunctionContext = import "LrFunctionContext"
 local LrBinding         = import "LrBinding"
 local LrView            = import "LrView"
 local LrApplication     = import "LrApplication"
+local LrPathUtils       = import "LrPathUtils"
+local LrFileUtils       = import "LrFileUtils"
 
 -- [Step 1] Import logger
 local logger = require("Logger")
@@ -207,10 +218,17 @@ local function showSelection(resultsString, photo)
 
             -- [2.9] Log success
             logger.logMessage("[2.9] Keywords successfully added: " .. table.concat(selectedKeywords, ", "))
---            LrDialogs.message(
---                LOC("$$$/iNat/Success/KeywordsAdded=Success"),
---                LOC("$$$/iNat/Success/KeywordsAddedMessage=Selected keywords were successfully added.")
---            )
+
+            -- [2.10] Ask for iNaturalist submission
+            local observation_selection = require("observation_selection")
+            local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
+
+            if LrFileUtils.exists(tempoPath) then
+                observation_selection.askSubmit(tempoPath, selectedKeywords, nil)
+            else
+                logger.logMessage("[2.10] tempo.jpg not found, cannot ask for observation submission.")
+            end
+
         else
             -- [2.9] User cancelled
             logger.logMessage("[2.9] User cancelled the species selection dialog.")
