@@ -16,11 +16,8 @@ Functional flow:
 3. Allow the user to select which species will be added.
 4. Add the selected keywords to the provided photo in Lightroom, 
    creating new keywords if necessary.
-5. After successful keyword addition, open a confirmation dialog 
-   ("Send photo to iNaturalist? Yes/No") by calling 
-   `observation_selection.lua`. If accepted, it uses the existing 
-   `tempo.jpg` (created by `export_photo_to_tempo.lua`) for 
-   submission.
+5. After successful keyword addition, call observation_selection
+   to ask user about iNaturalist submission.
 6. Log all actions in detail using `logger.lua`.
 
 ------------------------------------------------------------
@@ -32,10 +29,11 @@ Modules and Scripts Used
   * LrBinding          : Bind data to UI elements
   * LrView             : UI controls
   * LrApplication      : Access to catalog and photos
-  * LrPathUtils / LrFileUtils : For checking existence of tempo.jpg
-  * LrPrefs            : Access to plugin preferences (for token)
-- logger.lua             : Logging utility (English logs)
-- observation_selection.lua : Handles confirmation + iNaturalist submission
+  * LrPathUtils        : For path operations
+  * LrFileUtils        : For file existence checks
+  * LrPrefs            : Access to plugin preferences
+- logger.lua           : Logging utility (English logs)
+- observation_selection.lua : Handles iNaturalist submission
 
 ------------------------------------------------------------
 Scripts Using This Script
@@ -47,7 +45,7 @@ Scripts Using This Script
 ------------------------------------------------------------
 Numbered Steps
 ------------------------------------------------------------
-1. Import required modules (Lightroom SDK + logger).
+1. Import required modules (Lightroom SDK + logger + observation_selection).
 2. Define `showSelection` function.
    2.1. Locate "Recognized species" section in the results string.
    2.2. Parse each line to extract species (name + confidence).
@@ -56,10 +54,9 @@ Numbered Steps
    2.5. Show modal dialog and handle user choice.
    2.6. If user confirmed, collect selected species.
    2.7. If none selected, notify and exit.
-   2.8. Add selected species as keywords to the provided photo.
-   2.9. Log success or cancellation.
-   2.10. Ask user whether to send exported photo (`tempo.jpg`) 
-         as observation to iNaturalist using observation_selection.lua.
+   2.8. Add selected species as keywords to the given photo.
+   2.9. Call observation_selection to ask about iNaturalist submission.
+   2.10. Log success or cancellation.
 3. Export `showSelection` function.
 
 Each step is logged in English using `logger.lua`.
@@ -76,7 +73,7 @@ local LrPathUtils       = import "LrPathUtils"
 local LrFileUtils       = import "LrFileUtils"
 local LrPrefs           = import "LrPrefs"
 
--- [Step 1] Import logger and observation_selection modules
+-- [Step 1] Import logger and observation_selection
 local logger = require("Logger")
 local observationSelection = require("observation_selection")
 
@@ -84,7 +81,6 @@ local observationSelection = require("observation_selection")
 local LOC = LOC
 
 -- [Step 2] Main function: show species selection dialog
--- >>> modification : ajout du paramètre "photo"
 local function showSelection(resultsString, photo)
     logger.logMessage("[Step 2] Starting showSelection. Results string length: " .. tostring(#resultsString or "nil"))
 
@@ -191,14 +187,12 @@ local function showSelection(resultsString, photo)
                 return
             end
 
-            -- [2.8] Add selected keywords to provided photo
+            -- [2.8] Add selected keywords to the provided photo
             local catalog = LrApplication.activeCatalog()
-            logger.logMessage("[2.8] Preparing to add keywords to provided photo.")
+            local photoName = photo and photo:getFormattedMetadata("fileName") or "<unknown>"
+            logger.logMessage("[2.8] Preparing to add keywords to photo: " .. photoName)
 
             catalog:withWriteAccessDo("Adding iNaturalist keywords", function()
-                -- >>> nouvelle étape : forcer Lightroom sur la photo en cours
-                catalog:setSelectedPhotos({photo})
-
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
                         if kw:getName() == name then
@@ -213,41 +207,55 @@ local function showSelection(resultsString, photo)
                 for _, keyword in ipairs(selectedKeywords) do
                     local kw = getOrCreateKeyword(keyword)
                     if kw and photo then
-                        logger.logMessage("[2.8] Adding keyword to photo: " .. keyword)
+                        logger.logMessage("[2.8] Adding keyword '" .. keyword .. "' to photo: " .. photoName)
                         photo:addKeyword(kw)
                     end
                 end
             end)
 
-            -- [2.9] Log success
-            logger.logMessage("[2.9] Keywords successfully added: " .. table.concat(selectedKeywords, ", "))
+            logger.logMessage("[2.8] Keywords successfully added to " .. photoName .. ": " .. table.concat(selectedKeywords, ", "))
 
-            -- [2.10] Ask for iNaturalist submission using observation_selection.lua
-            logger.logMessage("[2.10] Keywords applied successfully. Calling observation_selection module.")
+            -- [2.9] Call observation_selection after successful keyword addition
+            logger.logMessage("[2.9] Keywords applied successfully. Calling observation_selection module.")
             
-            -- Get plugin preferences for token
-            local prefs = LrPrefs.prefsForPlugin()
-            local token = prefs.token
-            logger.logMessage("[2.10] Retrieved token from preferences: " .. (token and "present" or "missing"))
-            
-            -- Path to tempo.jpg (created by export_photo_to_tempo.lua)
-            local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
-            logger.logMessage("[2.10] Checking for tempo.jpg at path: " .. tempoPath)
+            -- Validation before calling observation_selection
+            if selectedKeywords and #selectedKeywords > 0 then
+                -- Get plugin preferences for token
+                local prefs = LrPrefs.prefsForPlugin()
+                local token = prefs.token
+                logger.logMessage("[2.9] Retrieved token from preferences: " .. (token and "present" or "missing"))
+                
+                -- Path to tempo.jpg (created by export_photo_to_tempo.lua)
+                local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
+                logger.logMessage("[2.9] Checking for tempo.jpg at path: " .. tempoPath)
 
-            if LrFileUtils.exists(tempoPath) then
-                logger.logMessage("[2.10] tempo.jpg found. Calling observation_selection.askSubmit()")
-                observationSelection.askSubmit(tempoPath, selectedKeywords, token)
+                if LrFileUtils.exists(tempoPath) then
+                    logger.logMessage("[2.9] tempo.jpg found. Calling observation_selection.askSubmit()")
+                    -- Protection against errors
+                    local success, err = pcall(function()
+                        observationSelection.askSubmit(tempoPath, selectedKeywords, token)
+                    end)
+                    if not success then
+                        logger.logMessage("[2.9] Error calling observation_selection: " .. tostring(err))
+                        LrDialogs.message("Error", "Could not launch observation submission: " .. tostring(err))
+                    end
+                else
+                    logger.logMessage("[2.9] tempo.jpg not found at expected path. Cannot ask for observation submission.")
+                    LrDialogs.message(
+                        LOC("$$$/iNat/Error/TempoNotFound=Temporary file not found"),
+                        LOC("$$$/iNat/Error/CannotSubmitObservation=Cannot submit observation without exported image.")
+                    )
+                end
             else
-                logger.logMessage("[2.10] tempo.jpg not found at expected path. Cannot ask for observation submission.")
-                LrDialogs.message(
-                    LOC("$$$/iNat/Error/TempoNotFound=Temporary file not found"),
-                    LOC("$$$/iNat/Error/CannotSubmitObservation=Cannot submit observation without exported image.")
-                )
+                logger.logMessage("[2.9] No selectedKeywords available for observation submission")
             end
 
+            -- [2.10] Final success log
+            logger.logMessage("[2.10] Process completed successfully.")
+
         else
-            -- [2.9] User cancelled
-            logger.logMessage("[2.9] User cancelled the species selection dialog.")
+            -- [2.10] User cancelled
+            logger.logMessage("[2.10] User cancelled the species selection dialog.")
         end
     end)
 end
