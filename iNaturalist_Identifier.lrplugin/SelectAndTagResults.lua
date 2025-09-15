@@ -83,7 +83,6 @@ local LOC = LOC
 -- [Step 2] Main function: show species selection dialog
 local function showSelection(resultsString, photo)
     logger.logMessage("[Step 2] Starting showSelection. Results string length: " .. tostring(#resultsString or "nil"))
-    logger.logMessage("[Step 2] Photo object received: " .. (photo and "present" or "missing"))
 
     -- [2.1] Find "Recognized species" section
     logger.logMessage("[2.1] Searching for recognized species section in results string.")
@@ -219,54 +218,32 @@ local function showSelection(resultsString, photo)
             -- [2.9] Call observation_selection after successful keyword addition
             logger.logMessage("[2.9] Keywords applied successfully. Calling observation_selection module.")
             
-            -- Enhanced validation before calling observation_selection
+            -- Validation before calling observation_selection
             if selectedKeywords and #selectedKeywords > 0 then
                 -- Get plugin preferences for token
                 local prefs = LrPrefs.prefsForPlugin()
                 local token = prefs.token
                 logger.logMessage("[2.9] Retrieved token from preferences: " .. (token and "present" or "missing"))
                 
-                if not token or token == "" then
-                    logger.logMessage("[2.9] No iNaturalist token found in preferences.")
-                    LrDialogs.message(
-                        LOC("$$$/iNat/Error/NoToken=No iNaturalist token configured"),
-                        LOC("$$$/iNat/Error/ConfigureToken=Please configure your iNaturalist token in plugin preferences.")
-                    )
-                    return
-                end
-                
                 -- Path to tempo.jpg (created by export_photo_to_tempo.lua)
                 local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
                 logger.logMessage("[2.9] Checking for tempo.jpg at path: " .. tempoPath)
 
                 if LrFileUtils.exists(tempoPath) then
-                    logger.logMessage("[2.9] tempo.jpg found. Calling observation_selection.askSubmit() with 4 parameters:")
-                    logger.logMessage("[2.9]   - photoPath: " .. tempoPath)
-                    logger.logMessage("[2.9]   - keywords: " .. table.concat(selectedKeywords, ", "))
-                    logger.logMessage("[2.9]   - token: [PRESENT]")
-                    logger.logMessage("[2.9]   - photo object: " .. (photo and "provided" or "nil"))
-                    
-                    -- Protection against errors with enhanced error handling
+                    logger.logMessage("[2.9] tempo.jpg found. Calling observation_selection.askSubmit()")
+                    -- Protection against errors
                     local success, err = pcall(function()
-                        -- CORRECTION IMPORTANTE: Passer 4 paramètres au lieu de 3
-                        observationSelection.askSubmit(tempoPath, selectedKeywords, token, photo)
+                        observationSelection.askSubmit(tempoPath, selectedKeywords, token)
                     end)
-                    
                     if not success then
                         logger.logMessage("[2.9] Error calling observation_selection: " .. tostring(err))
-                        LrDialogs.message(
-                            LOC("$$$/iNat/Error/ObservationError=Error launching observation submission"), 
-                            tostring(err),
-                            "error"
-                        )
-                    else
-                        logger.logMessage("[2.9] observation_selection.askSubmit() called successfully")
+                        LrDialogs.message("Error", "Could not launch observation submission: " .. tostring(err))
                     end
                 else
                     logger.logMessage("[2.9] tempo.jpg not found at expected path. Cannot ask for observation submission.")
                     LrDialogs.message(
                         LOC("$$$/iNat/Error/TempoNotFound=Temporary file not found"),
-                        LOC("$$$/iNat/Error/CannotSubmitObservation=Cannot submit observation without exported image. Please ensure the photo export completed successfully.")
+                        LOC("$$$/iNat/Error/CannotSubmitObservation=Cannot submit observation without exported image.")
                     )
                 end
             else
