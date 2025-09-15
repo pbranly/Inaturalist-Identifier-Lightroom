@@ -233,7 +233,7 @@ local function submitObservation(photoPath, keyword, token, photo)
     logger.logMessage("POST https://api.inaturalist.org/v1/observations")
     logger.logMessage("Headers:")
     for _, h in ipairs(headers) do
-        -- Don't log full token for security
+        -- Don't log full token for security in production
         if h.field == "Authorization" then
             logger.logMessage("  " .. h.field .. ": Bearer [TOKEN_HIDDEN]")
         else
@@ -247,7 +247,34 @@ local function submitObservation(photoPath, keyword, token, photo)
         if p.fileName then desc = desc .. " (fileName=" .. p.fileName .. ", filePath=" .. p.filePath .. ")" end
         logger.logMessage(desc)
     end
-    -- === Fin log ===
+    
+    -- === Génération de la commande curl équivalente (DEBUG) ===
+    local curlCommand = "curl -X POST \"https://api.inaturalist.org/v1/observations\" \\\n"
+    
+    -- Ajouter les headers
+    for _, h in ipairs(headers) do
+        curlCommand = curlCommand .. "  -H \"" .. h.field .. ": " .. h.value .. "\" \\\n"
+    end
+    
+    -- Ajouter les paramètres multipart
+    for _, p in ipairs(params) do
+        if p.fileName and p.filePath then
+            -- Paramètre fichier
+            curlCommand = curlCommand .. "  -F \"" .. p.name .. "=@" .. p.filePath .. "\" \\\n"
+        else
+            -- Paramètre texte (échapper les guillemets dans la valeur)
+            local escapedValue = string.gsub(tostring(p.value), '"', '\\"')
+            curlCommand = curlCommand .. "  -F \"" .. p.name .. "=" .. escapedValue .. "\" \\\n"
+        end
+    end
+    
+    -- Ajouter les options finales
+    curlCommand = curlCommand .. "  --verbose"
+    
+    logger.logMessage("[observation_selection] === CURL COMMAND FOR MANUAL TESTING ===")
+    logger.logMessage(curlCommand)
+    logger.logMessage("[observation_selection] === END CURL COMMAND ===")
+    -- === Fin log curl ===
 
     -- Perform POST request to iNaturalist API with timeout
     local result, hdrs = LrHttp.postMultipart(
