@@ -113,6 +113,7 @@ local function identify()
         local function processNextPhoto(index)
             if index > #photos then
                 logger.logMessage("[Step 10] All photos processed.")
+				LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AllDone=All photos processed."), 3)
                 return
             end
