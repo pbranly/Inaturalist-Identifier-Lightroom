@@ -16,9 +16,10 @@ Modules and Scripts Used:
 - Logger.lua
 
 Calling Scripts:
-- AnimalIdentifier.lua
+- Inaturalist_Identifier.lua
 - PluginInfoProvider.lua
 ============================================================]]
+
 
 -- Step 1: Imports
 local LrPrefs   = import "LrPrefs"
