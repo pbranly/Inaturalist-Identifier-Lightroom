@@ -219,7 +219,7 @@ local function showSelection(resultsString, photo)
             end)
 
             logger.logMessage(
-                "[2.8] Keywords successfully added to " .. photoName .. ": " 
+                "[2.8] Keywords successfully added to " .. photoName .. ": "
                 .. table.concat(selectedKeywords, ",")
             )
 
