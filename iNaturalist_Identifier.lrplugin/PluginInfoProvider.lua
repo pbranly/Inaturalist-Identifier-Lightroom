@@ -152,7 +152,8 @@ return {
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
                 logger.logMessage(
-                    "[Step 8] Preferences saved. Logging: " .. tostring(prefs.logEnabled)
+                    "[Step 8] Preferences saved. Logging: "
+                    .. tostring(prefs.logEnabled)
                     .. ", Token length: "
                     .. tostring(#(prefs.token or ""))
                 )
