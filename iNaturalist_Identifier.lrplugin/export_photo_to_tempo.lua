@@ -4,7 +4,7 @@
  Purpose     : Export selected photo to a temporary JPEG file for external use
 
  Description :
- This Lightroom plugin module exports the currently selected photo to a temporary 
+ This Lightroom plugin module exports the currently selected photo to a temporary
  JPEG file named "tempo.jpg" located in the plugin's own folder (cross-platform).
  It keeps only the EXIF metadata useful for iNaturalist determination:
    - Date/time of capture
