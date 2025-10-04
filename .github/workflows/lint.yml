@@ -29,4 +29,4 @@ jobs:
           version: 0.18
           args: >
             --check .
-            --exclude json.lua   # <-- ignore json.lua pour StyLua
+
