@@ -47,17 +47,17 @@ Execution Steps:
 ====================================================================
 --]]
 
-local LrView        = import "LrView"
-local LrPrefs       = import "LrPrefs"
-local __LrDialogs   = import "LrDialogs"
-local LrTasks       = import "LrTasks"
-local __LrHttp      = import "LrHttp"
+local LrView      = import "LrView"
+local LrPrefs     = import "LrPrefs"
+local LrDialogs   = import "LrDialogs" -- luacheck: ignore 512
+local LrTasks     = import "LrTasks"
+local LrHttp      = import "LrHttp"    -- luacheck: ignore 512
 
-local logger        = require("Logger")
-local Updates       = require("Update_plugin")
-local TokenUpdater  = require("TokenUpdater")
+local logger       = require("Logger")
+local Updates      = require("Update_plugin")
+local TokenUpdater = require("TokenUpdater")
 
-local __bind = LrView.bind
+local bind = LrView.bind -- luacheck: ignore 512
 
 return {
     sectionsForTopOfDialog = function(viewFactory)
