@@ -113,7 +113,7 @@ local function identify()
         local function processNextPhoto(index)
             if index > #photos then
                 logger.logMessage("[Step 10] All photos processed.")
-				LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
+                LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AllDone=All photos processed."), 3)
                 return
             end
@@ -139,22 +139,23 @@ local function identify()
 
             -- Step 9.5 & 9.6: Call iNaturalist API and log request/response
             logger.logMessage("[Step 9.5] Sending identification request for " .. filename .. " to iNaturalist API")
-            callInaturalist.identifyAsync(tempoPath, token, function(result, err, httpDetails)
+            callInaturalist.identifyAsync(tempoPath, token, function(result, apiErr, httpDetails)
                 if httpDetails then
                     logger.logMessage("[Step 9.6] HTTP request: " .. (httpDetails.request or "<unknown>"))
                     logger.logMessage("[Step 9.6] HTTP response: " .. (httpDetails.response or "<unknown>"))
                 end
 
-                if err then
-                    logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. err)
-                    LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), err)
+                if apiErr then
+                    logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. apiErr)
+                    LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), apiErr)
                     processNextPhoto(index + 1)
                     return
                 end
 
                 -- Step 9.7 & 9.8: Handle recognized or unrecognized species
                 if result:match("🕊️") then
-                    logger.logMessage("[Step 9.7] Species recognized for " .. filename .. ". Launching selection/tagging module.")
+                    logger.logMessage("[Step 9.7] Species recognized for " .. filename ..
+                        ". Launching selection/tagging module.")
                     
                     -- 🔑 MODIFICATION : Forcer l'affichage de cette photo spécifique
                     catalog:withWriteAccessDo("Set active photo", function()
@@ -191,7 +192,7 @@ local function identify()
 end
 
 -- Optional Lightroom export hook
-local function processRenderedPhotos(functionContext, exportContext)
+local function processRenderedPhotos(_functionContext, _exportContext)
     identify()
 end
 
