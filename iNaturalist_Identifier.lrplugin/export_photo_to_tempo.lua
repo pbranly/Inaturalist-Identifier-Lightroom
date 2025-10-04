@@ -111,7 +111,9 @@ function export_photo_to_tempo.exportToTempo(photo)
     exportSession:doExportOnCurrentTask()
 
     -- Step 5: Locate exported JPEG and rename
-    for _, rendition in exportSession:renditions() do
+    local renditions = exportSession:renditions()
+    local rendition = renditions[1] -- éviter le warning loop executed at most once
+    if rendition then
         local success, pathOrMsg = rendition:waitForRender()
         if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
             local result = LrFileUtils.move(pathOrMsg, tempFilePath)
