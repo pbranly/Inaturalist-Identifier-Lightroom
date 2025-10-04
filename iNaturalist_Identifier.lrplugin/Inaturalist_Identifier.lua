@@ -3,11 +3,11 @@
 Inaturalist_Identifier.lua (Sequential Multi-photo Version with Detailed Logging)
 -------------------------------------------------------------------------------------
 Functional Description:
-This plugin identifies species from selected photos in Adobe Lightroom using the 
-iNaturalist API. It processes photos sequentially to avoid concurrency issues, 
-exports temporary images for API submission, checks and updates access tokens, 
-and allows the user to select and tag recognized species. All key events, API 
-requests, and responses are logged in English. UI messages are internationalized 
+This plugin identifies species from selected photos in Adobe Lightroom using the
+iNaturalist API. It processes photos sequentially to avoid concurrency issues,
+exports temporary images for API submission, checks and updates access tokens,
+and allows the user to select and tag recognized species. All key events, API
+requests, and responses are logged in English. UI messages are internationalized
 using LOC() and appear in English by default.
 
 MODIFICATION: Ajout du forçage de l'affichage de la photo en cours de traitement
