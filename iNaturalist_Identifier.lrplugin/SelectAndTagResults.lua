@@ -31,9 +31,9 @@ Modules and Scripts Used
   * LrBinding          : Bind data to UI elements
   * LrView             : UI controls
   * LrApplication      : Access to catalog and photos
-  * LrPathUtils        : For path operations
-  * LrFileUtils        : For file existence checks
-  * LrPrefs            : Access to plugin preferences
+  -- * LrPathUtils      : For path operations (unused)
+  -- * LrFileUtils      : For file existence checks (unused)
+  -- * LrPrefs          : Access to plugin preferences (unused)
 - logger.lua           : Logging utility (English logs)
 - observation_selection.lua : Handles iNaturalist submission
                               (⚠️ currently disabled)
@@ -68,38 +68,40 @@ Each step is logged in English using `logger.lua`.
 ]]
 
 -- [Step 1] Import Lightroom SDK modules
-local LrDialogs         = import "LrDialogs"
-local LrFunctionContext = import "LrFunctionContext"
-local LrBinding         = import "LrBinding"
-local LrView            = import "LrView"
-local LrApplication     = import "LrApplication"
---local LrPathUtils       = import "LrPathUtils"
---local LrFileUtils       = import "LrFileUtils"
---local LrPrefs           = import "LrPrefs"
+local _LrDialogs         = import "LrDialogs"         -- luacheck: ignore 512
+local LrFunctionContext  = import "LrFunctionContext"
+local LrBinding          = import "LrBinding"
+local LrView             = import "LrView"
+local LrApplication      = import "LrApplication"
+-- local _LrPathUtils      = import "LrPathUtils"      -- luacheck: ignore 512
+-- local _LrFileUtils      = import "LrFileUtils"      -- luacheck: ignore 512
+-- local _LrPrefs          = import "LrPrefs"          -- luacheck: ignore 512
 
 -- [Step 1] Import logger and observation_selection
 local logger = require("Logger")
--- local observationSelection = require("observation_selection") -- ⚠️ désactivé
+-- local observationSelection = require("observation_selection") -- ⚠️ disabled
 
 -- Localization function
 local LOC = LOC
 
 -- [Step 2] Main function: show species selection dialog
 local function showSelection(resultsString, photo)
-    logger.logMessage("[Step 2] Starting showSelection. Results string length: " .. tostring(#resultsString or "nil"))
+    logger.logMessage("[Step 2] Starting showSelection. Results string length: "
+        .. tostring(#resultsString or "nil"))
 
     -- [2.1] Find "Recognized species" section
     logger.logMessage("[2.1] Searching for recognized species section in results string.")
     local startIndex = resultsString:find("🕊️%s*Recognized species%s*:")
     if not startIndex then
         logger.logMessage("[2.1] No recognized species section found. Aborting.")
-        LrDialogs.message(
+        _LrDialogs.message(
             LOC("$$$/iNat/Error/NoRecognizedSection=No recognized species found"),
             LOC("$$$/iNat/Error/UnexpectedFormat=The result format is not recognized.")
         )
         return
     end
-    logger.logMessage("[2.1] Recognized species section found at index: " .. tostring(startIndex))
+    logger.logMessage("[2.1] Recognized species section found at index: "
+        .. tostring(startIndex))
 
     local subResult = resultsString:sub(startIndex)
     logger.logMessage("[2.1] Extracted recognized species section:\n" .. subResult)
@@ -130,7 +132,7 @@ local function showSelection(resultsString, photo)
     -- [2.3] Check at least one valid species
     if #parsedItems == 0 then
         logger.logMessage("[2.3] No valid species parsed. Aborting.")
-        LrDialogs.message(
+        _LrDialogs.message(
             LOC("$$$/iNat/Error/NoSpeciesDetected=No species detected"),
             LOC("$$$/iNat/Error/TryAgain=Please try identification again.")
         )
@@ -162,7 +164,7 @@ local function showSelection(resultsString, photo)
 
         -- [2.5] Show dialog
         logger.logMessage("[2.5] Presenting modal dialog for user selection.")
-        local result = LrDialogs.presentModalDialog {
+        local result = _LrDialogs.presentModalDialog {
             title = LOC("$$$/iNat/Dialog/SelectSpecies=Select species to add as keywords"),
             contents = contents,
             actionVerb = LOC("$$$/iNat/Dialog/Add=Add")
@@ -182,7 +184,7 @@ local function showSelection(resultsString, photo)
             -- [2.7] If none selected, warn and exit
             if #selectedKeywords == 0 then
                 logger.logMessage("[2.7] No keywords selected. Exiting without changes.")
-                LrDialogs.message(
+                _LrDialogs.message(
                     LOC("$$$/iNat/Error/NoKeywordsSelected=No species selected"),
                     LOC("$$$/iNat/Info/NoKeywordsAdded=No keywords will be added.")
                 )
@@ -208,46 +210,21 @@ local function showSelection(resultsString, photo)
                 for _, keyword in ipairs(selectedKeywords) do
                     local kw = getOrCreateKeyword(keyword)
                     if kw and photo then
-                        logger.logMessage("[2.8] Adding keyword '" .. keyword .. "' to photo: " .. photoName)
+                        logger.logMessage(
+                            "[2.8] Adding keyword '" .. keyword .. "' to photo: " .. photoName
+                        )
                         photo:addKeyword(kw)
                     end
                 end
             end)
 
-            logger.logMessage("[2.8] Keywords successfully added to " .. photoName .. ": " .. table.concat(selectedKeywords, ", "))
+            logger.logMessage(
+                "[2.8] Keywords successfully added to " .. photoName .. ": " 
+                .. table.concat(selectedKeywords, ",")
+            )
 
             -- [2.9] Call observation_selection after successful keyword addition
             logger.logMessage("[2.9] Keywords applied successfully. (⚠️ Appel à observation_selection désactivé)")
-
-            --[[ 
-            -- Validation before calling observation_selection
-            if selectedKeywords and #selectedKeywords > 0 then
-                local prefs = LrPrefs.prefsForPlugin()
-                local token = prefs.token
-                logger.logMessage("[2.9] Retrieved token from preferences: " .. (token and "present" or "missing"))
-                local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
-                logger.logMessage("[2.9] Checking for tempo.jpg at path: " .. tempoPath)
-
-                if LrFileUtils.exists(tempoPath) then
-                    logger.logMessage("[2.9] tempo.jpg found. Calling observation_selection.askSubmit()")
-                    local success, err = pcall(function()
-                        observationSelection.askSubmit(tempoPath, selectedKeywords, token)
-                    end)
-                    if not success then
-                        logger.logMessage("[2.9] Error calling observation_selection: " .. tostring(err))
-                        LrDialogs.message("Error", "Could not launch observation submission: " .. tostring(err))
-                    end
-                else
-                    logger.logMessage("[2.9] tempo.jpg not found at expected path. Cannot ask for observation submission.")
-                    LrDialogs.message(
-                        LOC("$$$/iNat/Error/TempoNotFound=Temporary file not found"),
-                        LOC("$$$/iNat/Error/CannotSubmitObservation=Cannot submit observation without exported image.")
-                    )
-                end
-            else
-                logger.logMessage("[2.9] No selectedKeywords available for observation submission")
-            end
-            ]]
 
             -- [2.10] Final success log
             logger.logMessage("[2.10] Process completed successfully.")
