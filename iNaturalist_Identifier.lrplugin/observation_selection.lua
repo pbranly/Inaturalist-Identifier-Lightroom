@@ -72,7 +72,9 @@ local function submitObservation(photoPath, keywords, token)
         if part.value then
             logger.logMessage(string.format("  part %d: %s = %s", i, part.name, tostring(part.value)))
         else
-            logger.logMessage(string.format("  part %d: %s (fileName=%s, filePath=%s)", i, part.name, part.fileName, part.filePath))
+            logger.logMessage(string.format(
+                "  part %d: %s (fileName=%s, filePath=%s)", i, part.name, part.fileName, part.filePath
+            ))
         end
     end
 
@@ -84,7 +86,8 @@ local function submitObservation(photoPath, keywords, token)
     end
 
     -- [2.3] Log equivalent curl command for testing
-    local curlCmd = 'curl -X POST "https://api.inaturalist.org/v1/observations" -H "Authorization: Bearer ' .. token .. '"'
+    local curlCmd = 'curl -X POST "https://api.inaturalist.org/v1/observations" -H "Authorization: Bearer ' ..
+                    token .. '"'
     for _, part in ipairs(params) do
         if part.value then
             curlCmd = curlCmd .. ' -F "' .. part.name .. '=' .. tostring(part.value) .. '"'
@@ -96,7 +99,9 @@ local function submitObservation(photoPath, keywords, token)
 
     -- [2.4] Perform HTTP request
     logger.logMessage("[observation_selection] Submitting POST request to iNaturalist API.")
-    local result, headersOut = LrHttp.postMultipart("https://api.inaturalist.org/v1/observations", params, headers)
+    local result, headersOut = LrHttp.postMultipart(
+        "https://api.inaturalist.org/v1/observations", params, headers
+    )
 
     -- [2.5] Log API response
     logger.logMessage("[observation_selection] API raw response: " .. tostring(result))
@@ -141,10 +146,16 @@ function observation.askSubmit(photoPath, keywords, token)
 
             if success then
                 logger.logMessage("[observation_selection] Observation submitted successfully.")
-                LrDialogs.message("Observation submitted", "Thank you for contributing to science!")
+                LrDialogs.message(
+                    "Observation submitted",
+                    "Thank you for contributing to science!"
+                )
             else
                 logger.logMessage("[observation_selection] Failed to submit observation.")
-                LrDialogs.message("Failed to submit observation", msg or "Unknown error occurred.")
+                LrDialogs.message(
+                    "Failed to submit observation",
+                    msg or "Unknown error occurred."
+                )
             end
         else
             logger.logMessage("[observation_selection] User cancelled observation submission.")
