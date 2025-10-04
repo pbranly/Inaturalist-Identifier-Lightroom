@@ -18,3 +18,7 @@ globals = {
   "LrColor",
   "LrFileUtils",
 }
+
+exclude_files = {
+  "json.lua"  -- ajouter d'autres fichiers à exclure ici si nécessaire
+}
