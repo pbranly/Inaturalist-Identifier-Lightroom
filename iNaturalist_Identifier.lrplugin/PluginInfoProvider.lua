@@ -160,11 +160,18 @@ return {
             end
         }
 
-        -- Return dialog layout
+        -- Return dialog layout (ligne longue corrigée)
         return {
             {
                 title = "iNaturalist connection settings",
-                viewFactory:row { localVersionField, viewFactory:static_text { title = " | ", width = 20 }, githubVersionField },
+                viewFactory:row {
+                    localVersionField,
+                    viewFactory:static_text {
+                        title = " | ",
+                        width = 20
+                    },
+                    githubVersionField
+                },
                 viewFactory:row { updateStatusText, updateButton },
                 viewFactory:row { tokenStatusText },
                 viewFactory:row { tokenField },
