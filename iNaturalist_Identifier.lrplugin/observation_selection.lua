@@ -126,7 +126,10 @@ function observation.askSubmit(photoPath, keywords, token)
     logger.logMessage("=== START askSubmit ===")
     logger.logMessage("Parameters received:")
     logger.logMessage("  photoPath: " .. tostring(photoPath))
-    logger.logMessage("  keywords: " .. (type(keywords) == "table" and table.concat(keywords, ", ") or tostring(keywords)))
+    logger.logMessage(
+    "  keywords: " ..
+    (type(keywords) == "table" and table.concat(keywords, ", ") or tostring(keywords))
+)
     logger.logMessage("  token: " .. (token and "***provided***" or "NIL"))
 
     -- [3.2] Run inside async task to avoid coroutine errors
