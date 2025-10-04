@@ -12,7 +12,8 @@ jobs:
 
       - name: Run Luacheck
         uses: lunarmodules/luacheck@v1
-
+        with:
+          args: . --config .luacheckrc   # <-- utilise ton .luacheckrc pour exclure json.lua
 
   stylua:
     name: Check formatting with StyLua
@@ -26,4 +27,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: 0.18
-
+          args: >
+            --check .
+            --exclude json.lua   # <-- ignore json.lua pour StyLua
