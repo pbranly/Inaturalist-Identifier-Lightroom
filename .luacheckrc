@@ -4,6 +4,7 @@
 globals = {
   "import",
   "LOC",
+  "_PLUGIN",        -- <- Lightroom plugin global
   "LrApplication",
   "LrDialogs",
   "LrTasks",
