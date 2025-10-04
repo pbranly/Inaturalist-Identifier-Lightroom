@@ -47,17 +47,17 @@ Execution Steps:
 ====================================================================
 --]]
 
-local LrView    = import "LrView"
-local LrPrefs   = import "LrPrefs"
-local LrDialogs = import "LrDialogs"
-local LrTasks   = import "LrTasks"
-local LrHttp    = import "LrHttp"
+local LrView      = import "LrView"
+local LrPrefs     = import "LrPrefs"
+local _LrDialogs  = import "LrDialogs"
+local LrTasks     = import "LrTasks"
+local _LrHttp     = import "LrHttp"
 
 local logger       = require("Logger")
 local Updates      = require("Update_plugin")
 local TokenUpdater = require("TokenUpdater")
 
-local bind = LrView.bind
+local _bind = LrView.bind
 
 return {
     sectionsForTopOfDialog = function(viewFactory)
@@ -151,10 +151,10 @@ return {
             action = function()
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
-                logger.logMessage("[Step 8] Preferences saved. Logging: "
-                    .. tostring(prefs.logEnabled)
-                    .. ", Token length: "
-                    .. tostring(#(prefs.token or "")))
+                logger.logMessage(
+                    "[Step 8] Preferences saved. Logging: " .. tostring(prefs.logEnabled)
+                    .. ", Token length: " .. tostring(#(prefs.token or ""))
+                )
             end
         }
 
