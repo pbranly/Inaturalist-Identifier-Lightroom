@@ -6,7 +6,7 @@
 =====================================================================================
 Functional Description (English)
 ------------------------------------------------------------
-This module `call_inaturalist.lua` is responsible for performing species identification 
+This module `call_inaturalist.lua` is responsible for performing species identification
 from a JPEG image exported from Lightroom by sending it to iNaturalist's AI scoring API.
 It performs the following main functions:
 
@@ -95,7 +95,7 @@ local function identifyAsync(imagePath, token, callback)
 
         -- Step 4: POST to iNaturalist API
         logger.logMessage("[Step 4] Sending POST request to iNaturalist API.")
-        local result, hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
+        local result, _hdrs = LrHttp.post("https://api.inaturalist.org/v1/computervision/score_image", body, headers)
         if not result then
             logger.logMessage("[Step 5] API call failed: no response.")
             callback(nil, "API error: No response")
