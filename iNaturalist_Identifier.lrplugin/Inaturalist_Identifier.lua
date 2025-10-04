@@ -3,11 +3,11 @@
 Inaturalist_Identifier.lua (Sequential Multi-photo Version with Detailed Logging)
 -------------------------------------------------------------------------------------
 Functional Description:
-This plugin identifies species from selected photos in Adobe Lightroom using the
-iNaturalist API. It processes photos sequentially to avoid concurrency issues,
-exports temporary images for API submission, checks and updates access tokens,
-and allows the user to select and tag recognized species. All key events, API
-requests, and responses are logged in English. UI messages are internationalized
+This plugin identifies species from selected photos in Adobe Lightroom using the 
+iNaturalist API. It processes photos sequentially to avoid concurrency issues, 
+exports temporary images for API submission, checks and updates access tokens, 
+and allows the user to select and tag recognized species. All key events, API 
+requests, and responses are logged in English. UI messages are internationalized 
 using LOC() and appear in English by default.
 
 MODIFICATION: Ajout du forçage de l'affichage de la photo en cours de traitement
@@ -113,7 +113,7 @@ local function identify()
         local function processNextPhoto(index)
             if index > #photos then
                 logger.logMessage("[Step 10] All photos processed.")
-                LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
+				LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
                 LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AllDone=All photos processed."), 3)
                 return
             end
@@ -139,30 +139,32 @@ local function identify()
 
             -- Step 9.5 & 9.6: Call iNaturalist API and log request/response
             logger.logMessage("[Step 9.5] Sending identification request for " .. filename .. " to iNaturalist API")
-            callInaturalist.identifyAsync(tempoPath, token, function(result, apiErr, httpDetails)
+            callInaturalist.identifyAsync(tempoPath, token, function(result, err, httpDetails)
                 if httpDetails then
                     logger.logMessage("[Step 9.6] HTTP request: " .. (httpDetails.request or "<unknown>"))
                     logger.logMessage("[Step 9.6] HTTP response: " .. (httpDetails.response or "<unknown>"))
                 end
 
-                if apiErr then
-                    logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. apiErr)
-                    LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), apiErr)
+                if err then
+                    logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. err)
+                    LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), err)
                     processNextPhoto(index + 1)
                     return
                 end
 
                 -- Step 9.7 & 9.8: Handle recognized or unrecognized species
                 if result:match("🕊️") then
-                    logger.logMessage("[Step 9.7] Species recognized for " .. filename ..
-                        ". Launching selection/tagging module.")
+                    logger.logMessage("[Step 9.7] Species recognized for " .. filename .. ". Launching selection/tagging module.")
+                    
                     -- 🔑 MODIFICATION : Forcer l'affichage de cette photo spécifique
                     catalog:withWriteAccessDo("Set active photo", function()
                         catalog:setSelectedPhotos(photo, {photo})
                         logger.logMessage("[Step 9.7] Photo " .. filename .. " set as active photo in Lightroom.")
                     end)
+                    
                     -- Petit délai pour laisser l'interface se mettre à jour
                     LrTasks.sleep(0.5)
+                    
                     -- Lancer le module de sélection avec la photo ciblée
                     selectorModule.showSelection(result, photo)
                 else
@@ -189,7 +191,7 @@ local function identify()
 end
 
 -- Optional Lightroom export hook
-local function processRenderedPhotos(_functionContext, _exportContext)
+local function processRenderedPhotos(functionContext, exportContext)
     identify()
 end
 

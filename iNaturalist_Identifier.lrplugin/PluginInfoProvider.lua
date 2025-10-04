@@ -47,17 +47,17 @@ Execution Steps:
 ====================================================================
 --]]
 
---local LrView      = import "LrView"   -- luacheck: ignore 512
-local LrPrefs     = import "LrPrefs"
---local LrDialogs   = import "LrDialogs" -- luacheck: ignore 512
-local LrTasks     = import "LrTasks"
---local LrHttp      = import "LrHttp"    -- luacheck: ignore 512
+local LrView    = import "LrView"
+local LrPrefs   = import "LrPrefs"
+local LrDialogs = import "LrDialogs"
+local LrTasks   = import "LrTasks"
+local LrHttp    = import "LrHttp"
 
 local logger       = require("Logger")
 local Updates      = require("Update_plugin")
 local TokenUpdater = require("TokenUpdater")
 
---local bind = LrView.bind -- luacheck: ignore 512
+local bind = LrView.bind
 
 return {
     sectionsForTopOfDialog = function(viewFactory)
@@ -151,27 +151,18 @@ return {
             action = function()
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
-                logger.logMessage(
-                    "[Step 8] Preferences saved. Logging: "
+                logger.logMessage("[Step 8] Preferences saved. Logging: "
                     .. tostring(prefs.logEnabled)
                     .. ", Token length: "
-                    .. tostring(#(prefs.token or ""))
-                )
+                    .. tostring(#(prefs.token or "")))
             end
         }
 
-        -- Return dialog layout (ligne longue corrigée)
+        -- Return dialog layout
         return {
             {
                 title = "iNaturalist connection settings",
-                viewFactory:row {
-                    localVersionField,
-                    viewFactory:static_text {
-                        title = " | ",
-                        width = 20
-                    },
-                    githubVersionField
-                },
+                viewFactory:row { localVersionField, viewFactory:static_text { title = " | ", width = 20 }, githubVersionField },
                 viewFactory:row { updateStatusText, updateButton },
                 viewFactory:row { tokenStatusText },
                 viewFactory:row { tokenField },

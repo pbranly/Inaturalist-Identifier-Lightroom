@@ -2,20 +2,20 @@
 ============================================================
 Functional Description
 ------------------------------------------------------------
-This module `observation_selection.lua` handles submitting
+This module `observation_selection.lua` handles submitting 
 photos and species observations to iNaturalist from Lightroom.
 
 Functional flow:
-1. Receive the exported photo path (`tempo.jpg`) and selected
+1. Receive the exported photo path (`tempo.jpg`) and selected 
    species keywords from Lightroom.
 2. Ask the user for confirmation before submission.
 3. Retrieve the OAuth2 token stored in plugin preferences.
-4. Build a multipart/form-data HTTP POST request to
+4. Build a multipart/form-data HTTP POST request to 
    https://api.inaturalist.org/v1/observations.
-5. Log all details, including multipart parameters, headers,
+5. Log all details, including multipart parameters, headers, 
    and a corresponding `curl` command for testing.
 6. Submit the observation using `LrHttp.postMultipart`.
-7. Handle the API response, log it, and show dialogs for success
+7. Handle the API response, log it, and show dialogs for success 
    or failure.
 
 Modules and Scripts Used:
@@ -72,9 +72,7 @@ local function submitObservation(photoPath, keywords, token)
         if part.value then
             logger.logMessage(string.format("  part %d: %s = %s", i, part.name, tostring(part.value)))
         else
-            logger.logMessage(string.format(
-                "  part %d: %s (fileName=%s, filePath=%s)", i, part.name, part.fileName, part.filePath
-            ))
+            logger.logMessage(string.format("  part %d: %s (fileName=%s, filePath=%s)", i, part.name, part.fileName, part.filePath))
         end
     end
 
@@ -86,8 +84,7 @@ local function submitObservation(photoPath, keywords, token)
     end
 
     -- [2.3] Log equivalent curl command for testing
-    local curlCmd = 'curl -X POST "https://api.inaturalist.org/v1/observations" -H "Authorization: Bearer ' ..
-                    token .. '"'
+    local curlCmd = 'curl -X POST "https://api.inaturalist.org/v1/observations" -H "Authorization: Bearer ' .. token .. '"'
     for _, part in ipairs(params) do
         if part.value then
             curlCmd = curlCmd .. ' -F "' .. part.name .. '=' .. tostring(part.value) .. '"'
@@ -99,9 +96,7 @@ local function submitObservation(photoPath, keywords, token)
 
     -- [2.4] Perform HTTP request
     logger.logMessage("[observation_selection] Submitting POST request to iNaturalist API.")
-    local result, headersOut = LrHttp.postMultipart(
-        "https://api.inaturalist.org/v1/observations", params, headers
-    )
+    local result, headersOut = LrHttp.postMultipart("https://api.inaturalist.org/v1/observations", params, headers)
 
     -- [2.5] Log API response
     logger.logMessage("[observation_selection] API raw response: " .. tostring(result))
@@ -126,10 +121,7 @@ function observation.askSubmit(photoPath, keywords, token)
     logger.logMessage("=== START askSubmit ===")
     logger.logMessage("Parameters received:")
     logger.logMessage("  photoPath: " .. tostring(photoPath))
-    logger.logMessage(
-    "  keywords: " ..
-    (type(keywords) == "table" and table.concat(keywords, ", ") or tostring(keywords))
-)
+    logger.logMessage("  keywords: " .. (type(keywords) == "table" and table.concat(keywords, ", ") or tostring(keywords)))
     logger.logMessage("  token: " .. (token and "***provided***" or "NIL"))
 
     -- [3.2] Run inside async task to avoid coroutine errors
@@ -149,16 +141,10 @@ function observation.askSubmit(photoPath, keywords, token)
 
             if success then
                 logger.logMessage("[observation_selection] Observation submitted successfully.")
-                LrDialogs.message(
-                    "Observation submitted",
-                    "Thank you for contributing to science!"
-                )
+                LrDialogs.message("Observation submitted", "Thank you for contributing to science!")
             else
                 logger.logMessage("[observation_selection] Failed to submit observation.")
-                LrDialogs.message(
-                    "Failed to submit observation",
-                    msg or "Unknown error occurred."
-                )
+                LrDialogs.message("Failed to submit observation", msg or "Unknown error occurred.")
             end
         else
             logger.logMessage("[observation_selection] User cancelled observation submission.")

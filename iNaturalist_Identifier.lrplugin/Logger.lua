@@ -2,9 +2,10 @@
 ============================================================
 Functional Description
 ------------------------------------------------------------
-This `logger.lua` module handles logging for the iNaturalist
-Identifier Lightroom plugin. It provides detailed logging
+This `logger.lua` module handles logging for the iNaturalist 
+Identifier Lightroom plugin. It provides detailed logging 
 and user notifications for all scripts in the plugin.
+
 Main Features:
 1. Determine the location of the log file.
 2. Initialize the log file at plugin startup.
@@ -12,17 +13,20 @@ Main Features:
 4. Insert a header the first time a script writes to the log.
 5. Display messages to the user while also recording them.
 6. Logging is entirely controlled by the `logEnabled` plugin preference.
+
 Modules and Scripts Used:
 - LrPathUtils
 - LrDialogs
 - LrPrefs
 - Lua `debug` library
+
 Calling Scripts:
 - AnimalIdentifier.lua
 - selectAndTagResults.lua
 - VerificationToken.lua
 - Updates.lua
 - Any other plugin script needing logging
+
 ============================================================
 Numbered Steps
 1. Import Lightroom SDK modules and Lua debug library.
@@ -34,6 +38,7 @@ Numbered Steps
 7. Write a message to the log including timestamp and script name.
 8. Display a message to the user and log it.
 9. Export the module functions.
+
 ============================================================
 Step Descriptions in English
 ------------------------------------------------------------
@@ -42,21 +47,30 @@ Step 1: Import Lightroom SDK modules and Lua debug library.
   - LrDialogs for user messages
   - LrPrefs for plugin preferences
   - debug for detecting caller script
+
 Step 2: Access plugin-specific preferences to check if logging is enabled.
-Step 3: Initialize a table to track which scripts have already logged messages.
+
+Step 3: Initialize a table to track which scripts have already logged messages. 
   This ensures headers are added only once per script.
-Step 4: Provide a function `getLogFilePath()` to determine the absolute
+
+Step 4: Provide a function `getLogFilePath()` to determine the absolute 
   path of `log.txt` inside the plugin folder.
-Step 5: Provide a function `getCallerScriptName()` using Lua debug stack
+
+Step 5: Provide a function `getCallerScriptName()` using Lua debug stack 
   inspection to detect which script is calling the logger.
-Step 6: Initialize the log file at plugin startup with a timestamped
+
+Step 6: Initialize the log file at plugin startup with a timestamped 
   “Plugin launched” entry. Reset script tracking.
-Step 7: Write messages to the log with timestamp, caller script name,
+
+Step 7: Write messages to the log with timestamp, caller script name, 
   and insert a header if this script writes for the first time.
-Step 8: Display a message to the user and log it. The screen message
+
+Step 8: Display a message to the user and log it. The screen message 
   is internationalized using a base English form.
-Step 9: Export functions `initializeLogFile`, `logMessage`, and `notify`
+
+Step 9: Export functions `initializeLogFile`, `logMessage`, and `notify` 
   for use by other scripts in the plugin.
+
 ============================================================
 Logging Notes
 ------------------------------------------------------------
@@ -64,24 +78,30 @@ Logging Notes
 - Caller script names are automatically detected.
 - Headers are written once per script.
 - Timestamp format: [YYYY-MM-DD HH:MM:SS]
-- Messages displayed on-screen are internationalized with LOC,
+- Messages displayed on-screen are internationalized with LOC, 
   e.g., LOC("$$$/iNat/PluginName=iNaturalist Identification")
 ============================================================
 ]]
+
 -- Step 1: Lightroom API imports
 local LrPathUtils = import "LrPathUtils"
 local LrDialogs  = import "LrDialogs"
 local LrPrefs    = import "LrPrefs"
+
 -- Lua debug library is used for caller detection
 local debug = debug
+
 -- Step 2: Access plugin-specific preferences
 local prefs = LrPrefs.prefsForPlugin()
+
 -- Step 3: Keep track of scripts that already wrote to the log
 local initializedScripts = {}
+
 -- Step 4: Returns the absolute path to the log file
 local function getLogFilePath()
     return LrPathUtils.child(_PLUGIN.path, "log.txt")
 end
+
 -- Step 5: Detect caller script name automatically
 local function getCallerScriptName()
     local info = debug.getinfo(3, "S")  -- 3 = caller up the stack
@@ -91,6 +111,7 @@ local function getCallerScriptName()
     end
     return "UnknownScript"
 end
+
 -- Step 6: Initialize the log file (if logging is enabled)
 local function initializeLogFile()
     if prefs.logEnabled then
@@ -103,6 +124,7 @@ local function initializeLogFile()
         initializedScripts = {} -- reset script tracking
     end
 end
+
 -- Step 7: Write a message to the log (if logging is enabled)
 local function logMessage(message)
     if prefs.logEnabled then
@@ -114,18 +136,21 @@ local function logMessage(message)
                 f:write("=== Logging started for " .. scriptName .. " ===\n")
                 initializedScripts[scriptName] = true
             end
+
             local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
             f:write(timestamp .. "[" .. scriptName .. "] " .. message .. "\n")
             f:close()
         end
     end
 end
+
 -- Step 8: Show a message to the user and log it
 local function notify(message)
     local scriptName = getCallerScriptName()
     logMessage(message)
     LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), "[" .. scriptName .. "] " .. message)
 end
+
 -- Step 9: Exported functions
 return {
     initializeLogFile = initializeLogFile,
