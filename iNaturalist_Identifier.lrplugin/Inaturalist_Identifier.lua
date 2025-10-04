@@ -156,16 +156,13 @@ local function identify()
                 if result:match("🕊️") then
                     logger.logMessage("[Step 9.7] Species recognized for " .. filename ..
                         ". Launching selection/tagging module.")
-                    
                     -- 🔑 MODIFICATION : Forcer l'affichage de cette photo spécifique
                     catalog:withWriteAccessDo("Set active photo", function()
                         catalog:setSelectedPhotos(photo, {photo})
                         logger.logMessage("[Step 9.7] Photo " .. filename .. " set as active photo in Lightroom.")
                     end)
-                    
                     -- Petit délai pour laisser l'interface se mettre à jour
                     LrTasks.sleep(0.5)
-                    
                     -- Lancer le module de sélection avec la photo ciblée
                     selectorModule.showSelection(result, photo)
                 else
