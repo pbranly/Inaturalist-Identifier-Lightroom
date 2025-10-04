@@ -68,8 +68,8 @@ local function getLatestRelease()
 
     logger.logMessage("[Step 1] Sending GET request to GitHub API: " .. url)
     local data, respHeaders = LrHttp.get(url, headers)
-    logger.logMessage("[Step 1] HTTP response: " 
-        .. tostring(respHeaders.status or "nil") .. ", error: " 
+    logger.logMessage("[Step 1] HTTP response: "
+        .. tostring(respHeaders.status or "nil") .. ", error: "
         .. tostring(respHeaders.error)
     )
 
@@ -103,8 +103,8 @@ end
 local function findPluginZipAsset(release)
     if not release or not release.assets then return nil end
     for _, asset in ipairs(release.assets) do
-        if asset.name:match("^iNaturalist_Identifier%.lrplugin") 
-           and asset.name:match("%.zip$") 
+        if asset.name:match("^iNaturalist_Identifier%.lrplugin")
+           and asset.name:match("%.zip$")
         then
             logger.logMessage("[Step 2] Found plugin ZIP asset: " .. asset.name)
             return asset.browser_download_url
@@ -120,8 +120,8 @@ end
 local function downloadZip(url, zipPath)
     logger.logMessage("[Step 3] Downloading plugin ZIP from: " .. url)
     local data, headers = LrHttp.get(url)
-    logger.logMessage("[Step 3] HTTP download response: " 
-        .. tostring(headers.status or "nil") .. ", error: " 
+    logger.logMessage("[Step 3] HTTP download response: "
+        .. tostring(headers.status or "nil") .. ", error: "
         .. tostring(headers.error)
     )
     if headers.error then
