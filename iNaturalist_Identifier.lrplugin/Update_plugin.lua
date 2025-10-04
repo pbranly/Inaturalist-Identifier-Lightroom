@@ -215,7 +215,7 @@ end
 ------------------------------------------------------------
 -- Orchestration: Download and install latest plugin
 ------------------------------------------------------------
-local function downloadAndInstall(ctx, release)
+local function downloadAndInstall(_ctx, release)
     local pluginPath = _PLUGIN.path
     local parentDir = LrPathUtils.parent(pluginPath)
     local zipPath = LrPathUtils.child(parentDir, "download.zip")
