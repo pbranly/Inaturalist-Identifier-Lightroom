@@ -73,9 +73,9 @@ local LrFunctionContext = import "LrFunctionContext"
 local LrBinding         = import "LrBinding"
 local LrView            = import "LrView"
 local LrApplication     = import "LrApplication"
-local LrPathUtils       = import "LrPathUtils"
-local LrFileUtils       = import "LrFileUtils"
-local LrPrefs           = import "LrPrefs"
+--local LrPathUtils       = import "LrPathUtils"
+--local LrFileUtils       = import "LrFileUtils"
+--local LrPrefs           = import "LrPrefs"
 
 -- [Step 1] Import logger and observation_selection
 local logger = require("Logger")
@@ -144,7 +144,6 @@ local function showSelection(resultsString, photo)
         local f = LrView.osFactory()
         local props = LrBinding.makePropertyTable(context)
         local checkboxes = {}
-
         for i, item in ipairs(parsedItems) do
             local key = "item_" .. i
             props[key] = false
@@ -154,7 +153,6 @@ local function showSelection(resultsString, photo)
             })
             logger.logMessage("[2.4] Added checkbox for species: " .. item.label)
         end
-
         local contents = f:scrolled_view {
             width = 500,
             height = 300,
@@ -195,7 +193,6 @@ local function showSelection(resultsString, photo)
             local catalog = LrApplication.activeCatalog()
             local photoName = photo and photo:getFormattedMetadata("fileName") or "<unknown>"
             logger.logMessage("[2.8] Preparing to add keywords to photo: " .. photoName)
-
             catalog:withWriteAccessDo("Adding iNaturalist keywords", function()
                 local function getOrCreateKeyword(name)
                     for _, kw in ipairs(catalog:getKeywords()) do
@@ -228,7 +225,6 @@ local function showSelection(resultsString, photo)
                 local prefs = LrPrefs.prefsForPlugin()
                 local token = prefs.token
                 logger.logMessage("[2.9] Retrieved token from preferences: " .. (token and "present" or "missing"))
-                
                 local tempoPath = LrPathUtils.child(_PLUGIN.path, "tempo.jpg")
                 logger.logMessage("[2.9] Checking for tempo.jpg at path: " .. tempoPath)
 
