@@ -47,7 +47,7 @@ Execution Steps:
 ====================================================================
 --]]
 
---local LrView      = import "LrView"
+--local LrView      = import "LrView"   -- luacheck: ignore 512
 local LrPrefs     = import "LrPrefs"
 --local LrDialogs   = import "LrDialogs" -- luacheck: ignore 512
 local LrTasks     = import "LrTasks"
@@ -153,7 +153,8 @@ return {
                 prefs.token = tokenField.value
                 logger.logMessage(
                     "[Step 8] Preferences saved. Logging: " .. tostring(prefs.logEnabled)
-                    .. ", Token length: " .. tostring(#(prefs.token or ""))
+                    .. ", Token length: "
+                    .. tostring(#(prefs.token or ""))
                 )
             end
         }
