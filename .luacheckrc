@@ -20,5 +20,5 @@ globals = {
 }
 
 exclude_files = {
-  "json.lua"  -- ajouter d'autres fichiers à exclure ici si nécessaire
+  "iNaturalist_Identifier.lrplugin/json.lua"  -- ajouter d'autres fichiers à exclure ici si nécessaire
 }
