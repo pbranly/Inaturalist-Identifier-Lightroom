@@ -2,20 +2,20 @@
 ============================================================
 Functional Description
 ------------------------------------------------------------
-This module `observation_selection.lua` handles submitting 
+This module `observation_selection.lua` handles submitting
 photos and species observations to iNaturalist from Lightroom.
 
 Functional flow:
-1. Receive the exported photo path (`tempo.jpg`) and selected 
+1. Receive the exported photo path (`tempo.jpg`) and selected
    species keywords from Lightroom.
 2. Ask the user for confirmation before submission.
 3. Retrieve the OAuth2 token stored in plugin preferences.
-4. Build a multipart/form-data HTTP POST request to 
+4. Build a multipart/form-data HTTP POST request to
    https://api.inaturalist.org/v1/observations.
-5. Log all details, including multipart parameters, headers, 
+5. Log all details, including multipart parameters, headers,
    and a corresponding `curl` command for testing.
 6. Submit the observation using `LrHttp.postMultipart`.
-7. Handle the API response, log it, and show dialogs for success 
+7. Handle the API response, log it, and show dialogs for success
    or failure.
 
 Modules and Scripts Used:
