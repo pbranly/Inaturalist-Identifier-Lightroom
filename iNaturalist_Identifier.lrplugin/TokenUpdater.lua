@@ -38,6 +38,10 @@ local LrTasks   = import "LrTasks"
 
 local logger = require("Logger")
 
+-- Définition des environnements pour Windows / Mac
+local WIN_ENV = package.config:sub(1,1) == '\\'
+local MAC_ENV = package.config:sub(1,1) == '/' and os.getenv("OSTYPE") == "darwin"
+
 -- Step 2: Function to check if token is fresh (<24h old)
 local function isTokenFresh()
     local prefs = LrPrefs.prefsForPlugin()
@@ -57,7 +61,9 @@ local function getTokenStatusText()
         return LOC("$$$/iNat/TokenStatus/None=No token available.")
     end
     if isTokenFresh() then
-        return LOC("$$$/iNat/TokenStatus/Valid=Token is fresh and valid (less than 24h old).")
+        return LOC(
+            "$$$/iNat/TokenStatus/Valid=Token is fresh and valid (less than 24h old)."
+        )
     else
         return LOC("$$$/iNat/TokenStatus/Expired=Token expired. Please refresh.")
     end
@@ -81,7 +87,9 @@ local function runUpdateTokenScript()
             else
                 openCommand = 'xdg-open "' .. url .. '"'
             end
-            logger.logMessage("[TokenUpdater] Opening token page with command: " .. openCommand)
+            logger.logMessage(
+                "[TokenUpdater] Opening token page with command: " .. openCommand
+            )
             LrTasks.execute(openCommand)
         end
 
@@ -91,7 +99,9 @@ local function runUpdateTokenScript()
             spacing = f:control_spacing(),
 
             f:static_text {
-                title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
+                title = LOC(
+                    "$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"
+                ),
                 width = 400,
             },
 
@@ -110,8 +120,13 @@ local function runUpdateTokenScript()
                 action = function()
                     prefs.token = props.token
                     prefs.tokenTimestamp = os.time()
-                    logger.logMessage("[TokenUpdater] Token saved. Timestamp updated to " .. tostring(prefs.tokenTimestamp))
-                    LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
+                    logger.logMessage(
+                        "[TokenUpdater] Token saved. Timestamp updated to "
+                        .. tostring(prefs.tokenTimestamp)
+                    )
+                    LrDialogs.message(
+                        LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved.")
+                    )
                 end
             }
         }
