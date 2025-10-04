@@ -47,17 +47,17 @@ Execution Steps:
 ====================================================================
 --]]
 
-local LrView      = import "LrView"
-local LrPrefs     = import "LrPrefs"
-local _LrDialogs  = import "LrDialogs"
-local LrTasks     = import "LrTasks"
-local _LrHttp     = import "LrHttp"
+local LrView        = import "LrView"
+local LrPrefs       = import "LrPrefs"
+local __LrDialogs   = import "LrDialogs"
+local LrTasks       = import "LrTasks"
+local __LrHttp      = import "LrHttp"
 
-local logger       = require("Logger")
-local Updates      = require("Update_plugin")
-local TokenUpdater = require("TokenUpdater")
+local logger        = require("Logger")
+local Updates       = require("Update_plugin")
+local TokenUpdater  = require("TokenUpdater")
 
-local _bind = LrView.bind
+local __bind = LrView.bind
 
 return {
     sectionsForTopOfDialog = function(viewFactory)
