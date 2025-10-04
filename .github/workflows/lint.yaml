@@ -1,0 +1,28 @@
+name: Lint Lua code
+
+on: [push, pull_request]
+
+jobs:
+  luacheck:
+    name: Run Luacheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Luacheck
+        uses: lunarmodules/luacheck@v1
+
+  stylua:
+    name: Check formatting with StyLua
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run StyLua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: 0.18
+          args: --check .
