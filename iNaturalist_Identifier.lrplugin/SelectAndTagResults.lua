@@ -33,7 +33,7 @@ Modules and Scripts Used
   * LrFileUtils        : For file existence checks
   * LrPrefs            : Access to plugin preferences
 - logger.lua           : Logging utility (English logs)
-- observation_selection.lua : Handles iNaturalist submission 
+- observation_selection.lua : Handles iNaturalist submission
                               (⚠️ currently disabled)
 ------------------------------------------------------------
 Scripts Using This Script
@@ -198,7 +198,7 @@ local function showSelection(resultsString, photo)
             logger.logMessage("[2.8] Keywords successfully added to " .. photoName .. ": " .. table.concat(selectedKeywords, ", "))
             -- [2.9] Call observation_selection after successful keyword addition
             logger.logMessage("[2.9] Keywords applied successfully. (⚠️ Appel à observation_selection désactivé)")
-            --[[ 
+            --[[
             -- Validation before calling observation_selection
             if selectedKeywords and #selectedKeywords > 0 then
                 local prefs = LrPrefs.prefsForPlugin()
