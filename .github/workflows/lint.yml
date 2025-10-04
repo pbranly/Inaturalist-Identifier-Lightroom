@@ -27,5 +27,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: 0.18
-          args: >
-            --check $(find . -type f -name '*.lua' ! -name 'json.lua')
+          args: --check -g '*.lua' -g '!json.lua' -- .
