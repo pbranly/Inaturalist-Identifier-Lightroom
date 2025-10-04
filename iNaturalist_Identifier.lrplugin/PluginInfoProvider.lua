@@ -47,7 +47,7 @@ Execution Steps:
 ====================================================================
 --]]
 
-local LrView      = import "LrView"
+--local LrView      = import "LrView"
 local LrPrefs     = import "LrPrefs"
 --local LrDialogs   = import "LrDialogs" -- luacheck: ignore 512
 local LrTasks     = import "LrTasks"
