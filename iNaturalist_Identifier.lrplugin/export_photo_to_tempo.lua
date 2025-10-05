@@ -91,13 +91,13 @@ function export_photo_to_tempo.exportToTempo(photo)
 
         -- Metadata control
         LR_metadata_keywordHandling = "excludeAll",
-        LR_metadata_include = "all", -- inclut tout au départ
-        LR_metadata_includeDate = true,          -- garder date/heure
-        LR_metadata_includeLocation = true,      -- garder GPS
-        LR_metadata_includeCopyright = true,     -- garder copyright
-        LR_metadata_includeCreator = true,       -- garder auteur
+        LR_metadata_include = "all",
+        LR_metadata_includeDate = true,
+        LR_metadata_includeLocation = true,
+        LR_metadata_includeCopyright = true,
+        LR_metadata_includeCreator = true,
         LR_removeLocationMetadata = false,
-        LR_minimizeEmbeddedMetadata = true,      -- clé pour supprimer appareil, ISO, objectif, etc.
+        LR_minimizeEmbeddedMetadata = true,
         LR_renamingTokensOn = false,
     }
 
@@ -110,23 +110,25 @@ function export_photo_to_tempo.exportToTempo(photo)
     -- Step 4: Perform export
     exportSession:doExportOnCurrentTask()
 
--- Step 5: Locate exported JPEG and rename
-    for _, rendition in exportSession:renditions() do
-    local success, pathOrMsg = rendition:waitForRender()
-    if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
-        local result = LrFileUtils.move(pathOrMsg, tempFilePath)
-        if result then
-            logger.logMessage("Export successful: " .. tempFilePath)
-            return tempFilePath
+    -- Step 5: Locate exported JPEG and rename (single photo expected)
+    local renditions = exportSession:renditions()
+    local rendition = renditions[1]
+    if rendition then
+        local success, pathOrMsg = rendition:waitForRender()
+        if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
+            local result = LrFileUtils.move(pathOrMsg, tempFilePath)
+            if result then
+                logger.logMessage("Export successful: " .. tempFilePath)
+                return tempFilePath
+            else
+                return nil, "Failed to move exported file."
+            end
         else
-            return nil, "Failed to move exported file."
+            return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
         end
-    else
-        return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
     end
-end
 
-return nil, "No photo was exported."
+    return nil, "No photo was exported."
 end
 
 -- Return module
