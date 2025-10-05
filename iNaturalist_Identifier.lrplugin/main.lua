@@ -2,10 +2,10 @@
 ============================================================
 Functional Description
 ------------------------------------------------------------
-This script `main.lua` is the entry point of the plugin when 
-launched from Lightroom’s "File > Export" menu.  
-Its simple but essential role is to:  
-1. Import the module responsible for animal identification.  
+This script `main.lua` is the entry point of the plugin when
+launched from Lightroom’s "File > Export" menu.
+Its simple but essential role is to:
+1. Import the module responsible for animal identification.
 2. Call the main function of this module to start the identification process.
 
 ------------------------------------------------------------
@@ -19,8 +19,8 @@ Called Scripts
 
 ------------------------------------------------------------
 Calling Script
-- Declared in `Info.lua` under the `LrExportMenuItems` key  
-  → Lightroom runs `main.lua` when selecting  
+- Declared in `Info.lua` under the `LrExportMenuItems` key
+  → Lightroom runs `main.lua` when selecting
     "Identify wildlife via iNaturalist" from the Export menu.
 ============================================================
 ]]

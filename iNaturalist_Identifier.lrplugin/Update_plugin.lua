@@ -1,5 +1,4 @@
---[[ 
-====================================================================
+--[[============================================================
 iNaturalist Lightroom Plugin Updater (Cross-Platform)
 --------------------------------------------------------------------
 Functional Description:
@@ -69,7 +68,10 @@ local function getLatestRelease()
 
     logger.logMessage("[Step 1] Sending GET request to GitHub API: " .. url)
     local data, respHeaders = LrHttp.get(url, headers)
-    logger.logMessage("[Step 1] HTTP response: " .. tostring(respHeaders.status or "nil") .. ", error: " .. tostring(respHeaders.error))
+    logger.logMessage("[Step 1] HTTP response: "
+        .. tostring(respHeaders.status or "nil") .. ", error: "
+        .. tostring(respHeaders.error)
+    )
 
     if respHeaders.error or respHeaders.status ~= 200 then
         LrDialogs.message(
@@ -101,7 +103,9 @@ end
 local function findPluginZipAsset(release)
     if not release or not release.assets then return nil end
     for _, asset in ipairs(release.assets) do
-        if asset.name:match("^iNaturalist_Identifier%.lrplugin") and asset.name:match("%.zip$") then
+        if asset.name:match("^iNaturalist_Identifier%.lrplugin")
+           and asset.name:match("%.zip$")
+        then
             logger.logMessage("[Step 2] Found plugin ZIP asset: " .. asset.name)
             return asset.browser_download_url
         end
@@ -116,7 +120,10 @@ end
 local function downloadZip(url, zipPath)
     logger.logMessage("[Step 3] Downloading plugin ZIP from: " .. url)
     local data, headers = LrHttp.get(url)
-    logger.logMessage("[Step 3] HTTP download response: " .. tostring(headers.status or "nil") .. ", error: " .. tostring(headers.error))
+    logger.logMessage("[Step 3] HTTP download response: "
+        .. tostring(headers.status or "nil") .. ", error: "
+        .. tostring(headers.error)
+    )
     if headers.error then
         LrDialogs.message(
             LOC("$$$/iNat/PluginName=iNaturalist Identification"),
@@ -208,7 +215,7 @@ end
 ------------------------------------------------------------
 -- Orchestration: Download and install latest plugin
 ------------------------------------------------------------
-local function downloadAndInstall(ctx, release)
+local function downloadAndInstall(_ctx, release)
     local pluginPath = _PLUGIN.path
     local parentDir = LrPathUtils.parent(pluginPath)
     local zipPath = LrPathUtils.child(parentDir, "download.zip")

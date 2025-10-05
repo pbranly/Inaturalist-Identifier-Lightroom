@@ -4,7 +4,7 @@
  Purpose     : Export selected photo to a temporary JPEG file for external use
 
  Description :
- This Lightroom plugin module exports the currently selected photo to a temporary 
+ This Lightroom plugin module exports the currently selected photo to a temporary
  JPEG file named "tempo.jpg" located in the plugin's own folder (cross-platform).
  It keeps only the EXIF metadata useful for iNaturalist determination:
    - Date/time of capture
@@ -89,18 +89,16 @@ function export_photo_to_tempo.exportToTempo(photo)
         LR_size_maxWidth = 1024,
         LR_size_maxHeight = 1024,
 
-
--- Metadata control
-    LR_metadata_keywordHandling = "excludeAll",
-    LR_metadata_include = "all",             -- inclut tout au départ
-    LR_metadata_includeDate = true,          -- garder date/heure
-    LR_metadata_includeLocation = true,      -- garder GPS
-    LR_metadata_includeCopyright = true,     -- garder copyright
-    LR_metadata_includeCreator = true,       -- garder auteur
-    LR_removeLocationMetadata = false,
-    LR_minimizeEmbeddedMetadata = true,      -- <<< clé pour supprimer appareil, ISO, objectif, etc.
-    LR_renamingTokensOn = false,
-
+        -- Metadata control
+        LR_metadata_keywordHandling = "excludeAll",
+        LR_metadata_include = "all", -- inclut tout au départ
+        LR_metadata_includeDate = true,          -- garder date/heure
+        LR_metadata_includeLocation = true,      -- garder GPS
+        LR_metadata_includeCopyright = true,     -- garder copyright
+        LR_metadata_includeCreator = true,       -- garder auteur
+        LR_removeLocationMetadata = false,
+        LR_minimizeEmbeddedMetadata = true,      -- clé pour supprimer appareil, ISO, objectif, etc.
+        LR_renamingTokensOn = false,
     }
 
     -- Step 3: Create export session
@@ -112,23 +110,23 @@ function export_photo_to_tempo.exportToTempo(photo)
     -- Step 4: Perform export
     exportSession:doExportOnCurrentTask()
 
-    -- Step 5: Locate exported JPEG and rename
+-- Step 5: Locate exported JPEG and rename
     for _, rendition in exportSession:renditions() do
-        local success, pathOrMsg = rendition:waitForRender()
-        if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
-            local result = LrFileUtils.move(pathOrMsg, tempFilePath)
-            if result then
-                logger.logMessage("Export successful: " .. tempFilePath)
-                return tempFilePath
-            else
-                return nil, "Failed to move exported file."
-            end
+    local success, pathOrMsg = rendition:waitForRender()
+    if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
+        local result = LrFileUtils.move(pathOrMsg, tempFilePath)
+        if result then
+            logger.logMessage("Export successful: " .. tempFilePath)
+            return tempFilePath
         else
-            return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
+            return nil, "Failed to move exported file."
         end
+    else
+        return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
     end
+end
 
-    return nil, "No photo was exported."
+return nil, "No photo was exported."
 end
 
 -- Return module

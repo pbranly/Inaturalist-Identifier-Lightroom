@@ -1,33 +1,7 @@
 --[[============================================================
 TokenUpdater.lua
 ------------------------------------------------------------
-Functional Description:
-This module `TokenUpdater.lua` manages the iNaturalist authentication token
-for the Lightroom plugin by allowing the user to enter a token and saving it
-with a timestamp. Token validity is considered < 24 hours old.
-
-Main Features:
-1. Display a modal dialog to enter and save the token.
-2. Save the token and its timestamp in Lightroom plugin preferences.
-3. Provide functions to check token freshness and display token status.
-
-Modules and Scripts Used:
-- LrPrefs
-- LrDialogs
-- LrView
-- LrTasks
-- Logger.lua (custom logging)
-
-Called Scripts:
-- PluginInfoProvider.lua (e.g., to show token status or open the dialog)
-
-Numbered Steps:
-1. Import Lightroom SDK modules and Logger.
-2. Define `isTokenFresh()` to check token age (<24h).
-3. Define `getTokenStatusText()` to return a human-readable token status.
-4. Define `runUpdateTokenScript()` to show a modal UI to enter/update token.
-5. Save token and update timestamp when user clicks "Save".
-6. Export functions for external use.
+Gère le token iNaturalist pour le plugin Lightroom.
 ============================================================]]
 
 -- Step 1: Lightroom SDK imports
@@ -37,6 +11,22 @@ local LrView    = import "LrView"
 local LrTasks   = import "LrTasks"
 
 local logger = require("Logger")
+
+-- Detect platform in a Lightroom-safe way using _PLUGIN.path
+local WIN_ENV = false
+local MAC_ENV = false
+do
+    local pluginPath = (_PLUGIN and _PLUGIN.path) or ""
+    if pluginPath ~= "" then
+        -- If path contains backslash, assume Windows
+        if pluginPath:find("\\") then
+            WIN_ENV = true
+        -- If path starts with '/', assume macOS / Unix-like
+        elseif pluginPath:sub(1,1) == "/" then
+            MAC_ENV = true
+        end
+    end
+end
 
 -- Step 2: Function to check if token is fresh (<24h old)
 local function isTokenFresh()
@@ -57,7 +47,9 @@ local function getTokenStatusText()
         return LOC("$$$/iNat/TokenStatus/None=No token available.")
     end
     if isTokenFresh() then
-        return LOC("$$$/iNat/TokenStatus/Valid=Token is fresh and valid (less than 24h old).")
+        return LOC(
+            "$$$/iNat/TokenStatus/Valid=Token is fresh and valid (less than 24h old)."
+        )
     else
         return LOC("$$$/iNat/TokenStatus/Expired=Token expired. Please refresh.")
     end
@@ -81,7 +73,10 @@ local function runUpdateTokenScript()
             else
                 openCommand = 'xdg-open "' .. url .. '"'
             end
-            logger.logMessage("[TokenUpdater] Opening token page with command: " .. openCommand)
+            logger.logMessage(
+                "[TokenUpdater] Opening token page with command: " .. openCommand
+            )
+            -- Exécute la commande d'ouverture
             LrTasks.execute(openCommand)
         end
 
@@ -91,7 +86,9 @@ local function runUpdateTokenScript()
             spacing = f:control_spacing(),
 
             f:static_text {
-                title = LOC("$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"),
+                title = LOC(
+                    "$$$/iNat/TokenDialog/Instruction=Please paste your iNaturalist token (valid for 24 hours):"
+                ),
                 width = 400,
             },
 
@@ -110,8 +107,13 @@ local function runUpdateTokenScript()
                 action = function()
                     prefs.token = props.token
                     prefs.tokenTimestamp = os.time()
-                    logger.logMessage("[TokenUpdater] Token saved. Timestamp updated to " .. tostring(prefs.tokenTimestamp))
-                    LrDialogs.message(LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved."))
+                    logger.logMessage(
+                        "[TokenUpdater] Token saved. Timestamp updated to "
+                        .. tostring(prefs.tokenTimestamp)
+                    )
+                    LrDialogs.message(
+                        LOC("$$$/iNat/TokenDialog/Saved=Token successfully saved.")
+                    )
                 end
             }
         }
