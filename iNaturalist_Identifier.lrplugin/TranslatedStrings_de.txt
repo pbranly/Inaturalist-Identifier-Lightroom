@@ -19,6 +19,20 @@
 "$$$/iNat/Log/PluginStarted=== Plugin gestartet ==="
 # "$$$/iNat/PluginName=iNaturalist Identification"
 
+# PluginInfoProvider.lua
+"$$$/iNat/CurrentVersion=Plugin aktuelle Version:"
+"$$$/iNat/LatestGitHubVersion=Neueste GitHub -Version: ..."
+"$$$/iNat/CheckUpdatesNow=Updates überprüfen ..."
+"$$$/iNat/DownloadGitHub=Laden Sie die neueste GitHub -Version herunter"
+"$$$/iNat/LatestGitHubVersion=Neueste GitHub -Version:"
+"$$$/iNat/UpToDate=Ihre Version ist auf dem neuesten Stand ("
+"$$$/iNat/NewVersion=Eine neue Version ist verfügbar ("
+"$$$/iNat/TokenTooltip=Dein inasaturalistischer API -Token"
+"$$$/iNat/RefreshToken=Token erfrischen"
+"$$$/iNat/EnableLogging=Aktivieren Sie die Protokollierung an log.txt"
+"$$$/iNat/Save=Speichern"
+"$$$/iNat/DialogTitle=Inaturalistische Verbindungseinstellungen"
+
 # SelectAndTagResults.lua
 "$$$/iNat/Error/NoRecognizedSection=Keine anerkannten Arten gefunden"
 "$$$/iNat/Error/UnexpectedFormat=Das Ergebnisformat wird nicht erkannt."
