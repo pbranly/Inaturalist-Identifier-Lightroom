@@ -7,23 +7,31 @@ Script Name: translation.py
 Author: Philippe's Python Helper (GPT-5)
 -------------------------------------------------------------------------------
 Functional Description:
-This script scans all `.lua` files in the `iNaturalist_Identifier.lrplugin`
-directory to extract Lightroom translation strings of the form:
+This script scans all `.lua` files inside the `iNaturalist_Identifier.lrplugin`
+directory to extract Lightroom translation strings defined as:
 
     LOC("$$$/namespace/key=Translated Text")
+or
+    LOC "$$$/namespace/key=Translated Text"
 
-It then:
-  1. Generates a base English file `TranslatedStrings_en.txt`
-  2. Optionally translates these strings into one or more target languages
-     (e.g., French, German, Italian) using Google Translate via `deep-translator`.
-  3. Creates or overwrites files named:
-        TranslatedStrings_<lang>.txt
+It generates or overwrites translation files:
+    - TranslatedStrings_en.txt
+    - TranslatedStrings_fr.txt
+    - TranslatedStrings_de.txt
+    - etc.
 
-Usage:
+based on languages provided as command-line arguments:
     python3 translation.py fr de it
-    → generates English + French + German + Italian translation files
 
-If no language is specified, only the English file is generated.
+If no language is specified, only the English base file is generated.
+
+-------------------------------------------------------------------------------
+Features:
+- Detects both LOC("...") and LOC "..." syntax.
+- Removes duplicates (marks repeated entries as comments).
+- Auto-installs `deep-translator` if missing.
+- Translates extracted English strings using Google Translate.
+- Saves translations per language into `iNaturalist_Identifier.lrplugin`.
 
 -------------------------------------------------------------------------------
 """
@@ -33,111 +41,130 @@ import re
 import sys
 import subprocess
 
-# --- Ensure deep-translator is available ------------------------------------
+# ---------------------------------------------------------------------------
+# 1. Ensure dependency: deep-translator
+# ---------------------------------------------------------------------------
 try:
     from deep_translator import GoogleTranslator
 except ImportError:
-    print("Installing required package: deep-translator ...")
+    print("Installing required package: deep-translator...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "deep-translator"])
     from deep_translator import GoogleTranslator
 
-# --- Configuration -----------------------------------------------------------
-PLUGIN_DIR = "iNaturalist_Identifier.lrplugin"
-ENGLISH_FILE = os.path.join(PLUGIN_DIR, "TranslatedStrings_en.txt")
 
-# --- Utility functions -------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 2. Core extraction logic
+# ---------------------------------------------------------------------------
+
 def extract_lightroom_strings(text):
-    """Extract translation strings from LOC() calls."""
-    pattern = re.compile(r'LOC\("(\$\$\$/[^\s=]+)=([^\n")]+)"')
+    """Extract Lightroom LOC() or LOC "" translation strings."""
+    pattern = re.compile(
+        r'LOC\s*(?:\(\s*"?|\s+)"(\$\$\$/[^\s=]+)=([^\n")]+)"'
+    )
     return pattern.findall(text)
 
+
 def format_translation(key, value):
-    """Format Lightroom translation line."""
+    """Return formatted translation line."""
     return f'"{key}={value}"'
 
+
+# ---------------------------------------------------------------------------
+# 3. Translation helper
+# ---------------------------------------------------------------------------
+
 def translate_text(text, target_lang):
-    """Translate English text to target_lang using Google Translate."""
-    if target_lang.lower() == "en":
-        return text
+    """Translate text using Google Translate, or return original on error."""
     try:
         return GoogleTranslator(source="en", target=target_lang).translate(text)
     except Exception as e:
-        print(f"[Warning] Failed to translate '{text}' to '{target_lang}': {e}")
-        return text  # fallback to original English text
+        print(f"[WARN] Translation failed for '{text}' → {target_lang}: {e}")
+        return text
 
-# --- Main processing ---------------------------------------------------------
-def process_scripts(languages):
-    """Extract Lightroom strings and generate translated files."""
+
+# ---------------------------------------------------------------------------
+# 4. Main processing
+# ---------------------------------------------------------------------------
+
+def process_lua_files(plugin_dir, output_langs):
+    """Extract and generate translation files for given languages."""
+    print(f"🔍 Scanning Lua files in: {plugin_dir}")
+
+    # Step 1 — Collect all translations
     seen_lines = set()
-    output_en = []
-
-    # Ensure plugin directory exists
-    if not os.path.isdir(PLUGIN_DIR):
-        print(f"Error: '{PLUGIN_DIR}' not found.")
-        sys.exit(1)
-
-    print(f"Scanning Lua scripts in '{PLUGIN_DIR}' ...")
-
-    for filename in sorted(os.listdir(PLUGIN_DIR)):
+    translations_by_file = {}
+    for filename in sorted(os.listdir(plugin_dir)):
         if filename.lower().endswith(".lua"):
-            path = os.path.join(PLUGIN_DIR, filename)
+            path = os.path.join(plugin_dir, filename)
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
+            matches = extract_lightroom_strings(content)
+            if matches:
+                translations_by_file[filename] = matches
 
-            translations = extract_lightroom_strings(content)
-            if translations:
-                output_en.append(f"# {filename}")
-                for key, value in translations:
-                    line = format_translation(key, value)
-                    if line in seen_lines:
-                        output_en.append(f"# {line}")
-                    else:
-                        output_en.append(line)
-                        seen_lines.add(line)
-                output_en.append("")
+    if not translations_by_file:
+        print("⚠️  No translation strings found.")
+        return
 
-    # Write English file
-    print(f"Writing English file: {ENGLISH_FILE}")
-    with open(ENGLISH_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(output_en))
+    # Step 2 — Build English base output
+    en_output_path = os.path.join(plugin_dir, "TranslatedStrings_en.txt")
+    output_lines = []
+    for filename, translations in translations_by_file.items():
+        output_lines.append(f"# {filename}")
+        for key, value in translations:
+            line = format_translation(key, value)
+            if line in seen_lines:
+                output_lines.append(f"# {line}")
+            else:
+                output_lines.append(line)
+                seen_lines.add(line)
+        output_lines.append("")
 
-    # Generate translations
-    for lang in languages:
-        lang = lang.lower()
+    with open(en_output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(output_lines))
+
+    print(f"✅ English base file generated: {en_output_path}")
+
+    # Step 3 — Generate translations if requested
+    for lang in output_langs:
         if lang == "en":
             continue
-
+        lang_path = os.path.join(plugin_dir, f"TranslatedStrings_{lang}.txt")
         translated_lines = []
-        print(f"Translating to '{lang}' ...")
-        for line in output_en:
-            if line.startswith("#") or not line.strip():
-                translated_lines.append(line)
-            elif line.startswith('"$$$/'):
-                try:
-                    key, value = line.strip('"').split("=", 1)
-                    translated_value = translate_text(value, lang)
-                    translated_lines.append(format_translation(key, translated_value))
-                except Exception as e:
-                    print(f"Error translating line '{line}': {e}")
-                    translated_lines.append(line)
+        for line in output_lines:
+            if line.startswith('"$$$'):
+                key, value = line.strip('"').split("=", 1)
+                translated_value = translate_text(value, lang)
+                translated_lines.append(f'"{key}={translated_value}"')
             else:
                 translated_lines.append(line)
-
-        output_path = os.path.join(PLUGIN_DIR, f"TranslatedStrings_{lang}.txt")
-        print(f"Writing {output_path}")
-        with open(output_path, "w", encoding="utf-8") as f:
+        with open(lang_path, "w", encoding="utf-8") as f:
             f.write("\n".join(translated_lines))
+        print(f"🌍 Translated file generated: {lang_path}")
 
-    print("\n✅ Translation generation complete!")
 
-# --- Entry point -------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 5. CLI entry point
+# ---------------------------------------------------------------------------
+
+def main():
+    # Determine plugin directory (fixed)
+    plugin_dir = os.path.join(os.getcwd(), "iNaturalist_Identifier.lrplugin")
+
+    # Parse language arguments
+    langs = [arg.lower() for arg in sys.argv[1:]]
+    if not langs:
+        langs = ["en"]
+
+    print(f"Languages selected: {', '.join(langs)}")
+
+    if not os.path.isdir(plugin_dir):
+        print(f"❌ Plugin directory not found: {plugin_dir}")
+        sys.exit(1)
+
+    process_lua_files(plugin_dir, langs)
+    print("✅ All translations completed successfully.")
+
+
 if __name__ == "__main__":
-    # Get target languages from command-line arguments
-    # Example: python3 translation.py fr de it
-    languages = sys.argv[1:] or []
-    if not languages:
-        print("No languages specified. Generating English file only.")
-    else:
-        print(f"Target languages: {', '.join(languages)}")
-
-    process_scripts(["en"] + languages)
+    main()
