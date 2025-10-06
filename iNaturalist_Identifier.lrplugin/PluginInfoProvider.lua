@@ -69,24 +69,24 @@ return {
         logger.logMessage("[Step 2] Current plugin version: " .. tostring(localVersion))
 
         local localVersionField = viewFactory:static_text {
-            title = "Plugin current version: " .. localVersion,
+            title = LOC "$$$/iNat/CurrentVersion=Plugin current version: " .. localVersion,
             width = 250
         }
 
         -- Step 3: Latest GitHub release version placeholder
         local githubVersionField = viewFactory:static_text {
-            title = "Latest GitHub version: ...",
+            title = LOC "$$$/iNat/LatestGitHubVersion=Latest GitHub version: ...",
             width = 250
         }
 
         -- Step 4: Update status text and optional button
         local updateStatusText = viewFactory:static_text {
-            title = "Checking updates...",
+            title = LOC "$$$/iNat/CheckUpdatesNow=Checking updates...",
             width = 400
         }
 
         local updateButton = viewFactory:push_button {
-            title = "Update",
+            title = LOC "$$$/iNat/DownloadGitHub=Download latest GitHub version",
             enabled = false,
             action = function()
                 logger.logMessage("[Step 4] User clicked Update button.")
@@ -98,16 +98,16 @@ return {
         LrTasks.startAsyncTask(function()
             logger.logMessage("[Step 3] Fetching latest GitHub release...")
             local latest = Updates.getLatestGitHubVersion() or "?"
-            githubVersionField.title = "Latest GitHub version: " .. latest
+            githubVersionField.title = LOC "$$$/iNat/LatestGitHubVersion=Latest GitHub version: " .. latest
             logger.logMessage("[Step 3] Latest GitHub version fetched: " .. latest)
 
             local function normalizeVersion(v) return (v or ""):gsub("^v", "") end
             if normalizeVersion(localVersion) == normalizeVersion(latest) then
-                updateStatusText.title = "Your version is up to date (" .. localVersion .. ")"
+                updateStatusText.title = LOC "$$$/iNat/UpToDate=Your version is up to date (" .. localVersion .. ")"
                 updateButton.enabled = false
                 logger.logMessage("[Step 4] Plugin is up to date: " .. localVersion)
             else
-                updateStatusText.title = "A new version is available (" .. latest .. ")"
+                updateStatusText.title = LOC "$$$/iNat/NewVersion=A new version is available (" .. latest .. ")"
                 updateButton.enabled = true
                 logger.logMessage("[Step 4] New version available: " .. latest)
             end
@@ -127,12 +127,12 @@ return {
             width = 500,
             height = 80,
             wrap = true,
-            tooltip = "Your iNaturalist API token"
+            tooltip = LOC "$$$/iNat/TokenTooltip=Your iNaturalist API token"
         }
 
         -- Step 6: Refresh token button
         local refreshTokenButton = viewFactory:push_button {
-            title = "Refresh Token",
+            title = LOC "$$$/iNat/RefreshToken=Refresh Token",
             action = function()
                 logger.logMessage("[Step 6] User clicked Refresh Token button.")
                 TokenUpdater.runUpdateTokenScript()
@@ -141,13 +141,13 @@ return {
 
         -- Step 7: Logging checkbox
         local logCheck = viewFactory:checkbox {
-            title = "Enable logging to log.txt",
+            title = LOC "$$$/iNat/EnableLogging=Enable logging to log.txt",
             value = prefs.logEnabled or false
         }
 
         -- Step 8: Save preferences button
         local saveButton = viewFactory:push_button {
-            title = "Save",
+            title = LOC "$$$/iNat/Save=Save",
             action = function()
                 prefs.logEnabled = logCheck.value
                 prefs.token = tokenField.value
@@ -163,7 +163,7 @@ return {
         -- Return dialog layout (ligne longue corrigée)
         return {
             {
-                title = "iNaturalist connection settings",
+                title = LOC "$$$/iNat/DialogTitle=iNaturalist connection settings",
                 viewFactory:row {
                     localVersionField,
                     viewFactory:static_text {
