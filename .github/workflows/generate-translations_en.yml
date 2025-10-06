@@ -1,8 +1,13 @@
 name: Generate Lightroom Translations
 
 on:
-  # Run manually only from the GitHub Actions tab
+  # Manual trigger only, with optional language input
   workflow_dispatch:
+    inputs:
+      languages:
+        description: "List of target languages (space-separated, e.g. 'fr de it es')"
+        required: false
+        default: ""
 
 jobs:
   generate-translations:
@@ -10,7 +15,7 @@ jobs:
     name: Extract Lightroom translations
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -26,21 +31,14 @@ jobs:
           echo "Listing all Lua files in iNaturalist_Identifier.lrplugin:"
           find iNaturalist_Identifier.lrplugin -type f -name "*.lua" -print
 
-      # Step 4: Run the translation extraction script from the repo root
-      # translation.py is located at the repository root
+      # Step 4: Run translation extraction script with dynamic language input
       - name: Run translation extraction script
         run: |
-          python3 translation.py
+          echo "Running translation.py with languages: '${{ inputs.languages }}'"
+          python3 translation.py ${{ inputs.languages }}
 
-      # Step 5: Display the generated file in workflow logs
-      - name: Display generated file
-        run: |
-          echo "Generated TranslatedStrings_en.txt:"
-          cat iNaturalist_Identifier.lrplugin/TranslatedStrings_en.txt
-
-      # Step 6: Upload the generated translation file as a downloadable artifact
-      - name: Upload generated translation file
-        uses: actions/upload-artifact@v4
-        with:
-          name: TranslatedStrings_en
-          path: iNaturalist_Identifier.lrplugin/TranslatedStrings_en.txt
+      # (Optional) Step 5: Display generated English file in logs for verification
+      # - name: Display generated English file
+      #   run: |
+      #     echo "Generated TranslatedStrings_en.txt:"
+      #     cat iNaturalist_Identifier.lrplugin/TranslatedStrings_en.txt || echo "No file found."
