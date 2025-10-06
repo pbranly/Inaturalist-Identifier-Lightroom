@@ -1,7 +1,7 @@
 name: Generate Lightroom Translations
 
 on:
-  # Run manually only
+  # Run manually only from the GitHub Actions tab
   workflow_dispatch:
 
 jobs:
@@ -10,36 +10,35 @@ jobs:
     name: Extract Lightroom translations
 
     steps:
-      # Step 1: Check out repository
+      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python environment
+      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      # Step 3: List all Lua files in the plugin directory (diagnostic)
+      # Step 3: Diagnostic – list all Lua files in the plugin directory
       - name: List Lua files before running script
         run: |
           echo "Listing all Lua files in iNaturalist_Identifier.lrplugin:"
           find iNaturalist_Identifier.lrplugin -type f -name "*.lua" -print
 
-      # Step 4: Run translation extraction script
-      # The working directory is set so that translation.py scans this folder
+      # Step 4: Run the translation extraction script from the repo root
+      # translation.py is located at the repository root
       - name: Run translation extraction script
         run: |
           python3 translation.py
-        working-directory: ./iNaturalist_Identifier.lrplugin
 
-      # Step 5: Display generated file in the console output
+      # Step 5: Display the generated file in workflow logs
       - name: Display generated file
         run: |
           echo "Generated TranslatedStrings_en.txt:"
           cat iNaturalist_Identifier.lrplugin/TranslatedStrings_en.txt
 
-      # Step 6: Upload result as an artifact (for download from the workflow page)
+      # Step 6: Upload the generated translation file as a downloadable artifact
       - name: Upload generated translation file
         uses: actions/upload-artifact@v4
         with:
