@@ -1,68 +1,54 @@
--- Inaturalist_Identifier.lua
-"$$$/iNat/Bezel/PluginStarted=Plugin démarré"
+# Inaturalist_Identifier.lua
+"$$$/iNat/Bezel/PluginStarted=Le plugin a commencé"
 "$$$/iNat/Bezel/NoPhoto=Aucune photo sélectionnée."
-"$$$/iNat/Bezel/AllDone=Toutes les photos ont été traitées."
-"$$$/iNat/Bezel/PhotoName=Photo sélectionnée : "
-"$$$/iNat/Bezel/ExportFailed=Échec de l’exportation temporaire."
+"$$$/iNat/Bezel/AllDone=Toutes les photos traitées."
+"$$$/iNat/Bezel/PhotoName=Photo sélectionnée:"
+"$$$/iNat/Bezel/ExportFailed=L'exportation temporaire a échoué."
 "$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg"
-"$$$/iNat/Title/Error=Erreur lors de l’identification"
-"$$$/iNat/Title/NoSpecies=Aucune espèce reconnue"
-"$$$/iNat/Message/NoSpecies=Aucune espèce reconnue"
+"$$$/iNat/Title/Error=Erreur pendant l'identification"
+"$$$/iNat/Title/NoSpecies=Pas d'espèces reconnues"
+"$$$/iNat/Message/NoSpecies=Il n'y a pas d'espèces reconnues"
 "$$$/iNat/Bezel/AnalysisDone=Analyse terminée."
 
--- Info.lua
-"$$$/iNat/PluginName=Identification iNaturalist"
-"$$$/iNat/MenuItem=Identifier la faune via iNaturalist"
+# Info.lua
+"$$$/iNat/PluginName=Identification des inaturalistes"
+"$$$/iNat/MenuItem=Identifier la faune via l'inaturiste"
 
--- Logger.lua
+# Logger.lua
+# "$$$/iNat/PluginName=iNaturalist Identification"
 "$$$/iNat/Log/PluginStarted=== Plugin lancé ==="
+# "$$$/iNat/PluginName=iNaturalist Identification"
 
--- PluginInfoProvider.lua
-"$$$/iNat/CurrentVersion=Version actuelle du plugin : "
-"$$$/iNat/LatestGitHubVersion=Dernière version GitHub : ..."
-"$$$/iNat/DownloadGitHub=Télécharger la dernière version GitHub"
-"$$$/iNat/Go=Aller"
-"$$$/iNat/CheckUpdatesNow=Vérifier les mises à jour maintenant"
-"$$$/iNat/LatestGitHubVersion=Dernière version GitHub : "
-"$$$/iNat/TokenTooltip=Votre token API iNaturalist"
-"$$$/iNat/RefreshToken=Rafraîchir le token"
-"$$$/iNat/EnableLogging=Activer la journalisation dans log.txt"
-"$$$/iNat/Save=Enregistrer"
-"$$$/iNat/DialogTitle=Paramètres de connexion iNaturalist"
-
--- SelectAndTagResults.lua
+# SelectAndTagResults.lua
 "$$$/iNat/Error/NoRecognizedSection=Aucune espèce reconnue trouvée"
-"$$$/iNat/Error/UnexpectedFormat=Le format du résultat n’est pas reconnu."
+"$$$/iNat/Error/UnexpectedFormat=Le format de résultat n'est pas reconnu."
 "$$$/iNat/Error/NoSpeciesDetected=Aucune espèce détectée"
-"$$$/iNat/Error/TryAgain=Veuillez réessayer l’identification."
-"$$$/iNat/Dialog/SelectSpecies=Séléctionnez l’espèce à ajouter comme mot-clé"
+"$$$/iNat/Error/TryAgain=Veuillez réessayer l'identification."
+"$$$/iNat/Dialog/SelectSpecies=Sélectionnez des espèces à ajouter comme mots clés"
 "$$$/iNat/Dialog/Add=Ajouter"
 "$$$/iNat/Error/NoKeywordsSelected=Aucune espèce sélectionnée"
 "$$$/iNat/Info/NoKeywordsAdded=Aucun mot-clé ne sera ajouté."
-"$$$/iNat/Success/KeywordsAdded=Succès"
-"$$$/iNat/Success/KeywordsAddedMessage=Les mots-clés sélectionnés ont été ajoutés avec succès."
 
--- TokenUpdater.lua
-"$$$/iNat/TokenStatus/None=Aucun token disponible."
-"$$$/iNat/TokenStatus/Expired=Token expiré. Veuillez le rafraîchir."
-"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du token"
-"$$$/iNat/TokenDialog/Save=Enregistrer le token"
-"$$$/iNat/TokenDialog/Saved=Token enregistré avec succès."
-"$$$/iNat/TokenDialog/Title=Configuration du token iNaturalist"
+# TokenUpdater.lua
+"$$$/iNat/TokenStatus/None=Pas de jeton disponible."
+"$$$/iNat/TokenStatus/Expired=Jeton expiré. Veuillez actualiser."
+"$$$/iNat/TokenDialog/OpenPage=Page de génération de jetons ouverts"
+"$$$/iNat/TokenDialog/Save=Sauvegarder"
+"$$$/iNat/TokenDialog/Saved=Jeton avec succès sauvé."
+"$$$/iNat/TokenDialog/Title=Configuration du jeton inaturéniste"
 
--- export_photo_to_tempo.lua
-"$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé : "
+# Update_plugin.lua
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
+# "$$$/iNat/PluginName=iNaturalist Identification"
 
--- observation_selection.lua
-"$$$/iNat/Dialog/AskObservation=Voulez-vous soumettre cette photo comme observation sur iNaturalist ?"
-"$$$/iNat/Dialog/AskObservationDetails=L’espèce sélectionnée sera soumise avec la photo."
-"$$$/iNat/Dialog/Submit=Soumettre"
-"$$$/iNat/Dialog/Cancel=Annuler"
-"$$$/iNat/Dialog/ObservationSubmitted=Observation soumise avec succès."
-"$$$/iNat/Dialog/Thanks=Merci pour votre contribution à la science !"
-"$$$/iNat/Dialog/ObservationFailed=Échec de la soumission de l’observation."
-"$$$/iNat/Dialog/UnknownError=Une erreur inconnue est survenue."
+# VerificationToken.lua
+"$$$/iNat/Log/TokenMissing=⛔ Pas de jeton trouvé dans les préférences de Lightroom."
+# "$$$/iNat/PluginName=iNaturalist Identification"
+"$$$/iNat/Log/TokenExpired=❌ Le jeton expiré ou plus de 24 heures. Veuillez actualiser."
+# "$$$/iNat/PluginName=iNaturalist Identification"
 
--- verificationtoken.lua
-"$$$/iNat/Log/TokenMissing=⛔ Aucun token trouvé dans les préférences Lightroom."
-"$$$/iNat/Log/TokenExpired=❌ Token expiré ou datant de plus de 24 heures. Veuillez le rafraîchir."
+# export_photo_to_tempo.lua
+"$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé:"
