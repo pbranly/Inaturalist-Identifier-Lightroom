@@ -4,7 +4,6 @@
 """
 -------------------------------------------------------------------------------
 Script Name: translation.py
-Author: Philippe's Python Helper (GPT-5)
 -------------------------------------------------------------------------------
 Functional Description:
 This script scans all `.lua` files inside the `iNaturalist_Identifier.lrplugin`
