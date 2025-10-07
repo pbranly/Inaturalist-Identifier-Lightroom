@@ -28,7 +28,6 @@ If no language is specified, only the English base file is generated.
 Features:
 - Detects both LOC("...") and LOC "..." syntax.
 - Removes duplicates (marks repeated entries as comments).
-- Auto-installs `deep-translator` if missing.
 - Translates extracted English strings using Google Translate.
 - Saves translations per language into `iNaturalist_Identifier.lrplugin`.
 
@@ -38,21 +37,10 @@ Features:
 import os
 import re
 import sys
-import subprocess
+from deep_translator import GoogleTranslator
 
 # ---------------------------------------------------------------------------
-# 1. Ensure dependency: deep-translator
-# ---------------------------------------------------------------------------
-try:
-    from deep_translator import GoogleTranslator
-except ImportError:
-    print("Installing required package: deep-translator...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "deep-translator"])
-    from deep_translator import GoogleTranslator
-
-
-# ---------------------------------------------------------------------------
-# 2. Core extraction logic
+# 1. Core extraction logic
 # ---------------------------------------------------------------------------
 
 def extract_lightroom_strings(text):
@@ -62,14 +50,12 @@ def extract_lightroom_strings(text):
     )
     return pattern.findall(text)
 
-
 def format_translation(key, value):
     """Return formatted translation line."""
     return f'"{key}={value}"'
 
-
 # ---------------------------------------------------------------------------
-# 3. Translation helper
+# 2. Translation helper
 # ---------------------------------------------------------------------------
 
 def translate_text(text, target_lang):
@@ -80,9 +66,8 @@ def translate_text(text, target_lang):
         print(f"[WARN] Translation failed for '{text}' → {target_lang}: {e}")
         return text
 
-
 # ---------------------------------------------------------------------------
-# 4. Main processing
+# 3. Main processing
 # ---------------------------------------------------------------------------
 
 def process_lua_files(plugin_dir, output_langs):
@@ -141,9 +126,8 @@ def process_lua_files(plugin_dir, output_langs):
             f.write("\n".join(translated_lines))
         print(f"🌍 Translated file generated: {lang_path}")
 
-
 # ---------------------------------------------------------------------------
-# 5. CLI entry point
+# 4. CLI entry point
 # ---------------------------------------------------------------------------
 
 def main():
@@ -163,7 +147,6 @@ def main():
 
     process_lua_files(plugin_dir, langs)
     print("✅ All translations completed successfully.")
-
 
 if __name__ == "__main__":
     main()
