@@ -17,26 +17,29 @@ jobs:
       contents: write  # Required to push changes to the repository
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
+      # Step 1: Checkout only the main branch (without full history)
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-        # Explanation: Checks out the repository with write permissions.
+          ref: main
+          sparse-checkout: |
+            iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
+            translation.py
+            requirements.txt
+        # Explanation: Checks out only the necessary files from main (translation files, script, and requirements).
 
       # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-        # Explanation: Configures Python 3.11 for the workflow.
 
       # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-        # Explanation: Installs all dependencies listed in requirements.txt.
 
       # Step 4: Run translation extraction script
       - name: Run translation extraction script
@@ -48,34 +51,35 @@ jobs:
           else
             python3 translation.py ${{ inputs.languages }}
           fi
-        # Explanation: Runs the translation script with the specified languages.
 
-      # Step 5: Create or switch to the 'translations' branch
+      # Step 5: Create or switch to the 'translations' branch (orphan)
       - name: Create or switch to 'translations' branch
         run: |
-          if git show-ref --quiet refs/heads/translations; then
+          # Check if the 'translations' branch already exists
+          if git ls-remote --exit-code --heads origin translations; then
+            git fetch origin translations:translations
             git checkout translations
-            git pull origin translations
+            # Keep only translation files (remove others)
+            git rm -r --ignore-unmatch . || true
+            git clean -fd
           else
-            git checkout -b translations
+            # Create a new orphan branch (no history)
+            git checkout --orphan translations
+            git rm -rf . || true
           fi
-        # Explanation: Checks if the 'translations' branch exists. If it does, it checks it out and pulls the latest changes. If not, it creates the branch.
+        # Explanation: Creates an orphan 'translations' branch (no history) or checks it out if it exists, then clears all files.
 
-      # Step 6: Commit and push translation updates to 'translations' branch
-      - name: Commit and push translation updates
+      # Step 6: Copy only translation files to the 'translations' branch
+      - name: Copy translation files
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Copy the generated translation files from main
+          git checkout main -- iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
+          # Add and commit only the translation files
+          git add iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
+          git commit -m "Update translation files"
+          git push origin translations --force
+        # Explanation: Copies only the translation files from main to the 'translations' branch and forces push.
 
-          # Add only translation files
-          git add iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt 2>/dev/null || true
-
-          # Check if there are changes to commit
-          if git diff --cached --quiet; then
-            echo "No changes detected — skipping commit."
-          else
-            git commit -m "Update Lightroom translations"
-            git push origin translations
-            echo "✅ Translation updates pushed to 'translations' branch."
-          fi
-        # Explanation: Commits and pushes translation updates to the 'translations' branch.
+      # Step 7: Notify success
+      - name: Success notification
+        run: echo "✅ Translation files updated in 'translations' branch."
