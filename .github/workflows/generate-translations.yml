@@ -23,21 +23,27 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
-          fetch-depth: 1  # Shallow clone to save time
+          fetch-depth: 1
 
-      # Step 2: Set up Python
+      # Step 2: Configure Git identity
+      - name: Configure Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      # Step 3: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # Step 3: Install dependencies
+      # Step 4: Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Run translation script
+      # Step 5: Run translation script
       - name: Run translation script
         run: |
           if [ -z "${{ inputs.languages }}" ]; then
@@ -46,22 +52,17 @@ jobs:
             python3 translation.py ${{ inputs.languages }}
           fi
 
-      # Step 5: Create a fresh 'translations' branch (orphan)
+      # Step 6: Create a fresh 'translations' branch (orphan)
       - name: Create fresh 'translations' branch
         run: |
-          # Create a new orphan branch (no history)
           git checkout --orphan translations
-          # Remove all files from the working directory
           git rm -rf .
-          # Clean up any untracked files
           git clean -fd
 
-      # Step 6: Copy ONLY translation files to the new branch
+      # Step 7: Copy ONLY translation files to the new branch
       - name: Copy translation files
         run: |
-          # Re-checkout main branch temporarily to copy files
           git checkout main -- iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
-          # Add and commit only the translation files
           git add iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
           git commit -m "Update translation files [GitHub Actions]"
           git push origin translations --force
