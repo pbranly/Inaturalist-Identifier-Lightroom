@@ -17,11 +17,12 @@ jobs:
       contents: write
 
     steps:
-      # Step 1: Checkout the entire repository (lightweight)
-      - name: Checkout repository
+      # Step 1: Checkout ONLY the main branch (shallow clone)
+      - name: Checkout main branch (shallow)
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
           fetch-depth: 1  # Shallow clone to save time
 
       # Step 2: Set up Python
@@ -45,31 +46,22 @@ jobs:
             python3 translation.py ${{ inputs.languages }}
           fi
 
-      # Step 5: Create or reset the 'translations' branch
-      - name: Prepare 'translations' branch
+      # Step 5: Create a fresh 'translations' branch (orphan)
+      - name: Create fresh 'translations' branch
         run: |
-          # Create a temporary directory for translation files
-          mkdir -p temp_translations
-          cp -r iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt temp_translations/
+          # Create a new orphan branch (no history)
+          git checkout --orphan translations
+          # Remove all files from the working directory
+          git rm -rf .
+          # Clean up any untracked files
+          git clean -fd
 
-          # Switch to 'translations' branch (orphan if new)
-          if git show-ref --quiet refs/heads/translations; then
-            git checkout translations
-            git rm -r --ignore-unmatch . || true  # Clear existing files
-          else
-            git checkout --orphan translations
-          fi
-
-          # Copy only translation files to the branch
-          cp -r temp_translations/* iNaturalist_Identifier.lrplugin/
-          rm -rf temp_translations
-
-      # Step 6: Commit and push translation files
-      - name: Commit and push translations
+      # Step 6: Copy ONLY translation files to the new branch
+      - name: Copy translation files
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
+          # Re-checkout main branch temporarily to copy files
+          git checkout main -- iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
+          # Add and commit only the translation files
           git add iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
           git commit -m "Update translation files [GitHub Actions]"
           git push origin translations --force
