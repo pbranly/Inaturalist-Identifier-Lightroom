@@ -14,20 +14,15 @@ jobs:
     name: Extract and update Lightroom translations
 
     permissions:
-      contents: write  # Required to push changes to the repository
+      contents: write
 
     steps:
-      # Step 1: Checkout only the main branch (without full history)
-      - name: Checkout main branch
+      # Step 1: Checkout the entire repository (lightweight)
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main
-          sparse-checkout: |
-            iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
-            translation.py
-            requirements.txt
-        # Explanation: Checks out only the necessary files from main (translation files, script, and requirements).
+          fetch-depth: 1  # Shallow clone to save time
 
       # Step 2: Set up Python
       - name: Set up Python
@@ -41,45 +36,40 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Run translation extraction script
-      - name: Run translation extraction script
+      # Step 4: Run translation script
+      - name: Run translation script
         run: |
-          echo "Running translation.py with languages: '${{ inputs.languages }}'"
           if [ -z "${{ inputs.languages }}" ]; then
-            echo "No languages specified — generating English only."
             python3 translation.py
           else
             python3 translation.py ${{ inputs.languages }}
           fi
 
-      # Step 5: Create or switch to the 'translations' branch (orphan)
-      - name: Create or switch to 'translations' branch
+      # Step 5: Create or reset the 'translations' branch
+      - name: Prepare 'translations' branch
         run: |
-          # Check if the 'translations' branch already exists
-          if git ls-remote --exit-code --heads origin translations; then
-            git fetch origin translations:translations
+          # Create a temporary directory for translation files
+          mkdir -p temp_translations
+          cp -r iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt temp_translations/
+
+          # Switch to 'translations' branch (orphan if new)
+          if git show-ref --quiet refs/heads/translations; then
             git checkout translations
-            # Keep only translation files (remove others)
-            git rm -r --ignore-unmatch . || true
-            git clean -fd
+            git rm -r --ignore-unmatch . || true  # Clear existing files
           else
-            # Create a new orphan branch (no history)
             git checkout --orphan translations
-            git rm -rf . || true
           fi
-        # Explanation: Creates an orphan 'translations' branch (no history) or checks it out if it exists, then clears all files.
 
-      # Step 6: Copy only translation files to the 'translations' branch
-      - name: Copy translation files
+          # Copy only translation files to the branch
+          cp -r temp_translations/* iNaturalist_Identifier.lrplugin/
+          rm -rf temp_translations
+
+      # Step 6: Commit and push translation files
+      - name: Commit and push translations
         run: |
-          # Copy the generated translation files from main
-          git checkout main -- iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
-          # Add and commit only the translation files
-          git add iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
-          git commit -m "Update translation files"
-          git push origin translations --force
-        # Explanation: Copies only the translation files from main to the 'translations' branch and forces push.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Step 7: Notify success
-      - name: Success notification
-        run: echo "✅ Translation files updated in 'translations' branch."
+          git add iNaturalist_Identifier.lrplugin/TranslatedStrings_*.txt
+          git commit -m "Update translation files [GitHub Actions]"
+          git push origin translations --force
