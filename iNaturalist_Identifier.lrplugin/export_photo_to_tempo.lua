@@ -33,7 +33,7 @@
 
  Dependencies:
  -------------
- - Lightroom SDK: LrExportSession, LrPathUtils, LrFileUtils
+ - Lightroom SDK: LrExportSession, LrPathUtils, LrFileUtils, LrTasks
  - _PLUGIN global: for plugin directory path
  - Logger.lua : for logging deletions and issues
 
@@ -47,6 +47,8 @@
 local LrExportSession = import "LrExportSession"
 local LrFileUtils     = import "LrFileUtils"
 local LrPathUtils     = import "LrPathUtils"
+local LrTasks         = import "LrTasks"
+local LrFunctionContext = import "LrFunctionContext"
 
 -- Import logger
 local logger = require("Logger")
@@ -78,7 +80,7 @@ function export_photo_to_tempo.exportToTempo(photo)
     -- Step 1: Clear all existing JPEGs in folder
     clearJPEGs(exportFolder)
 
-    -- Step 2: Define export settings
+    -- Step 2: Define export settings (sans renommage - on laisse le nom original)
     local exportSettings = {
         LR_export_destinationType = "specificFolder",
         LR_export_destinationPathPrefix = exportFolder,
@@ -101,34 +103,57 @@ function export_photo_to_tempo.exportToTempo(photo)
         LR_renamingTokensOn = false,
     }
 
-    -- Step 3: Create export session
-    local exportSession = LrExportSession {
-        photosToExport = { photo },
-        exportSettings = exportSettings,
-    }
+    -- Step 3: Perform export in a function context
+    local exportSuccess = false
+    
+    LrFunctionContext.callWithContext("export", function(context)
+        -- Create export session
+        local exportSession = LrExportSession {
+            photosToExport = { photo },
+            exportSettings = exportSettings,
+        }
 
-    -- Step 4: Perform export
-    exportSession:doExportOnCurrentTask()
+        -- Execute export on current task
+        exportSession:doExportOnCurrentTask()
+        exportSuccess = true
+    end)
 
-    -- Step 5: Locate exported JPEG and rename (single photo expected)
-    local renditions = exportSession:renditions()
-    local rendition = renditions[1]
-    if rendition then
-        local success, pathOrMsg = rendition:waitForRender()
-        if success and pathOrMsg and LrFileUtils.exists(pathOrMsg) then
-            local result = LrFileUtils.move(pathOrMsg, tempFilePath)
-            if result then
-                logger.logMessage("Export successful: " .. tempFilePath)
-                return tempFilePath
-            else
-                return nil, "Failed to move exported file."
-            end
-        else
-            return nil, "Failed to render photo: " .. (pathOrMsg or "unknown error")
+    if not exportSuccess then
+        return nil, "Export session failed"
+    end
+
+    -- Step 4: Wait a bit for file system to sync
+    LrTasks.sleep(0.2)
+
+    -- Step 5: Find the exported JPEG file in the folder
+    local exportedFile = nil
+    for file in LrFileUtils.files(exportFolder) do
+        if string.lower(LrPathUtils.extension(file)) == "jpg" then
+            exportedFile = file
+            logger.logMessage("Found exported file: " .. file)
+            break
         end
     end
 
-    return nil, "No photo was exported."
+    if not exportedFile then
+        return nil, "No exported file found in folder"
+    end
+
+    -- Step 6: Rename to tempo.jpg if needed
+    if exportedFile ~= tempFilePath then
+        local moveResult = LrFileUtils.move(exportedFile, tempFilePath)
+        if not moveResult then
+            return nil, "Failed to rename exported file to tempo.jpg"
+        end
+    end
+
+    -- Verify final file exists
+    if LrFileUtils.exists(tempFilePath) then
+        logger.logMessage("Export successful: " .. tempFilePath)
+        return tempFilePath
+    else
+        return nil, "Final file tempo.jpg not found"
+    end
 end
 
 -- Return module
