@@ -33,7 +33,7 @@
 
  Dependencies:
  -------------
- - Lightroom SDK: LrExportSession, LrPathUtils, LrFileUtils, LrTasks
+ - Lightroom SDK: LrExportSession, LrPathUtils, LrFileUtils, LrTasks, LrFunctionContext
  - _PLUGIN global: for plugin directory path
  - Logger.lua : for logging deletions and issues
 
@@ -80,7 +80,7 @@ function export_photo_to_tempo.exportToTempo(photo)
     -- Step 1: Clear all existing JPEGs in folder
     clearJPEGs(exportFolder)
 
-    -- Step 2: Define export settings (sans renommage - on laisse le nom original)
+    -- Step 2: Define export settings
     local exportSettings = {
         LR_export_destinationType = "specificFolder",
         LR_export_destinationPathPrefix = exportFolder,
@@ -105,7 +105,8 @@ function export_photo_to_tempo.exportToTempo(photo)
 
     -- Step 3: Perform export in a function context
     local exportSuccess = false
-    LrFunctionContext.callWithContext("export", function(context)
+    
+    LrFunctionContext.callWithContext("export", function()
         -- Create export session
         local exportSession = LrExportSession {
             photosToExport = { photo },
