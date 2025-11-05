@@ -104,8 +104,7 @@ function export_photo_to_tempo.exportToTempo(photo)
     }
 
     -- Step 3: Perform export in a function context
-    local exportSuccess = false
-    
+    local exportSuccess = false 
     LrFunctionContext.callWithContext("export", function(context)
         -- Create export session
         local exportSession = LrExportSession {
