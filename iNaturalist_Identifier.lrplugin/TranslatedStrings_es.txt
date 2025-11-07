@@ -1,13 +1,13 @@
 # Inaturalist_Identifier.lua
 "$$$/iNat/Bezel/PluginStarted=Plugin iniciado"
 "$$$/iNat/Bezel/NoPhoto=Ninguna foto seleccionada."
-"$$$/iNat/Bezel/AllDone=Todas las fotos han sido procesadas."
+"$$$/iNat/Bezel/AllDone=Todas las fotos procesadas."
 "$$$/iNat/Bezel/PhotoName=Foto seleccionada:"
-"$$$/iNat/Bezel/ExportFailed=La exportación temporal ha fallado."
+"$$$/iNat/Bezel/ExportFailed=Exportación temporal fallida."
 "$$$/iNat/Bezel/Exported=Imagen exportada a tempo.jpg"
 "$$$/iNat/Title/Error=Error durante la identificación"
 "$$$/iNat/Title/NoSpecies=Ninguna especie reconocida"
-"$$$/iNat/Message/NoSpecies=No hay especies reconocidas"
+"$$$/iNat/Message/NoSpecies=No se han reconocido especies"
 "$$$/iNat/Bezel/AnalysisDone=Análisis completado."
 
 # Info.lua
@@ -16,41 +16,49 @@
 
 # Logger.lua
 # DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
-"$$$/iNat/Log/PluginStarted=== Plugin lanzado ==="
-# DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
+"$$$/iNat/Log/PluginStarted=== Plugin iniciado ==="
+
+# PluginInfoProvider.lua
+"$$$/iNat/CurrentVersion=Versión actual del plugin:"
+"$$$/iNat/LatestGitHubVersion=Última versión de GitHub: ..."
+"$$$/iNat/CheckUpdatesNow=Comprobando actualizaciones..."
+"$$$/iNat/DownloadGitHub=Descargar última versión de GitHub"
+# CONFLICT: "$$$/iNat/LatestGitHubVersion=Última versión de GitHub:" (anterior: Última versión de GitHub: ...)
+"$$$/iNat/UpToDate=Su versión está actualizada ("
+"$$$/iNat/NewVersion=Una nueva versión está disponible ("
+"$$$/iNat/TokenTooltip=Su token de API de iNaturalist"
+"$$$/iNat/RefreshToken=Actualizar token"
+"$$$/iNat/EnableLogging=Habilitar registro en log.txt"
+"$$$/iNat/Save=Guardar"
+"$$$/iNat/DialogTitle=Configuración de conexión de iNaturalist"
 
 # SelectAndTagResults.lua
 "$$$/iNat/Error/NoRecognizedSection=No se encontraron especies reconocidas"
 "$$$/iNat/Error/UnexpectedFormat=El formato del resultado no es reconocido."
 "$$$/iNat/Error/NoSpeciesDetected=No se detectaron especies"
-"$$$/iNat/Error/TryAgain=Por favor, intente la identificación nuevamente."
-"$$$/iNat/Dialog/SelectSpecies=Seleccione las especies para agregar como palabras clave"
+"$$$/iNat/Error/TryAgain=Por favor, intente la identificación de nuevo."
+"$$$/iNat/Dialog/SelectSpecies=Seleccione especies para agregar como palabras clave"
 "$$$/iNat/Dialog/Add=Agregar"
 "$$$/iNat/Error/NoKeywordsSelected=Ninguna especie seleccionada"
 "$$$/iNat/Info/NoKeywordsAdded=No se agregarán palabras clave."
 
 # TokenUpdater.lua
 "$$$/iNat/TokenStatus/None=No hay token disponible."
-"$$$/iNat/TokenStatus/Valid=El token es válido y reciente (menos de 24h)."
-"$$$/iNat/TokenStatus/Expired=Token expirado. Por favor, actualice."
+"$$$/iNat/TokenStatus/Valid=El token es reciente y válido (menos de 24 horas)."
+"$$$/iNat/TokenStatus/Expired=Token caducado. Por favor, actualícelo."
 "$$$/iNat/TokenDialog/Instruction=Por favor, pegue su token de iNaturalist (válido por 24 horas):"
 "$$$/iNat/TokenDialog/OpenPage=Abrir página de generación de token"
 "$$$/iNat/TokenDialog/Save=Guardar token"
-"$$$/iNat/TokenDialog/Saved=Token guardado exitosamente."
+"$$$/iNat/TokenDialog/Saved=Token guardado correctamente."
 "$$$/iNat/TokenDialog/Title=Configuración del token de iNaturalist"
 
 # Update_plugin.lua
-# DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
 # DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
 
 # VerificationToken.lua
 "$$$/iNat/Log/TokenMissing=⛔ No se encontró token en las preferencias de Lightroom."
 # DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
-"$$$/iNat/Log/TokenExpired=❌ Token expirado o con más de 24 horas. Por favor, actualice."
-# DUPLICATE: "$$$/iNat/PluginName=Identificación iNaturalist"
+"$$$/iNat/Log/TokenExpired=❌ Token caducado o con más de 24 horas. Por favor, actualícelo."
 
 # export_photo_to_tempo.lua
 "$$$/iNat/Log/JPGDeleted=Archivo JPG eliminado:"

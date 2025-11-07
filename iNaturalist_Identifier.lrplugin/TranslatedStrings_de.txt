@@ -1,7 +1,7 @@
 # Inaturalist_Identifier.lua
 "$$$/iNat/Bezel/PluginStarted=Plugin gestartet"
 "$$$/iNat/Bezel/NoPhoto=Kein Foto ausgewählt."
-"$$$/iNat/Bezel/AllDone=Alle Fotos wurden verarbeitet."
+"$$$/iNat/Bezel/AllDone=Alle Fotos verarbeitet."
 "$$$/iNat/Bezel/PhotoName=Ausgewähltes Foto:"
 "$$$/iNat/Bezel/ExportFailed=Temporärer Export fehlgeschlagen."
 "$$$/iNat/Bezel/Exported=Bild nach tempo.jpg exportiert"
@@ -17,40 +17,36 @@
 # Logger.lua
 # DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
 "$$$/iNat/Log/PluginStarted=== Plugin gestartet ==="
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
+
+# PluginInfoProvider.lua
+"$$$/iNat/CurrentVersion=Aktuelle Plugin-Version:"
+"$$$/iNat/LatestGitHubVersion=Neueste GitHub-Version: ..."
+"$$$/iNat/CheckUpdatesNow=Aktualisierungen werden geprüft..."
+"$$$/iNat/DownloadGitHub=Neueste GitHub-Version herunterladen"
+# CONFLICT: "$$$/iNat/LatestGitHubVersion=Neueste GitHub-Version:" (vorherig: Neueste GitHub-Version: ...)
+"$$$/iNat/UpToDate=Ihre Version ist aktuell ("
+"$$$/iNat/NewVersion=Eine neue Version ist verfügbar ("
+"$$$/iNat/TokenTooltip=Ihr iNaturalist API-Token"
+"$$$/iNat/RefreshToken=Token aktualisieren"
+"$$$/iNat/EnableLogging=Protokollierung in log.txt aktivieren"
+"$$$/iNat/Save=Speichern"
+"$$$/iNat/DialogTitle=iNaturalist Verbindungseinstellungen"
 
 # SelectAndTagResults.lua
 "$$$/iNat/Error/NoRecognizedSection=Keine erkannten Arten gefunden"
 "$$$/iNat/Error/UnexpectedFormat=Das Ergebnisformat wird nicht erkannt."
 "$$$/iNat/Error/NoSpeciesDetected=Keine Arten erkannt"
 "$$$/iNat/Error/TryAgain=Bitte versuchen Sie die Identifizierung erneut."
-"$$$/iNat/Dialog/SelectSpecies=Wählen Sie Arten aus, um sie als Stichwörter hinzuzufügen"
+"$$$/iNat/Dialog/SelectSpecies=Wählen Sie Arten aus, die als Stichwörter hinzugefügt werden sollen"
 "$$$/iNat/Dialog/Add=Hinzufügen"
-"$$$/iNat/Error/NoKeywordsSelected=Keine Art ausgewählt"
+"$$$/iNat/Error/NoKeywordsSelected=Keine Arten ausgewählt"
 "$$$/iNat/Info/NoKeywordsAdded=Es werden keine Stichwörter hinzugefügt."
 
 # TokenUpdater.lua
 "$$$/iNat/TokenStatus/None=Kein Token verfügbar."
-"$$$/iNat/TokenStatus/Valid=Token ist gültig und aktuell (weniger als 24 Stunden alt)."
+"$$$/iNat/TokenStatus/Valid=Token ist aktuell und gültig (weniger als 24 Stunden alt)."
 "$$$/iNat/TokenStatus/Expired=Token abgelaufen. Bitte aktualisieren."
-"$$$/iNat/TokenDialog/Instruction=Bitte fügen Sie Ihr iNaturalist-Token ein (gültig für 24 Stunden):"
+"$$$/iNat/TokenDialog/Instruction=Bitte fügen Sie Ihr iNaturalist-Token ein (24 Stunden gültig):"
 "$$$/iNat/TokenDialog/OpenPage=Token-Generierungsseite öffnen"
 "$$$/iNat/TokenDialog/Save=Token speichern"
-"$$$/iNat/TokenDialog/Saved=Token erfolgreich gespeichert."
-"$$$/iNat/TokenDialog/Title=iNaturalist Token-Einrichtung"
-
-# Update_plugin.lua
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-
-# VerificationToken.lua
-"$$$/iNat/Log/TokenMissing=⛔ Kein Token in den Lightroom-Einstellungen gefunden."
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-"$$$/iNat/Log/TokenExpired=❌ Token abgelaufen oder älter als 24 Stunden. Bitte aktualisieren."
-# DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identifizierung"
-
-# export_photo_to_tempo.lua
-"$$$/iNat/Log/JPGDeleted=JPG-Datei gelöscht:"
+"$$$/iNat/TokenDialog/Saved=T

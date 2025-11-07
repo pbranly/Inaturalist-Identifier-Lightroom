@@ -7,7 +7,7 @@
 "$$$/iNat/Bezel/Exported=Image exportée vers tempo.jpg"
 "$$$/iNat/Title/Error=Erreur lors de l'identification"
 "$$$/iNat/Title/NoSpecies=Aucune espèce reconnue"
-"$$$/iNat/Message/NoSpecies=Il n'y a aucune espèce reconnue"
+"$$$/iNat/Message/NoSpecies=Aucune espèce n'a été reconnue"
 "$$$/iNat/Bezel/AnalysisDone=Analyse terminée."
 
 # Info.lua
@@ -17,7 +17,20 @@
 # Logger.lua
 # DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
 "$$$/iNat/Log/PluginStarted=== Plugin lancé ==="
-# DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
+
+# PluginInfoProvider.lua
+"$$$/iNat/CurrentVersion=Version actuelle du plugin :"
+"$$$/iNat/LatestGitHubVersion=Dernière version GitHub : ..."
+"$$$/iNat/CheckUpdatesNow=Vérification des mises à jour..."
+"$$$/iNat/DownloadGitHub=Télécharger la dernière version GitHub"
+# CONFLICT: "$$$/iNat/LatestGitHubVersion=Dernière version GitHub :" (précédent: Dernière version GitHub : ...)
+"$$$/iNat/UpToDate=Votre version est à jour ("
+"$$$/iNat/NewVersion=Une nouvelle version est disponible ("
+"$$$/iNat/TokenTooltip=Votre jeton API iNaturalist"
+"$$$/iNat/RefreshToken=Actualiser le jeton"
+"$$$/iNat/EnableLogging=Activer la journalisation dans log.txt"
+"$$$/iNat/Save=Enregistrer"
+"$$$/iNat/DialogTitle=Paramètres de connexion iNaturalist"
 
 # SelectAndTagResults.lua
 "$$$/iNat/Error/NoRecognizedSection=Aucune espèce reconnue trouvée"
@@ -31,26 +44,21 @@
 
 # TokenUpdater.lua
 "$$$/iNat/TokenStatus/None=Aucun jeton disponible."
-"$$$/iNat/TokenStatus/Valid=Le jeton est valide et récent (moins de 24h)."
-"$$$/iNat/TokenStatus/Expired=Jeton expiré. Veuillez actualiser."
+"$$$/iNat/TokenStatus/Valid=Le jeton est récent et valide (moins de 24h)."
+"$$$/iNat/TokenStatus/Expired=Jeton expiré. Veuillez l'actualiser."
 "$$$/iNat/TokenDialog/Instruction=Veuillez coller votre jeton iNaturalist (valide 24 heures) :"
-"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération de jeton"
+"$$$/iNat/TokenDialog/OpenPage=Ouvrir la page de génération du jeton"
 "$$$/iNat/TokenDialog/Save=Enregistrer le jeton"
 "$$$/iNat/TokenDialog/Saved=Jeton enregistré avec succès."
 "$$$/iNat/TokenDialog/Title=Configuration du jeton iNaturalist"
 
 # Update_plugin.lua
 # DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
-# DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
 
 # VerificationToken.lua
 "$$$/iNat/Log/TokenMissing=⛔ Aucun jeton trouvé dans les préférences Lightroom."
 # DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
-"$$$/iNat/Log/TokenExpired=❌ Jeton expiré ou datant de plus de 24 heures. Veuillez actualiser."
-# DUPLICATE: "$$$/iNat/PluginName=Identification iNaturalist"
+"$$$/iNat/Log/TokenExpired=❌ Jeton expiré ou datant de plus de 24 heures. Veuillez l'actualiser."
 
 # export_photo_to_tempo.lua
 "$$$/iNat/Log/JPGDeleted=Fichier JPG supprimé :"

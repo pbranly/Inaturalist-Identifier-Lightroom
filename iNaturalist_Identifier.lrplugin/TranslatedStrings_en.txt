@@ -19,6 +19,20 @@
 "$$$/iNat/Log/PluginStarted=== Plugin launched ==="
 # DUPLICATE: "$$$/iNat/PluginName=iNaturalist Identification"
 
+# PluginInfoProvider.lua
+"$$$/iNat/CurrentVersion=Plugin current version:"
+"$$$/iNat/LatestGitHubVersion=Latest GitHub version: ..."
+"$$$/iNat/CheckUpdatesNow=Checking updates..."
+"$$$/iNat/DownloadGitHub=Download latest GitHub version"
+# CONFLICT: "$$$/iNat/LatestGitHubVersion=Latest GitHub version:" (previous: Latest GitHub version: ...)
+"$$$/iNat/UpToDate=Your version is up to date ("
+"$$$/iNat/NewVersion=A new version is available ("
+"$$$/iNat/TokenTooltip=Your iNaturalist API token"
+"$$$/iNat/RefreshToken=Refresh Token"
+"$$$/iNat/EnableLogging=Enable logging to log.txt"
+"$$$/iNat/Save=Save"
+"$$$/iNat/DialogTitle=iNaturalist connection settings"
+
 # SelectAndTagResults.lua
 "$$$/iNat/Error/NoRecognizedSection=No recognized species found"
 "$$$/iNat/Error/UnexpectedFormat=The result format is not recognized."
