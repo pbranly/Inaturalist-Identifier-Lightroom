@@ -27,5 +27,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: 0.18
-#          args: --check -g '*.lua' -g '!json.lua' -- .
-          args:  -g '*.lua' -g '!json.lua' -- .
+          args: --check -g '*.lua' -g '!json.lua' -- .
+
