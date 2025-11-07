@@ -25,50 +25,119 @@ import re
 def extract_loc_strings_improved(text):
     """
     Extrait les chaînes LOC en gérant les concaténations avec variables.
-    Recherche tous les patterns LOC et extrait uniquement la partie texte.
+    Recherche tous les patterns LOC et extrait la partie texte complète.
     """
     results = []
     
-    # Pattern pour trouver LOC( ou LOC "
-    # Capture: LOC("$$$/key=value" .. variable) ou LOC "$$$/key=value" .. variable
-    patterns = [
-        # LOC("$$$/key=value" potentiellement suivi de ..)
-        r'LOC\s*\(\s*"(\$\$\$/[^=]+)=([^"]*?)"\s*(?:\.\.|,|\))',
-        # LOC "$$$/key=value" potentiellement suivi de ..
-        r'LOC\s+"(\$\$\$/[^=]+)=([^"]+?)"\s*(?:\.\.|$|,)',
-    ]
+    # Pattern amélioré pour capturer les chaînes complètes, même sur plusieurs lignes
+    # Recherche LOC( ou LOC " suivi de $$$/key=value
+    pattern = r'LOC\s*[("\s]+(\$\$\$/[^=]+)=([^"]*(?:"[^"]*)?[^"]*?)(?:"|$)'
     
-    for pattern in patterns:
-        matches = re.finditer(pattern, text, re.MULTILINE)
-        for match in matches:
-            key = match.group(1).strip()
-            value = match.group(2).strip()
-            
-            # Nettoyer la valeur
-            value = clean_value(value)
-            
-            # Ne garder que si la valeur n'est pas vide
-            if value:
-                results.append((key, value))
+    # Recherche toutes les occurrences
+    pos = 0
+    while pos < len(text):
+        # Chercher le début d'un LOC
+        loc_match = re.search(r'LOC\s*[\("]\s*"(\$\$\$/[^=]+)=', text[pos:])
+        if not loc_match:
+            break
+        
+        start = pos + loc_match.start()
+        key = loc_match.group(1).strip()
+        
+        # Trouver la position après le =
+        equals_pos = pos + loc_match.end()
+        
+        # Extraire la valeur jusqu'à la fin de la chaîne ou concaténation
+        value = extract_value_from_position(text, equals_pos)
+        
+        if value:
+            results.append((key, value))
+        
+        pos = equals_pos + 1
     
     return results
+
+
+def extract_value_from_position(text, start_pos):
+    """
+    Extrait la valeur d'une chaîne LOC à partir d'une position donnée.
+    Gère les concaténations avec .. et les chaînes multi-lignes.
+    """
+    value_parts = []
+    pos = start_pos
+    in_string = True
+    paren_depth = 0
+    
+    while pos < len(text):
+        char = text[pos]
+        
+        # Gérer les guillemets échappés
+        if char == '\\' and pos + 1 < len(text):
+            if text[pos + 1] == 'n':
+                value_parts.append('\n')
+                pos += 2
+                continue
+            elif text[pos + 1] == 't':
+                value_parts.append('\t')
+                pos += 2
+                continue
+            elif text[pos + 1] == '"':
+                value_parts.append('"')
+                pos += 2
+                continue
+            pos += 1
+            continue
+        
+        # Fin de la chaîne
+        if char == '"' and in_string:
+            # Vérifier s'il y a une concaténation après
+            next_chars = text[pos+1:pos+10].strip()
+            if next_chars.startswith('..'):
+                # Chercher la prochaine chaîne
+                concat_pos = pos + 1 + next_chars.index('..')
+                next_string_match = re.search(r'\s*\.\.\s*"', text[pos:concat_pos+10])
+                if next_string_match:
+                    pos = pos + next_string_match.end()
+                    continue
+                else:
+                    # Pas de chaîne après .., c'est une variable
+                    break
+            else:
+                # Fin de la valeur
+                break
+        
+        # Ajouter le caractère à la valeur
+        if in_string:
+            value_parts.append(char)
+        
+        pos += 1
+    
+    value = ''.join(value_parts)
+    return clean_value(value)
 
 
 def clean_value(value):
     """
     Nettoie une valeur extraite en gérant les échappements et caractères spéciaux.
     """
-    # Remplacer les placeholders Lua
-    value = value.replace("^1", "{1}")
-    value = value.replace("^2", "{2}")
-    value = value.replace("^3", "{3}")
+    # Remplacer les placeholders Lua par le format {N}
+    value = re.sub(r'\^(\d+)', r'{\1}', value)
     
-    # Gérer les retours à la ligne littéraux
-    value = value.replace('\\n', ' ')
-    value = value.replace('\\t', ' ')
+    # Nettoyer les espaces excessifs mais garder les \n intentionnels
+    lines = value.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        # Réduire les espaces multiples sur chaque ligne
+        line = re.sub(r'[ \t]+', ' ', line)
+        line = line.strip()
+        if line:
+            cleaned_lines.append(line)
     
-    # Réduire les espaces multiples
-    value = re.sub(r'\s+', ' ', value)
+    # Rejoindre avec \n\n pour les vraies nouvelles lignes
+    if len(cleaned_lines) > 1:
+        value = '\\n\\n'.join(cleaned_lines)
+    else:
+        value = ' '.join(cleaned_lines)
     
     return value.strip()
 
@@ -141,7 +210,8 @@ def process_lua_files():
     # Afficher quelques exemples
     print("\n📝 Sample extractions:")
     for i, (k, v) in enumerate(list(seen_translations.items())[:5]):
-        print(f"   {i+1}. {k[:50]}... = {v[:50]}...")
+        print(f"   {i+1}. {k[:60]}...")
+        print(f"       = {v[:80]}...")
 
 
 # ---------------------------------------------------------------------------
