@@ -1,10 +1,10 @@
-name: Lint and Format Lua Code
+name: Lint Lua code
 
 on: [push, pull_request]
 
 jobs:
   luacheck:
-    name: Luacheck - Static Analysis
+    name: Run Luacheck
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -13,32 +13,18 @@ jobs:
       - name: Run Luacheck
         uses: lunarmodules/luacheck@v1
         with:
-          args: . --config .luacheckrc
+          args: . --config .luacheckrc   # utilise .luacheckrc pour exclure json.lua
 
   stylua:
-    name: StyLua - Auto Format and Report
+    name: Check formatting with StyLua
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Stylua (auto format)
+      - name: Run StyLua
         uses: JohnnyMorganz/stylua-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: 0.18
-          args: -g '*.lua' -g '!json.lua' -- .
-
-      - name: Check for changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          if [[ $(git status --porcelain) ]]; then
-            echo "🔧 Stylua a modifié les fichiers suivants :"
-            git diff --name-only
-            git add .
-            git commit -m "style: auto-format Lua files with Stylua"
-            git push
-          else
-            echo "✅ Aucun changement détecté par Stylua."
-          fi
+          args: --check -g '*.lua' -g '!json.lua' -- .
