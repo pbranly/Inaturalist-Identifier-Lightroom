@@ -48,137 +48,139 @@ Execution Steps:
 --]]
 
 --local LrView      = import "LrView"   -- luacheck: ignore 512
-local LrPrefs     = import "LrPrefs"
+local LrPrefs = import("LrPrefs")
 --local LrDialogs   = import "LrDialogs" -- luacheck: ignore 512
-local LrTasks     = import "LrTasks"
+local LrTasks = import("LrTasks")
 --local LrHttp      = import "LrHttp"    -- luacheck: ignore 512
 
-local logger       = require("Logger")
-local Updates      = require("Update_plugin")
+local logger = require("Logger")
+local Updates = require("Update_plugin")
 local TokenUpdater = require("TokenUpdater")
 
 --local bind = LrView.bind -- luacheck: ignore 512
 
 return {
-    sectionsForTopOfDialog = function(viewFactory)
-        local prefs = LrPrefs.prefsForPlugin()
-        logger.logMessage("[Step 1] Preferences initialized.")
+	sectionsForTopOfDialog = function(viewFactory)
+		local prefs = LrPrefs.prefsForPlugin()
+		logger.logMessage("[Step 1] Preferences initialized.")
 
-        -- Step 2: Current plugin version
-        local localVersion = Updates.getCurrentVersion()
-        logger.logMessage("[Step 2] Current plugin version: " .. tostring(localVersion))
+		-- Step 2: Current plugin version
+		local localVersion = Updates.getCurrentVersion()
+		logger.logMessage("[Step 2] Current plugin version: " .. tostring(localVersion))
 
-        local localVersionField = viewFactory:static_text {
-            title = LOC "$$$/iNat/CurrentVersion=Plugin current version: " .. localVersion,
-            width = 250
-        }
+		local localVersionField = viewFactory:static_text({
+			title = LOC("$$$/iNat/CurrentVersion=Plugin current version: ") .. localVersion,
+			width = 250,
+		})
 
-        -- Step 3: Latest GitHub release version placeholder
-        local githubVersionField = viewFactory:static_text {
-            title = LOC "$$$/iNat/LatestGitHubVersion=Latest GitHub version: ...",
-            width = 250
-        }
+		-- Step 3: Latest GitHub release version placeholder
+		local githubVersionField = viewFactory:static_text({
+			title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ..."),
+			width = 250,
+		})
 
-        -- Step 4: Update status text and optional button
-        local updateStatusText = viewFactory:static_text {
-            title = LOC "$$$/iNat/CheckUpdatesNow=Checking updates...",
-            width = 400
-        }
+		-- Step 4: Update status text and optional button
+		local updateStatusText = viewFactory:static_text({
+			title = LOC("$$$/iNat/CheckUpdatesNow=Checking updates..."),
+			width = 400,
+		})
 
-        local updateButton = viewFactory:push_button {
-            title = LOC "$$$/iNat/DownloadGitHub=Download latest GitHub version",
-            enabled = false,
-            action = function()
-                logger.logMessage("[Step 4] User clicked Update button.")
-                Updates.forceUpdate()
-            end
-        }
+		local updateButton = viewFactory:push_button({
+			title = LOC("$$$/iNat/DownloadGitHub=Download latest GitHub version"),
+			enabled = false,
+			action = function()
+				logger.logMessage("[Step 4] User clicked Update button.")
+				Updates.forceUpdate()
+			end,
+		})
 
-        -- Asynchronous fetch of latest GitHub version
-        LrTasks.startAsyncTask(function()
-            logger.logMessage("[Step 3] Fetching latest GitHub release...")
-            local latest = Updates.getLatestGitHubVersion() or "?"
-            githubVersionField.title = LOC "$$$/iNat/LatestGitHubVersion=Latest GitHub version: " .. latest
-            logger.logMessage("[Step 3] Latest GitHub version fetched: " .. latest)
+		-- Asynchronous fetch of latest GitHub version
+		LrTasks.startAsyncTask(function()
+			logger.logMessage("[Step 3] Fetching latest GitHub release...")
+			local latest = Updates.getLatestGitHubVersion() or "?"
+			githubVersionField.title = LOC("$$$/iNat/LatestGitHubVersion=Latest GitHub version: ") .. latest
+			logger.logMessage("[Step 3] Latest GitHub version fetched: " .. latest)
 
-            local function normalizeVersion(v) return (v or ""):gsub("^v", "") end
-            if normalizeVersion(localVersion) == normalizeVersion(latest) then
-                updateStatusText.title = LOC "$$$/iNat/UpToDate=Your version is up to date (" .. localVersion .. ")"
-                updateButton.enabled = false
-                logger.logMessage("[Step 4] Plugin is up to date: " .. localVersion)
-            else
-                updateStatusText.title = LOC "$$$/iNat/NewVersion=A new version is available (" .. latest .. ")"
-                updateButton.enabled = true
-                logger.logMessage("[Step 4] New version available: " .. latest)
-            end
-        end)
+			local function normalizeVersion(v)
+				return (v or ""):gsub("^v", "")
+			end
+			if normalizeVersion(localVersion) == normalizeVersion(latest) then
+				updateStatusText.title = LOC("$$$/iNat/UpToDate=Your version is up to date (") .. localVersion .. ")"
+				updateButton.enabled = false
+				logger.logMessage("[Step 4] Plugin is up to date: " .. localVersion)
+			else
+				updateStatusText.title = LOC("$$$/iNat/NewVersion=A new version is available (") .. latest .. ")"
+				updateButton.enabled = true
+				logger.logMessage("[Step 4] New version available: " .. latest)
+			end
+		end)
 
-        -- Step 5: Token status and input field
-        local tokenStatus = TokenUpdater.getTokenStatusText()
-        logger.logMessage("[Step 5] Token status: " .. tostring(tokenStatus))
+		-- Step 5: Token status and input field
+		local tokenStatus = TokenUpdater.getTokenStatusText()
+		logger.logMessage("[Step 5] Token status: " .. tostring(tokenStatus))
 
-        local tokenStatusText = viewFactory:static_text {
-            title = tokenStatus,
-            width = 500
-        }
+		local tokenStatusText = viewFactory:static_text({
+			title = tokenStatus,
+			width = 500,
+		})
 
-        local tokenField = viewFactory:edit_field {
-            value = prefs.token or "",
-            width = 500,
-            height = 80,
-            wrap = true,
-            tooltip = LOC "$$$/iNat/TokenTooltip=Your iNaturalist API token"
-        }
+		local tokenField = viewFactory:edit_field({
+			value = prefs.token or "",
+			width = 500,
+			height = 80,
+			wrap = true,
+			tooltip = LOC("$$$/iNat/TokenTooltip=Your iNaturalist API token"),
+		})
 
-        -- Step 6: Refresh token button
-        local refreshTokenButton = viewFactory:push_button {
-            title = LOC "$$$/iNat/RefreshToken=Refresh Token",
-            action = function()
-                logger.logMessage("[Step 6] User clicked Refresh Token button.")
-                TokenUpdater.runUpdateTokenScript()
-            end
-        }
+		-- Step 6: Refresh token button
+		local refreshTokenButton = viewFactory:push_button({
+			title = LOC("$$$/iNat/RefreshToken=Refresh Token"),
+			action = function()
+				logger.logMessage("[Step 6] User clicked Refresh Token button.")
+				TokenUpdater.runUpdateTokenScript()
+			end,
+		})
 
-        -- Step 7: Logging checkbox
-        local logCheck = viewFactory:checkbox {
-            title = LOC "$$$/iNat/EnableLogging=Enable logging to log.txt",
-            value = prefs.logEnabled or false
-        }
+		-- Step 7: Logging checkbox
+		local logCheck = viewFactory:checkbox({
+			title = LOC("$$$/iNat/EnableLogging=Enable logging to log.txt"),
+			value = prefs.logEnabled or false,
+		})
 
-        -- Step 8: Save preferences button
-        local saveButton = viewFactory:push_button {
-            title = LOC "$$$/iNat/Save=Save",
-            action = function()
-                prefs.logEnabled = logCheck.value
-                prefs.token = tokenField.value
-                logger.logMessage(
-                    "[Step 8] Preferences saved. Logging: "
-                    .. tostring(prefs.logEnabled)
-                    .. ", Token length: "
-                    .. tostring(#(prefs.token or ""))
-                )
-            end
-        }
+		-- Step 8: Save preferences button
+		local saveButton = viewFactory:push_button({
+			title = LOC("$$$/iNat/Save=Save"),
+			action = function()
+				prefs.logEnabled = logCheck.value
+				prefs.token = tokenField.value
+				logger.logMessage(
+					"[Step 8] Preferences saved. Logging: "
+						.. tostring(prefs.logEnabled)
+						.. ", Token length: "
+						.. tostring(#(prefs.token or ""))
+				)
+			end,
+		})
 
-        -- Return dialog layout (ligne longue corrigée)
-        return {
-            {
-                title = LOC "$$$/iNat/DialogTitle=iNaturalist connection settings",
-                viewFactory:row {
-                    localVersionField,
-                    viewFactory:static_text {
-                        title = " | ",
-                        width = 20
-                    },
-                    githubVersionField
-                },
-                viewFactory:row { updateStatusText, updateButton },
-                viewFactory:row { tokenStatusText },
-                viewFactory:row { tokenField },
-                viewFactory:row { refreshTokenButton },
-                viewFactory:row { logCheck },
-                viewFactory:row { saveButton }
-            }
-        }
-    end
+		-- Return dialog layout (ligne longue corrigée)
+		return {
+			{
+				title = LOC("$$$/iNat/DialogTitle=iNaturalist connection settings"),
+				viewFactory:row({
+					localVersionField,
+					viewFactory:static_text({
+						title = " | ",
+						width = 20,
+					}),
+					githubVersionField,
+				}),
+				viewFactory:row({ updateStatusText, updateButton }),
+				viewFactory:row({ tokenStatusText }),
+				viewFactory:row({ tokenField }),
+				viewFactory:row({ refreshTokenButton }),
+				viewFactory:row({ logCheck }),
+				viewFactory:row({ saveButton }),
+			},
+		}
+	end,
 }

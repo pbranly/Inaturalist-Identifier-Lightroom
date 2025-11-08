@@ -52,148 +52,149 @@ Numbered Workflow Steps:
 ]]
 
 -- Step 1: Import Lightroom SDK modules
-local LrTasks       = import "LrTasks"
-local LrDialogs     = import "LrDialogs"
-local LrApplication = import "LrApplication"
-local LrPrefs       = import "LrPrefs"
+local LrTasks = import("LrTasks")
+local LrDialogs = import("LrDialogs")
+local LrApplication = import("LrApplication")
+local LrPrefs = import("LrPrefs")
 
 -- Step 2: Import custom plugin modules
-local logger           = require("Logger")
-local callInaturalist  = require("call_inaturalist")
-local tokenUpdater     = require("TokenUpdater")
-local tokenChecker     = require("VerificationToken")
+local logger = require("Logger")
+local callInaturalist = require("call_inaturalist")
+local tokenUpdater = require("TokenUpdater")
+local tokenChecker = require("VerificationToken")
 local exportToTempoMod = require("export_photo_to_tempo")
-local selectorModule   = require("SelectAndTagResults") -- imported early for clarity
+local selectorModule = require("SelectAndTagResults") -- imported early for clarity
 
 -- Step 3: Main identify function
 local function identify()
-    LrTasks.startAsyncTask(function()
-        -- Step 2: Initialize logging and show startup bezel
-        logger.initializeLogFile()
-        logger.logMessage("[Step 2] Plugin started.")
-        LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PluginStarted=Plugin started"), 3)
+	LrTasks.startAsyncTask(function()
+		-- Step 2: Initialize logging and show startup bezel
+		logger.initializeLogFile()
+		logger.logMessage("[Step 2] Plugin started.")
+		LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PluginStarted=Plugin started"), 3)
 
-        -- Step 3: Retrieve stored token
-        local prefs = LrPrefs.prefsForPlugin()
-        local token = prefs.token
-        logger.logMessage("[Step 3] Retrieved token: " .. (token or "<missing>"))
+		-- Step 3: Retrieve stored token
+		local prefs = LrPrefs.prefsForPlugin()
+		local token = prefs.token
+		logger.logMessage("[Step 3] Retrieved token: " .. (token or "<missing>"))
 
-        -- Step 4: Token missing
-        if not token or token == "" then
-            logger.logMessage("[Step 4] Missing token. Prompting user to update.")
-            logger.notify("Token is missing. Please enter it in Preferences.")
-            tokenUpdater.runUpdateTokenScript()
-            return
-        end
+		-- Step 4: Token missing
+		if not token or token == "" then
+			logger.logMessage("[Step 4] Missing token. Prompting user to update.")
+			logger.notify("Token is missing. Please enter it in Preferences.")
+			tokenUpdater.runUpdateTokenScript()
+			return
+		end
 
-        -- Step 5: Validate token
-        local valid = tokenChecker.isTokenValid()
-        logger.logMessage("[Step 5] Token validation result: " .. tostring(valid))
-        if not valid then
-            -- Step 6: Token invalid
-            logger.logMessage("[Step 6] Invalid or expired token. Prompting user to update.")
-            logger.notify("Invalid or expired token.")
-            tokenUpdater.runUpdateTokenScript()
-            return
-        end
+		-- Step 5: Validate token
+		local valid = tokenChecker.isTokenValid()
+		logger.logMessage("[Step 5] Token validation result: " .. tostring(valid))
+		if not valid then
+			-- Step 6: Token invalid
+			logger.logMessage("[Step 6] Invalid or expired token. Prompting user to update.")
+			logger.notify("Invalid or expired token.")
+			tokenUpdater.runUpdateTokenScript()
+			return
+		end
 
-        -- Step 7: Retrieve selected photos
-        local catalog = LrApplication.activeCatalog()
-        local photos  = catalog:getTargetPhotos()
-        logger.logMessage("[Step 7] Number of selected photos: " .. (#photos or 0))
+		-- Step 7: Retrieve selected photos
+		local catalog = LrApplication.activeCatalog()
+		local photos = catalog:getTargetPhotos()
+		logger.logMessage("[Step 7] Number of selected photos: " .. (#photos or 0))
 
-        -- Step 8: No photos selected
-        if not photos or #photos == 0 then
-            logger.logMessage("[Step 8] No photos selected. Exiting.")
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
-            return
-        end
+		-- Step 8: No photos selected
+		if not photos or #photos == 0 then
+			logger.logMessage("[Step 8] No photos selected. Exiting.")
+			LrDialogs.showBezel(LOC("$$$/iNat/Bezel/NoPhoto=No photo selected."), 3)
+			return
+		end
 
-        -- Step 9: Sequential processing of photos
-        local function processNextPhoto(index)
-            if index > #photos then
-                logger.logMessage("[Step 10] All photos processed.")
-                LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
-                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AllDone=All photos processed."), 3)
-                return
-            end
+		-- Step 9: Sequential processing of photos
+		local function processNextPhoto(index)
+			if index > #photos then
+				logger.logMessage("[Step 10] All photos processed.")
+				LrTasks.sleep(0.5) -- petit délai pour laisser le précédent bezel se fermer
+				LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AllDone=All photos processed."), 3)
+				return
+			end
 
-            local photo = photos[index]
-            local filename = photo:getFormattedMetadata("fileName") or ("photo_" .. index)
-            logger.logMessage("[Step 9.1] Processing photo " .. index .. "/" .. #photos .. ": " .. filename)
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PhotoName=Selected photo: ") .. filename, 3)
+			local photo = photos[index]
+			local filename = photo:getFormattedMetadata("fileName") or ("photo_" .. index)
+			logger.logMessage("[Step 9.1] Processing photo " .. index .. "/" .. #photos .. ": " .. filename)
+			LrDialogs.showBezel(LOC("$$$/iNat/Bezel/PhotoName=Selected photo: ") .. filename, 3)
 
-            -- Step 9.2: Export photo
-            local tempoPath, err = exportToTempoMod.exportToTempo(photo)
-            if not tempoPath then
-                -- Step 9.3: Export failed
-                logger.logMessage("[Step 9.3] Export failed for " .. filename .. ": " .. (err or "unknown error"))
-                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Temporary export failed."), 3)
-                processNextPhoto(index + 1)
-                return
-            end
+			-- Step 9.2: Export photo
+			local tempoPath, err = exportToTempoMod.exportToTempo(photo)
+			if not tempoPath then
+				-- Step 9.3: Export failed
+				logger.logMessage("[Step 9.3] Export failed for " .. filename .. ": " .. (err or "unknown error"))
+				LrDialogs.showBezel(LOC("$$$/iNat/Bezel/ExportFailed=Temporary export failed."), 3)
+				processNextPhoto(index + 1)
+				return
+			end
 
-            -- Step 9.4: Log exported path
-            logger.logMessage("[Step 9.4] Image exported to: " .. tempoPath)
-            LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
+			-- Step 9.4: Log exported path
+			logger.logMessage("[Step 9.4] Image exported to: " .. tempoPath)
+			LrDialogs.showBezel(LOC("$$$/iNat/Bezel/Exported=Image exported to tempo.jpg"), 3)
 
-            -- Step 9.5 & 9.6: Call iNaturalist API and log request/response
-            logger.logMessage("[Step 9.5] Sending identification request for " .. filename .. " to iNaturalist API")
-            callInaturalist.identifyAsync(tempoPath, token, function(result, apiErr, httpDetails)
-                if httpDetails then
-                    logger.logMessage("[Step 9.6] HTTP request: " .. (httpDetails.request or "<unknown>"))
-                    logger.logMessage("[Step 9.6] HTTP response: " .. (httpDetails.response or "<unknown>"))
-                end
+			-- Step 9.5 & 9.6: Call iNaturalist API and log request/response
+			logger.logMessage("[Step 9.5] Sending identification request for " .. filename .. " to iNaturalist API")
+			callInaturalist.identifyAsync(tempoPath, token, function(result, apiErr, httpDetails)
+				if httpDetails then
+					logger.logMessage("[Step 9.6] HTTP request: " .. (httpDetails.request or "<unknown>"))
+					logger.logMessage("[Step 9.6] HTTP response: " .. (httpDetails.response or "<unknown>"))
+				end
 
-                if apiErr then
-                    logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. apiErr)
-                    LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), apiErr)
-                    processNextPhoto(index + 1)
-                    return
-                end
+				if apiErr then
+					logger.logMessage("[Step 9.6] Identification error for " .. filename .. ": " .. apiErr)
+					LrDialogs.message(LOC("$$$/iNat/Title/Error=Error during identification"), apiErr)
+					processNextPhoto(index + 1)
+					return
+				end
 
-                -- Step 9.7 & 9.8: Handle recognized or unrecognized species
-                if result:match("🕊️") then
-                    logger.logMessage("[Step 9.7] Species recognized for " .. filename ..
-                        ". Launching selection/tagging module.")
-                    -- 🔑 MODIFICATION : Forcer l'affichage de cette photo spécifique
-                    catalog:withWriteAccessDo("Set active photo", function()
-                        catalog:setSelectedPhotos(photo, {photo})
-                        logger.logMessage("[Step 9.7] Photo " .. filename .. " set as active photo in Lightroom.")
-                    end)
-                    -- Petit délai pour laisser l'interface se mettre à jour
-                    LrTasks.sleep(0.5)
-                    -- Lancer le module de sélection avec la photo ciblée
-                    selectorModule.showSelection(result, photo)
-                else
-                    logger.logMessage("[Step 9.8] No recognized species for " .. filename)
-                    LrDialogs.message(
-                        LOC("$$$/iNat/Title/NoSpecies=No recognized species"),
-                        LOC("$$$/iNat/Message/NoSpecies=There are no recognized species"),
-                        "ok"
-                    )
-                end
+				-- Step 9.7 & 9.8: Handle recognized or unrecognized species
+				if result:match("🕊️") then
+					logger.logMessage(
+						"[Step 9.7] Species recognized for " .. filename .. ". Launching selection/tagging module."
+					)
+					-- 🔑 MODIFICATION : Forcer l'affichage de cette photo spécifique
+					catalog:withWriteAccessDo("Set active photo", function()
+						catalog:setSelectedPhotos(photo, { photo })
+						logger.logMessage("[Step 9.7] Photo " .. filename .. " set as active photo in Lightroom.")
+					end)
+					-- Petit délai pour laisser l'interface se mettre à jour
+					LrTasks.sleep(0.5)
+					-- Lancer le module de sélection avec la photo ciblée
+					selectorModule.showSelection(result, photo)
+				else
+					logger.logMessage("[Step 9.8] No recognized species for " .. filename)
+					LrDialogs.message(
+						LOC("$$$/iNat/Title/NoSpecies=No recognized species"),
+						LOC("$$$/iNat/Message/NoSpecies=There are no recognized species"),
+						"ok"
+					)
+				end
 
-                -- Step 9.9: Log analysis completion
-                logger.logMessage("[Step 9.9] Analysis completed for " .. filename)
-                LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
+				-- Step 9.9: Log analysis completion
+				logger.logMessage("[Step 9.9] Analysis completed for " .. filename)
+				LrDialogs.showBezel(LOC("$$$/iNat/Bezel/AnalysisDone=Analysis completed."), 3)
 
-                -- Continue with next photo
-                processNextPhoto(index + 1)
-            end)
-        end
+				-- Continue with next photo
+				processNextPhoto(index + 1)
+			end)
+		end
 
-        -- Start sequential processing from first photo
-        processNextPhoto(1)
-    end)
+		-- Start sequential processing from first photo
+		processNextPhoto(1)
+	end)
 end
 
 -- Optional Lightroom export hook
 local function processRenderedPhotos(_functionContext, _exportContext)
-    identify()
+	identify()
 end
 
 return {
-    processRenderedPhotos = processRenderedPhotos,
-    identify = identify,
+	processRenderedPhotos = processRenderedPhotos,
+	identify = identify,
 }

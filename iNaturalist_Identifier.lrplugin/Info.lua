@@ -37,35 +37,35 @@ Calling script
 ============================================================
 ]]
 return {
-    -- [Step 1] Display name in Lightroom (localized)
-    LrPluginName = LOC("$$$/iNat/PluginName=iNaturalist Identification"),
+	-- [Step 1] Display name in Lightroom (localized)
+	LrPluginName = LOC("$$$/iNat/PluginName=iNaturalist Identification"),
 
-    -- [Step 2] Unique identifier for the plugin
-    LrToolkitIdentifier = "com.example.iNaturalistBirdIdentifier",
+	-- [Step 2] Unique identifier for the plugin
+	LrToolkitIdentifier = "com.example.iNaturalistBirdIdentifier",
 
-    -- [Step 3] Supported Lightroom SDK versions
-    LrSdkVersion = 14.0,
-    LrSdkMinimumVersion = 10.0,
+	-- [Step 3] Supported Lightroom SDK versions
+	LrSdkVersion = 14.0,
+	LrSdkMinimumVersion = 10.0,
 
-    -- [Step 4] Link to plugin information website
-    LrPluginInfoUrl = "https://www.inaturalist.org",
+	-- [Step 4] Link to plugin information website
+	LrPluginInfoUrl = "https://www.inaturalist.org",
 
-    -- [Step 5] Script launched from the "File > Export" menu
-    LrExportMenuItems = {
-        {
-            title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
-            file = "main.lua",
-        },
-    },
-    -- [Step 6] Interface for the Plugin Manager
-    LrPluginInfoProvider = "PluginInfoProvider.lua",
-    -- [Step 7] Plugin type
-    LrPluginType = "export",
-    -- [Step 8] Plugin version number
-    VERSION = {
-        major = 2,
-        minor = 1,
-        revision = 4,
-        build = 0,
-    },
+	-- [Step 5] Script launched from the "File > Export" menu
+	LrExportMenuItems = {
+		{
+			title = LOC("$$$/iNat/MenuItem=Identify wildlife via iNaturalist"),
+			file = "main.lua",
+		},
+	},
+	-- [Step 6] Interface for the Plugin Manager
+	LrPluginInfoProvider = "PluginInfoProvider.lua",
+	-- [Step 7] Plugin type
+	LrPluginType = "export",
+	-- [Step 8] Plugin version number
+	VERSION = {
+		major = 2,
+		minor = 1,
+		revision = 4,
+		build = 0,
+	},
 }

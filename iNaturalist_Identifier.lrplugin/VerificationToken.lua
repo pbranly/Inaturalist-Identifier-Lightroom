@@ -20,43 +20,42 @@ Calling Scripts:
 - PluginInfoProvider.lua
 ============================================================]]
 
-
 -- Step 1: Imports
-local LrPrefs   = import "LrPrefs"
-local LrDialogs = import "LrDialogs"
-local logger    = require("Logger")
+local LrPrefs = import("LrPrefs")
+local LrDialogs = import("LrDialogs")
+local logger = require("Logger")
 
 -- Step 2: Check token freshness (<24h)
 local function isTokenValid()
-    local prefs = LrPrefs.prefsForPlugin()
-    local token = prefs.token
-    local timestamp = prefs.tokenTimestamp or 0
+	local prefs = LrPrefs.prefsForPlugin()
+	local token = prefs.token
+	local timestamp = prefs.tokenTimestamp or 0
 
-    if not token or token == "" then
-        local msg = LOC("$$$/iNat/Log/TokenMissing=⛔ No token found in Lightroom preferences.")
-        logger.logMessage("[VerificationToken] " .. msg)
-        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
-        return false, msg
-    end
+	if not token or token == "" then
+		local msg = LOC("$$$/iNat/Log/TokenMissing=⛔ No token found in Lightroom preferences.")
+		logger.logMessage("[VerificationToken] " .. msg)
+		LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
+		return false, msg
+	end
 
-    local age = os.time() - timestamp
-    logger.logMessage("[VerificationToken] Token age (seconds): " .. tostring(age))
+	local age = os.time() - timestamp
+	logger.logMessage("[VerificationToken] Token age (seconds): " .. tostring(age))
 
-    if age <= 24*3600 then
-        -- ✅ Token still valid: log only, no dialog shown
-        local msg = "Token is fresh and valid (less than 24 hours old)."
-        logger.logMessage("[VerificationToken] " .. msg)
-        return true, msg
-    else
-        -- ❌ Token expired: log + dialog
-        local msg = LOC("$$$/iNat/Log/TokenExpired=❌ Token expired or older than 24 hours. Please refresh.")
-        logger.logMessage("[VerificationToken] " .. msg)
-        LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
-        return false, msg
-    end
+	if age <= 24 * 3600 then
+		-- ✅ Token still valid: log only, no dialog shown
+		local msg = "Token is fresh and valid (less than 24 hours old)."
+		logger.logMessage("[VerificationToken] " .. msg)
+		return true, msg
+	else
+		-- ❌ Token expired: log + dialog
+		local msg = LOC("$$$/iNat/Log/TokenExpired=❌ Token expired or older than 24 hours. Please refresh.")
+		logger.logMessage("[VerificationToken] " .. msg)
+		LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), msg, "critical")
+		return false, msg
+	end
 end
 
 -- Step 3: Export function
 return {
-    isTokenValid = isTokenValid
+	isTokenValid = isTokenValid,
 }

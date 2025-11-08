@@ -45,10 +45,10 @@ Numbered Steps:
 ]]
 
 -- [Step 1] Import Lightroom SDK modules
-local LrDialogs = import 'LrDialogs'
-local LrHttp    = import 'LrHttp'
-local LrTasks   = import 'LrTasks'
-local logger    = require("Logger")  -- Homogeneous logging
+local LrDialogs = import("LrDialogs")
+local LrHttp = import("LrHttp")
+local LrTasks = import("LrTasks")
+local logger = require("Logger") -- Homogeneous logging
 
 local observation = {}
 
@@ -56,116 +56,109 @@ local observation = {}
 -- Internal function: build and send multipart request
 -----------------------------------------------------------------------
 local function submitObservation(photoPath, keywords, token)
-    -- [2.1] Prepare multipart parameters
-    logger.logMessage("[observation_selection] Preparing multipart parameters.")
-    local params = {
-        { name = "observation[species_guess]", value = table.concat(keywords, ", ") },
-        { name = "observation[observed_on]", value = os.date("%Y-%m-%d") },
-        { name = "observation[observation_photos_attributes][0][photo]",
-          filePath = photoPath,
-          fileName = "tempo.jpg",
-          contentType = "image/jpeg"
-        }
-    }
+	-- [2.1] Prepare multipart parameters
+	logger.logMessage("[observation_selection] Preparing multipart parameters.")
+	local params = {
+		{ name = "observation[species_guess]", value = table.concat(keywords, ", ") },
+		{ name = "observation[observed_on]", value = os.date("%Y-%m-%d") },
+		{
+			name = "observation[observation_photos_attributes][0][photo]",
+			filePath = photoPath,
+			fileName = "tempo.jpg",
+			contentType = "image/jpeg",
+		},
+	}
 
-    for i, part in ipairs(params) do
-        if part.value then
-            logger.logMessage(string.format("  part %d: %s = %s", i, part.name, tostring(part.value)))
-        else
-            logger.logMessage(string.format(
-                "  part %d: %s (fileName=%s, filePath=%s)", i, part.name, part.fileName, part.filePath
-            ))
-        end
-    end
+	for i, part in ipairs(params) do
+		if part.value then
+			logger.logMessage(string.format("  part %d: %s = %s", i, part.name, tostring(part.value)))
+		else
+			logger.logMessage(
+				string.format("  part %d: %s (fileName=%s, filePath=%s)", i, part.name, part.fileName, part.filePath)
+			)
+		end
+	end
 
-    -- [2.2] Prepare headers
-    local headers = { { field = "Authorization", value = "Bearer " .. token } }
-    logger.logMessage("[observation_selection] Headers:")
-    for _, h in ipairs(headers) do
-        logger.logMessage("  " .. h.field .. ": " .. h.value)
-    end
+	-- [2.2] Prepare headers
+	local headers = { { field = "Authorization", value = "Bearer " .. token } }
+	logger.logMessage("[observation_selection] Headers:")
+	for _, h in ipairs(headers) do
+		logger.logMessage("  " .. h.field .. ": " .. h.value)
+	end
 
-    -- [2.3] Log equivalent curl command for testing
-    local curlCmd = 'curl -X POST "https://api.inaturalist.org/v1/observations" -H "Authorization: Bearer ' ..
-                    token .. '"'
-    for _, part in ipairs(params) do
-        if part.value then
-            curlCmd = curlCmd .. ' -F "' .. part.name .. '=' .. tostring(part.value) .. '"'
-        else
-            curlCmd = curlCmd .. ' -F "' .. part.name .. '=@' .. part.filePath:gsub("\\","/") .. '"'
-        end
-    end
-    logger.logMessage("[observation_selection] Equivalent curl command for testing:\n" .. curlCmd)
+	-- [2.3] Log equivalent curl command for testing
+	local curlCmd = 'curl -X POST "https://api.inaturalist.org/v1/observations" -H "Authorization: Bearer '
+		.. token
+		.. '"'
+	for _, part in ipairs(params) do
+		if part.value then
+			curlCmd = curlCmd .. ' -F "' .. part.name .. "=" .. tostring(part.value) .. '"'
+		else
+			curlCmd = curlCmd .. ' -F "' .. part.name .. "=@" .. part.filePath:gsub("\\", "/") .. '"'
+		end
+	end
+	logger.logMessage("[observation_selection] Equivalent curl command for testing:\n" .. curlCmd)
 
-    -- [2.4] Perform HTTP request
-    logger.logMessage("[observation_selection] Submitting POST request to iNaturalist API.")
-    local result, headersOut = LrHttp.postMultipart(
-        "https://api.inaturalist.org/v1/observations", params, headers
-    )
+	-- [2.4] Perform HTTP request
+	logger.logMessage("[observation_selection] Submitting POST request to iNaturalist API.")
+	local result, headersOut = LrHttp.postMultipart("https://api.inaturalist.org/v1/observations", params, headers)
 
-    -- [2.5] Log API response
-    logger.logMessage("[observation_selection] API raw response: " .. tostring(result))
-    if headersOut then
-        for k, v in pairs(headersOut) do
-            logger.logMessage("[observation_selection] Header: " .. tostring(k) .. " = " .. tostring(v))
-        end
-    end
+	-- [2.5] Log API response
+	logger.logMessage("[observation_selection] API raw response: " .. tostring(result))
+	if headersOut then
+		for k, v in pairs(headersOut) do
+			logger.logMessage("[observation_selection] Header: " .. tostring(k) .. " = " .. tostring(v))
+		end
+	end
 
-    -- Determine success based on presence of "id" field
-    if result and result:find('"id"') then
-        return true, result
-    else
-        return false, result
-    end
+	-- Determine success based on presence of "id" field
+	if result and result:find('"id"') then
+		return true, result
+	else
+		return false, result
+	end
 end
 
 -----------------------------------------------------------------------
 -- Public function: called from SelectAndTagResults.lua
 -----------------------------------------------------------------------
 function observation.askSubmit(photoPath, keywords, token)
-    logger.logMessage("=== START askSubmit ===")
-    logger.logMessage("Parameters received:")
-    logger.logMessage("  photoPath: " .. tostring(photoPath))
-    logger.logMessage(
-    "  keywords: " ..
-    (type(keywords) == "table" and table.concat(keywords, ", ") or tostring(keywords))
-)
-    logger.logMessage("  token: " .. (token and "***provided***" or "NIL"))
+	logger.logMessage("=== START askSubmit ===")
+	logger.logMessage("Parameters received:")
+	logger.logMessage("  photoPath: " .. tostring(photoPath))
+	logger.logMessage(
+		"  keywords: " .. (type(keywords) == "table" and table.concat(keywords, ", ") or tostring(keywords))
+	)
+	logger.logMessage("  token: " .. (token and "***provided***" or "NIL"))
 
-    -- [3.2] Run inside async task to avoid coroutine errors
-    LrTasks.startAsyncTask(function()
-        -- [3.3] Ask user for confirmation
-        local response = LrDialogs.confirm(
-            "Submit observation to iNaturalist?",
-            "The selected species will be submitted with the photo.",
-            "Submit",
-            "Cancel"
-        )
-        logger.logMessage("[observation_selection] User dialog response: " .. tostring(response))
+	-- [3.2] Run inside async task to avoid coroutine errors
+	LrTasks.startAsyncTask(function()
+		-- [3.3] Ask user for confirmation
+		local response = LrDialogs.confirm(
+			"Submit observation to iNaturalist?",
+			"The selected species will be submitted with the photo.",
+			"Submit",
+			"Cancel"
+		)
+		logger.logMessage("[observation_selection] User dialog response: " .. tostring(response))
 
-        if response == "ok" then
-            logger.logMessage("[observation_selection] User confirmed - submitting observation.")
-            local success, msg = submitObservation(photoPath, keywords, token)
+		if response == "ok" then
+			logger.logMessage("[observation_selection] User confirmed - submitting observation.")
+			local success, msg = submitObservation(photoPath, keywords, token)
 
-            if success then
-                logger.logMessage("[observation_selection] Observation submitted successfully.")
-                LrDialogs.message(
-                    "Observation submitted",
-                    "Thank you for contributing to science!"
-                )
-            else
-                logger.logMessage("[observation_selection] Failed to submit observation.")
-                LrDialogs.message(
-                    "Failed to submit observation",
-                    msg or "Unknown error occurred."
-                )
-            end
-        else
-            logger.logMessage("[observation_selection] User cancelled observation submission.")
-        end
+			if success then
+				logger.logMessage("[observation_selection] Observation submitted successfully.")
+				LrDialogs.message("Observation submitted", "Thank you for contributing to science!")
+			else
+				logger.logMessage("[observation_selection] Failed to submit observation.")
+				LrDialogs.message("Failed to submit observation", msg or "Unknown error occurred.")
+			end
+		else
+			logger.logMessage("[observation_selection] User cancelled observation submission.")
+		end
 
-        logger.logMessage("=== END askSubmit ===")
-    end)
+		logger.logMessage("=== END askSubmit ===")
+	end)
 end
 
 -----------------------------------------------------------------------

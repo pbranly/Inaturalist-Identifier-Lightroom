@@ -69,9 +69,9 @@ Logging Notes
 ============================================================
 ]]
 -- Step 1: Lightroom API imports
-local LrPathUtils = import "LrPathUtils"
-local LrDialogs  = import "LrDialogs"
-local LrPrefs    = import "LrPrefs"
+local LrPathUtils = import("LrPathUtils")
+local LrDialogs = import("LrDialogs")
+local LrPrefs = import("LrPrefs")
 -- Lua debug library is used for caller detection
 local debug = debug
 -- Step 2: Access plugin-specific preferences
@@ -80,55 +80,55 @@ local prefs = LrPrefs.prefsForPlugin()
 local initializedScripts = {}
 -- Step 4: Returns the absolute path to the log file
 local function getLogFilePath()
-    return LrPathUtils.child(_PLUGIN.path, "log.txt")
+	return LrPathUtils.child(_PLUGIN.path, "log.txt")
 end
 -- Step 5: Detect caller script name automatically
 local function getCallerScriptName()
-    local info = debug.getinfo(3, "S")  -- 3 = caller up the stack
-    if info and info.source then
-        local src = info.source:gsub("^@", "")
-        return LrPathUtils.leafName(src) or "UnknownScript"
-    end
-    return "UnknownScript"
+	local info = debug.getinfo(3, "S") -- 3 = caller up the stack
+	if info and info.source then
+		local src = info.source:gsub("^@", "")
+		return LrPathUtils.leafName(src) or "UnknownScript"
+	end
+	return "UnknownScript"
 end
 -- Step 6: Initialize the log file (if logging is enabled)
 local function initializeLogFile()
-    if prefs.logEnabled then
-        local f = io.open(getLogFilePath(), "w") -- overwrite at each launch
-        if f then
-            local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
-            f:write(timestamp .. LOC("$$$/iNat/Log/PluginStarted=== Plugin launched ===") .. "\n")
-            f:close()
-        end
-        initializedScripts = {} -- reset script tracking
-    end
+	if prefs.logEnabled then
+		local f = io.open(getLogFilePath(), "w") -- overwrite at each launch
+		if f then
+			local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
+			f:write(timestamp .. LOC("$$$/iNat/Log/PluginStarted=== Plugin launched ===") .. "\n")
+			f:close()
+		end
+		initializedScripts = {} -- reset script tracking
+	end
 end
 -- Step 7: Write a message to the log (if logging is enabled)
 local function logMessage(message)
-    if prefs.logEnabled then
-        local scriptName = getCallerScriptName()
-        local f = io.open(getLogFilePath(), "a") -- append mode
-        if f then
-            -- Add header if first log from this script
-            if not initializedScripts[scriptName] then
-                f:write("=== Logging started for " .. scriptName .. " ===\n")
-                initializedScripts[scriptName] = true
-            end
-            local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
-            f:write(timestamp .. "[" .. scriptName .. "] " .. message .. "\n")
-            f:close()
-        end
-    end
+	if prefs.logEnabled then
+		local scriptName = getCallerScriptName()
+		local f = io.open(getLogFilePath(), "a") -- append mode
+		if f then
+			-- Add header if first log from this script
+			if not initializedScripts[scriptName] then
+				f:write("=== Logging started for " .. scriptName .. " ===\n")
+				initializedScripts[scriptName] = true
+			end
+			local timestamp = os.date("[%Y-%m-%d %H:%M:%S] ")
+			f:write(timestamp .. "[" .. scriptName .. "] " .. message .. "\n")
+			f:close()
+		end
+	end
 end
 -- Step 8: Show a message to the user and log it
 local function notify(message)
-    local scriptName = getCallerScriptName()
-    logMessage(message)
-    LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), "[" .. scriptName .. "] " .. message)
+	local scriptName = getCallerScriptName()
+	logMessage(message)
+	LrDialogs.message(LOC("$$$/iNat/PluginName=iNaturalist Identification"), "[" .. scriptName .. "] " .. message)
 end
 -- Step 9: Exported functions
 return {
-    initializeLogFile = initializeLogFile,
-    logMessage        = logMessage,
-    notify            = notify
+	initializeLogFile = initializeLogFile,
+	logMessage = logMessage,
+	notify = notify,
 }
