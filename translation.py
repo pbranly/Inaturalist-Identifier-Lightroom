@@ -22,124 +22,251 @@ import re
 # 1. Extraction logic
 # ---------------------------------------------------------------------------
 
-def extract_loc_strings_improved(text):
+def extract_loc_strings(text):
     """
-    Extrait les chaînes LOC en gérant les concaténations avec variables.
-    Recherche tous les patterns LOC et extrait la partie texte complète.
+    Extract LOC strings handling multi-line concatenations with ..
+    Properly handles LOC("$$/key=value") pattern
     """
     results = []
     
-    # Pattern amélioré pour capturer les chaînes complètes, même sur plusieurs lignes
-    # Recherche LOC( ou LOC " suivi de $$$/key=value
-    pattern = r'LOC\s*[("\s]+(\$\$\$/[^=]+)=([^"]*(?:"[^"]*)?[^"]*?)(?:"|$)'
-    
-    # Recherche toutes les occurrences
     pos = 0
     while pos < len(text):
-        # Chercher le début d'un LOC
-        loc_match = re.search(r'LOC\s*[\("]\s*"(\$\$\$/[^=]+)=', text[pos:])
+        # Look for LOC( followed by "
+        loc_match = re.search(r'LOC\s*\(\s*"', text[pos:])
         if not loc_match:
             break
         
-        start = pos + loc_match.start()
-        key = loc_match.group(1).strip()
+        # Move to position RIGHT AFTER the opening quote
+        after_quote = pos + loc_match.end()
         
-        # Trouver la position après le =
-        equals_pos = pos + loc_match.end()
+        # Now check if we have $$/key= right after the quote
+        lookahead = text[after_quote:after_quote+500]
+        key_match = re.match(r'(\$\$\$/[^=]+)=', lookahead)
         
-        # Extraire la valeur jusqu'à la fin de la chaîne ou concaténation
-        value = extract_value_from_position(text, equals_pos)
+        if not key_match:
+            # Not a translation string, move on
+            pos = after_quote
+            continue
+        
+        # Found a valid LOC with key
+        key = key_match.group(1).strip()
+        
+        # The value starts right after the = sign
+        value_start = after_quote + key_match.end()
+        
+        # Extract the complete value (handling multi-line and concatenations)
+        value, next_pos = extract_complete_value(text, value_start, key)
         
         if value:
             results.append((key, value))
-        
-        pos = equals_pos + 1
+            pos = next_pos if next_pos > value_start else value_start + 1
+        else:
+            pos = value_start + 1
     
     return results
 
 
-def extract_value_from_position(text, start_pos):
+def extract_complete_value(text, start_pos, key=""):
     """
-    Extrait la valeur d'une chaîne LOC à partir d'une position donnée.
-    Gère les concaténations avec .. et les chaînes multi-lignes.
+    Extract a complete LOC value starting from position after the '=' sign.
+    The value is already inside the opened quote from LOC("$$/key=VALUE")
+    Reads until closing quote, then checks for .. concatenation or end of LOC.
     """
     value_parts = []
     pos = start_pos
-    in_string = True
-    paren_depth = 0
+    debug = "SpeciesGuessInfo" in key
+    should_stop = False  # Flag to stop both loops
     
-    while pos < len(text):
+    if debug:
+        print(f"\n  📍 Starting extraction at position {pos}")
+    
+    # Read characters until we hit the closing quote
+    chars = []
+    iteration = 0
+    while pos < len(text) and not should_stop:
+        iteration += 1
+        if debug and iteration <= 10:
+            print(f"    Iter {iteration}: pos={pos}, char='{text[pos] if pos < len(text) else 'EOF'}'")
+        
+        # Check flag at start of each iteration
+        if should_stop:
+            if debug:
+                print(f"    should_stop flag detected, breaking")
+            break
+        
         char = text[pos]
         
-        # Gérer les guillemets échappés
+        # Handle escape sequences
         if char == '\\' and pos + 1 < len(text):
-            if text[pos + 1] == 'n':
-                value_parts.append('\n')
+            next_char = text[pos + 1]
+            if next_char == 'n':
+                chars.append('\n')
                 pos += 2
                 continue
-            elif text[pos + 1] == 't':
-                value_parts.append('\t')
+            elif next_char == 't':
+                chars.append('\t')
                 pos += 2
                 continue
-            elif text[pos + 1] == '"':
-                value_parts.append('"')
+            elif next_char == '"':
+                chars.append('"')
                 pos += 2
                 continue
-            pos += 1
-            continue
+            elif next_char == '\\':
+                chars.append('\\')
+                pos += 2
+                continue
+            else:
+                chars.append(char)
+                pos += 1
+                continue
         
-        # Fin de la chaîne
-        if char == '"' and in_string:
-            # Vérifier s'il y a une concaténation après
-            next_chars = text[pos+1:pos+10].strip()
-            if next_chars.startswith('..'):
-                # Chercher la prochaine chaîne
-                concat_pos = pos + 1 + next_chars.index('..')
-                next_string_match = re.search(r'\s*\.\.\s*"', text[pos:concat_pos+10])
-                if next_string_match:
-                    pos = pos + next_string_match.end()
+        # Closing quote - this is the end of the current string part
+        if char == '"':
+            # Save what we have so far
+            if chars:
+                value_parts.append(''.join(chars))
+                chars = []
+            
+            pos += 1  # Skip the closing quote
+            
+            # Now look ahead: skip whitespace and check what's next
+            while pos < len(text) and text[pos] in ' \t\n\r':
+                pos += 1
+            
+            if pos >= len(text):
+                break
+            
+            # Check for end of LOC parameters FIRST (before checking concatenation)
+            if text[pos] in ',)':
+                break
+            
+            # Check for concatenation operator ..
+            if pos + 1 < len(text) and text[pos:pos+2] == '..':
+                
+                pos += 2
+                
+                # Skip whitespace after ..
+                while pos < len(text) and text[pos] in ' \t\n\r':
+                    pos += 1
+                
+                if pos >= len(text):
+                    break
+                
+                next_char = text[pos]
+                
+                # Check if next is a quoted string
+                if next_char == '"':
+                    pos += 1  # Skip opening quote of next part
+                    continue  # Continue reading
+                elif next_char == "'":
+                    # Single-quoted string in Lua
+                    pos += 1
+                    # Read until closing single quote
+                    single_chars = []
+                    while pos < len(text):
+                        if text[pos] == '\\' and pos + 1 < len(text):
+                            # Handle escapes
+                            if text[pos + 1] == "'":
+                                single_chars.append("'")
+                                pos += 2
+                                continue
+                            elif text[pos + 1] == 'n':
+                                single_chars.append('\n')
+                                pos += 2
+                                continue
+                        if text[pos] == "'":
+                            pos += 1
+                            if single_chars:
+                                part = ''.join(single_chars)
+                                value_parts.append(part)
+                                single_chars = []
+                            # After single quote, check for more concatenation
+                            while pos < len(text) and text[pos] in ' \t\n\r':
+                                pos += 1
+                            
+                            # CRITICAL: Check for end markers FIRST
+                            if pos < len(text) and text[pos] in ',)':
+                                # This is the end of the LOC string value
+                                should_stop = True
+                                break
+                            
+                            if pos + 1 < len(text) and text[pos:pos+2] == '..':
+                                pos += 2
+                                while pos < len(text) and text[pos] in ' \t\n\r':
+                                    pos += 1
+                                if pos < len(text):
+                                    next_after_concat = text[pos]
+                                    if next_after_concat == '"':
+                                        pos += 1
+                                        break  # Back to main loop to read double-quoted string
+                                    elif next_after_concat == "'":
+                                        # Stay in this loop to read another single-quoted string
+                                        pos += 1
+                                        single_chars = []
+                                        continue
+                            # No more concat after single quote, stop
+                            break
+                        single_chars.append(text[pos])
+                        pos += 1
+                    # After exiting single-quote loop, check if we should stop
+                    if should_stop:
+                        break  # Exit the main loop too
+                    # Otherwise continue to read more in main loop
                     continue
                 else:
-                    # Pas de chaîne après .., c'est une variable
+                    # Concatenation with variable/expression, stop here
                     break
             else:
-                # Fin de la valeur
+                # No more concatenation, end of value
                 break
-        
-        # Ajouter le caractère à la valeur
-        if in_string:
-            value_parts.append(char)
-        
-        pos += 1
+        else:
+            # Regular character
+            chars.append(char)
+            pos += 1
     
-    value = ''.join(value_parts)
-    return clean_value(value)
+    # Don't forget remaining chars
+    if chars:
+        value_parts.append(''.join(chars))
+    
+    # Join all parts and clean
+    if value_parts:
+        value = ''.join(value_parts)
+        value = clean_value(value)
+        return value, pos
+    
+    return None, pos
 
 
 def clean_value(value):
     """
-    Nettoie une valeur extraite en gérant les échappements et caractères spéciaux.
+    Clean extracted value:
+    - Replace Lua placeholders ^1, ^2 with {1}, {2}
+    - Normalize whitespace (but preserve intentional newlines)
     """
-    # Remplacer les placeholders Lua par le format {N}
+    # Replace ^N with {N}
     value = re.sub(r'\^(\d+)', r'{\1}', value)
     
-    # Nettoyer les espaces excessifs mais garder les \n intentionnels
+    # Split by newlines to handle each line
     lines = value.split('\n')
     cleaned_lines = []
+    
     for line in lines:
-        # Réduire les espaces multiples sur chaque ligne
+        # Collapse multiple spaces/tabs to single space
         line = re.sub(r'[ \t]+', ' ', line)
         line = line.strip()
         if line:
             cleaned_lines.append(line)
     
-    # Rejoindre avec \n\n pour les vraies nouvelles lignes
+    # Join lines
     if len(cleaned_lines) > 1:
-        value = '\\n\\n'.join(cleaned_lines)
+        # Multiple lines: join with literal \n\n string
+        result = '\\n\\n'.join(cleaned_lines)
+    elif len(cleaned_lines) == 1:
+        result = cleaned_lines[0]
     else:
-        value = ' '.join(cleaned_lines)
+        result = ''
     
-    return value.strip()
+    return result
 
 
 def format_translation(key, value):
@@ -156,30 +283,34 @@ def process_lua_files():
     current_dir = os.getcwd()
     print(f"🔍 Scanning Lua files in: {current_dir}")
     
-    seen_translations = {}  # key -> value pour détecter les doublons
+    seen_translations = {}
     translations_by_file = {}
     
-    for filename in sorted(os.listdir(current_dir)):
-        if filename.lower().endswith(".lua"):
-            path = os.path.join(current_dir, filename)
+    lua_files = [f for f in os.listdir(current_dir) if f.lower().endswith(".lua")]
+    print(f"Found {len(lua_files)} .lua files\n")
+    
+    # Process all files
+    for filename in sorted(lua_files):
+        path = os.path.join(current_dir, filename)
+        
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
             
-            try:
-                with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-                
-                # Extraire les chaînes
-                matches = extract_loc_strings_improved(content)
-                
-                if matches:
-                    translations_by_file[filename] = matches
-                    print(f"  📄 {filename}: {len(matches)} strings found")
-            except Exception as e:
-                print(f"  ⚠️  Error reading {filename}: {e}")
+            matches = extract_loc_strings(content)
+            
+            if matches:
+                translations_by_file[filename] = matches
+                print(f"  📄 {filename}: {len(matches)} strings extracted")
+                    
+        except Exception as e:
+            print(f"  ⚠️  Error reading {filename}: {e}")
     
     if not translations_by_file:
-        print("⚠️  No translation strings found.")
+        print("\n⚠️  No translation strings found.")
         return
     
+    # Generate output file
     output_path = os.path.join(current_dir, "TranslatedStrings_en.txt")
     output_lines = []
     
@@ -189,12 +320,12 @@ def process_lua_files():
         for key, value in translations:
             line = format_translation(key, value)
             
-            # Vérifier les doublons
             if key in seen_translations:
                 if seen_translations[key] == value:
                     output_lines.append(f"# DUPLICATE: {line}")
                 else:
-                    output_lines.append(f"# CONFLICT: {line} (previous: {seen_translations[key]})")
+                    output_lines.append(f"# CONFLICT: {line}")
+                    output_lines.append(f"# PREVIOUS: \"{key}={seen_translations[key]}\"")
             else:
                 output_lines.append(line)
                 seen_translations[key] = value
@@ -207,11 +338,12 @@ def process_lua_files():
     print(f"\n✅ File generated: {output_path}")
     print(f"📊 Total unique translations: {len(seen_translations)}")
     
-    # Afficher quelques exemples
-    print("\n📝 Sample extractions:")
+    # Show some examples
+    print("\n📋 Sample extractions:")
     for i, (k, v) in enumerate(list(seen_translations.items())[:5]):
-        print(f"   {i+1}. {k[:60]}...")
-        print(f"       = {v[:80]}...")
+        value_display = v[:80] + '...' if len(v) > 80 else v
+        print(f"   {i+1}. {k}")
+        print(f"      = {value_display}")
 
 
 # ---------------------------------------------------------------------------
